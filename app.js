@@ -911,17 +911,47 @@ function renderScoreInputs(containerId) {
         ${dealerBadge}
         ${firstBadge}
       </span>
-      <input
-        id="score-${containerId}-${i}"
-        class="score-input-field"
-        type="number"
-        placeholder="0"
-        inputmode="numeric"
-        autocomplete="off"
-      />
+      <div style="display: flex; align-items: center; gap: 0.5rem; flex-shrink: 0;">
+        <button
+          type="button"
+          class="btn-minus-toggle"
+          onclick="toggleMinusSign('score-${containerId}-${i}')"
+          title="Ubah Positif/Negatif"
+        >
+          ±
+        </button>
+        <input
+          id="score-${containerId}-${i}"
+          class="score-input-field"
+          type="number"
+          placeholder="0"
+          inputmode="numeric"
+          autocomplete="off"
+        />
+      </div>
     `;
     container.appendChild(row);
   });
+}
+
+function toggleMinusSign(inputId) {
+  const el = document.getElementById(inputId);
+  if (!el) return;
+  
+  let val = el.value.toString().trim();
+  
+  if (val === '' || val === '0') {
+    el.value = '-10';
+  } else {
+    if (val.startsWith('-')) {
+      el.value = val.substring(1);
+    } else {
+      el.value = '-' + val;
+    }
+  }
+  
+  // Trigger input event to let standard handlers know of value change
+  el.dispatchEvent(new Event('input', { bubbles: true }));
 }
 
 function renderRoundHistory() {
