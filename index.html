@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description"
+    content="Gaple Score Tracker — Catat skor permainan Gaple secara real-time, otomatis, dan mudah digunakan." />
+  <title>Gaple Score Tracker</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&family=Inter:wght@400;600;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css?v=2.6" />
+</head>
+
+<body>
+
+  <!-- ===== PAGE: HOME ===== -->
+  <div id="page-home" class="page active">
+    <div class="home-container">
+      <div class="home-logo">
+        <svg width="180" height="180" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" style="image-rendering: pixelated; filter: drop-shadow(4px 4px 0px #1A1C1E);">
+          <!-- Left Domino Card (tilted slightly left) -->
+          <g transform="translate(18, 10) rotate(-8 25 40)">
+            <!-- Card Base -->
+            <rect x="2" y="2" width="36" height="64" rx="4" fill="#1A1C1E" />
+            <rect x="5" y="5" width="30" height="58" rx="2" fill="#FFFFFF" />
+            <!-- Divider -->
+            <rect x="5" y="33" width="30" height="3" fill="#FF5252" />
+            <!-- Dots Top (1 dot in center) -->
+            <rect x="17.5" y="16.5" width="5" height="5" fill="#FF5252" />
+            
+            <!-- Dots Bottom (5 dots in X shape) -->
+            <!-- Top-left -->
+            <rect x="10" y="41" width="5" height="5" fill="#FF5252" />
+            <!-- Top-right -->
+            <rect x="25" y="41" width="5" height="5" fill="#FF5252" />
+            <!-- Center -->
+            <rect x="17.5" y="49" width="5" height="5" fill="#FF5252" />
+            <!-- Bottom-left -->
+            <rect x="10" y="57" width="5" height="5" fill="#FF5252" />
+            <!-- Bottom-right -->
+            <rect x="25" y="57" width="5" height="5" fill="#FF5252" />
+          </g>
+
+          <!-- Right Domino Card (tilted slightly right) -->
+          <g transform="translate(46, 12) rotate(12 25 40)">
+            <!-- Card Base -->
+            <rect x="2" y="2" width="36" height="64" rx="4" fill="#1A1C1E" />
+            <rect x="5" y="5" width="30" height="58" rx="2" fill="#FFFFFF" />
+            <!-- Divider -->
+            <rect x="5" y="33" width="30" height="3" fill="#FF5252" />
+            
+            <!-- Dots Top (3 dots diagonal) -->
+            <rect x="10" y="10" width="5" height="5" fill="#FF5252" />
+            <rect x="17.5" y="19.5" width="5" height="5" fill="#FF5252" />
+            <rect x="25" y="29" width="5" height="5" fill="#FF5252" />
+            
+            <!-- Dots Bottom (blank) -->
+          </g>
+        </svg>
+      </div>
+      <h1 class="home-title">Gaple Score</h1>
+      <p class="home-subtitle">Dung Tak Dung Dung Wawwwwww</p>
+      <div class="home-actions">
+        <button id="btn-start" class="btn btn-primary btn-lg" onclick="showPage('setup')">Mulai Permainan</button>
+        <button id="btn-history" class="btn btn-outline btn-lg" onclick="showHistory()">Riwayat Game</button>
+      </div>
+      <div id="saved-game-banner" class="saved-banner hidden">
+        <div class="saved-banner-inner">
+          <div>
+            <p class="saved-label">Permainan tersimpan</p>
+            <p id="saved-game-name" class="saved-name">—</p>
+          </div>
+          <button class="btn btn-sm btn-primary" onclick="resumeGame()">Lanjutkan</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== PAGE: SETUP ===== -->
+  <div id="page-setup" class="page">
+    <div class="page-header">
+      <button class="btn-back" onclick="showPage('home')" title="Kembali">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+          stroke-linecap="round" stroke-linejoin="round">
+          <path d="M19 12H5" />
+          <path d="M12 19l-7-7 7-7" />
+        </svg>
+      </button>
+      <h2 class="page-title">Setup Permainan</h2>
+    </div>
+    <div class="setup-container">
+      <div class="form-group">
+        <label class="form-label" for="game-name">Nama Game</label>
+        <input id="game-name" class="form-input" type="text" placeholder="Gaple Jumat Malam" maxlength="40" />
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="player-count">Jumlah Pemain</label>
+        <div class="player-count-selector">
+          <button class="count-btn" id="count-minus" onclick="changePlayerCount(-1)">−</button>
+          <span id="player-count-display" class="count-display">4</span>
+          <button class="count-btn" id="count-plus" onclick="changePlayerCount(1)">+</button>
+        </div>
+        <p class="form-hint">Antara 2 hingga 6 pemain</p>
+      </div>
+      
+      <!-- Starting Balak Selection -->
+      <div class="form-group">
+        <label class="form-label">Mulai dengan Balak</label>
+        <div class="balak-selector-grid">
+          <!-- 0/0 -->
+          <div class="balak-select-btn active" onclick="setStartingBalak('0/0')" id="balak-btn-0-0">
+            <svg viewBox="0 0 32 52" width="36" height="58" style="image-rendering: pixelated;">
+              <rect x="1" y="1" width="30" height="50" rx="3" fill="#FFFFFF" stroke="#1A1C1E" stroke-width="2" />
+              <line x1="1" y1="26" x2="31" y2="26" stroke="#FF5252" stroke-width="2" />
+            </svg>
+            <span class="balak-label">0/0</span>
+          </div>
+          <!-- 1/1 -->
+          <div class="balak-select-btn" onclick="setStartingBalak('1/1')" id="balak-btn-1-1">
+            <svg viewBox="0 0 32 52" width="36" height="58" style="image-rendering: pixelated;">
+              <rect x="1" y="1" width="30" height="50" rx="3" fill="#FFFFFF" stroke="#1A1C1E" stroke-width="2" />
+              <line x1="1" y1="26" x2="31" y2="26" stroke="#FF5252" stroke-width="2" />
+              <rect x="14.5" y="12" width="3" height="3" fill="#FF5252" />
+              <rect x="14.5" y="38" width="3" height="3" fill="#FF5252" />
+            </svg>
+            <span class="balak-label">1/1</span>
+          </div>
+          <!-- 2/2 -->
+          <div class="balak-select-btn" onclick="setStartingBalak('2/2')" id="balak-btn-2-2">
+            <svg viewBox="0 0 32 52" width="36" height="58" style="image-rendering: pixelated;">
+              <rect x="1" y="1" width="30" height="50" rx="3" fill="#FFFFFF" stroke="#1A1C1E" stroke-width="2" />
+              <line x1="1" y1="26" x2="31" y2="26" stroke="#FF5252" stroke-width="2" />
+              <rect x="7" y="6" width="3" height="3" fill="#FF5252" />
+              <rect x="22" y="17" width="3" height="3" fill="#FF5252" />
+              <rect x="7" y="32" width="3" height="3" fill="#FF5252" />
+              <rect x="22" y="43" width="3" height="3" fill="#FF5252" />
+            </svg>
+            <span class="balak-label">2/2</span>
+          </div>
+          <!-- 3/3 -->
+          <div class="balak-select-btn" onclick="setStartingBalak('3/3')" id="balak-btn-3-3">
+            <svg viewBox="0 0 32 52" width="36" height="58" style="image-rendering: pixelated;">
+              <rect x="1" y="1" width="30" height="50" rx="3" fill="#FFFFFF" stroke="#1A1C1E" stroke-width="2" />
+              <line x1="1" y1="26" x2="31" y2="26" stroke="#FF5252" stroke-width="2" />
+              <rect x="7" y="6" width="3" height="3" fill="#FF5252" />
+              <rect x="14.5" y="12" width="3" height="3" fill="#FF5252" />
+              <rect x="22" y="17" width="3" height="3" fill="#FF5252" />
+              <rect x="7" y="32" width="3" height="3" fill="#FF5252" />
+              <rect x="14.5" y="38" width="3" height="3" fill="#FF5252" />
+              <rect x="22" y="43" width="3" height="3" fill="#FF5252" />
+            </svg>
+            <span class="balak-label">3/3</span>
+          </div>
+          <!-- 4/4 -->
+          <div class="balak-select-btn" onclick="setStartingBalak('4/4')" id="balak-btn-4-4">
+            <svg viewBox="0 0 32 52" width="36" height="58" style="image-rendering: pixelated;">
+              <rect x="1" y="1" width="30" height="50" rx="3" fill="#FFFFFF" stroke="#1A1C1E" stroke-width="2" />
+              <line x1="1" y1="26" x2="31" y2="26" stroke="#FF5252" stroke-width="2" />
+              <rect x="7" y="6" width="3" height="3" fill="#FF5252" />
+              <rect x="22" y="6" width="3" height="3" fill="#FF5252" />
+              <rect x="7" y="17" width="3" height="3" fill="#FF5252" />
+              <rect x="22" y="17" width="3" height="3" fill="#FF5252" />
+              <rect x="7" y="32" width="3" height="3" fill="#FF5252" />
+              <rect x="22" y="32" width="3" height="3" fill="#FF5252" />
+              <rect x="7" y="43" width="3" height="3" fill="#FF5252" />
+              <rect x="22" y="43" width="3" height="3" fill="#FF5252" />
+            </svg>
+            <span class="balak-label">4/4</span>
+          </div>
+          <!-- 5/5 -->
+          <div class="balak-select-btn" onclick="setStartingBalak('5/5')" id="balak-btn-5-5">
+            <svg viewBox="0 0 32 52" width="36" height="58" style="image-rendering: pixelated;">
+              <rect x="1" y="1" width="30" height="50" rx="3" fill="#FFFFFF" stroke="#1A1C1E" stroke-width="2" />
+              <line x1="1" y1="26" x2="31" y2="26" stroke="#FF5252" stroke-width="2" />
+              <rect x="7" y="6" width="3" height="3" fill="#FF5252" />
+              <rect x="22" y="6" width="3" height="3" fill="#FF5252" />
+              <rect x="14.5" y="12" width="3" height="3" fill="#FF5252" />
+              <rect x="7" y="17" width="3" height="3" fill="#FF5252" />
+              <rect x="22" y="17" width="3" height="3" fill="#FF5252" />
+              <rect x="7" y="32" width="3" height="3" fill="#FF5252" />
+              <rect x="22" y="32" width="3" height="3" fill="#FF5252" />
+              <rect x="14.5" y="38" width="3" height="3" fill="#FF5252" />
+              <rect x="7" y="43" width="3" height="3" fill="#FF5252" />
+              <rect x="22" y="43" width="3" height="3" fill="#FF5252" />
+            </svg>
+            <span class="balak-label">5/5</span>
+          </div>
+          <!-- 6/6 -->
+          <div class="balak-select-btn" onclick="setStartingBalak('6/6')" id="balak-btn-6-6">
+            <svg viewBox="0 0 32 52" width="36" height="58" style="image-rendering: pixelated;">
+              <rect x="1" y="1" width="30" height="50" rx="3" fill="#FFFFFF" stroke="#1A1C1E" stroke-width="2" />
+              <line x1="1" y1="26" x2="31" y2="26" stroke="#FF5252" stroke-width="2" />
+              <rect x="7" y="6" width="3" height="3" fill="#FF5252" />
+              <rect x="7" y="12" width="3" height="3" fill="#FF5252" />
+              <rect x="7" y="17" width="3" height="3" fill="#FF5252" />
+              <rect x="22" y="6" width="3" height="3" fill="#FF5252" />
+              <rect x="22" y="12" width="3" height="3" fill="#FF5252" />
+              <rect x="22" y="17" width="3" height="3" fill="#FF5252" />
+              
+              <rect x="7" y="32" width="3" height="3" fill="#FF5252" />
+              <rect x="7" y="38" width="3" height="3" fill="#FF5252" />
+              <rect x="7" y="43" width="3" height="3" fill="#FF5252" />
+              <rect x="22" y="32" width="3" height="3" fill="#FF5252" />
+              <rect x="22" y="38" width="3" height="3" fill="#FF5252" />
+              <rect x="22" y="43" width="3" height="3" fill="#FF5252" />
+            </svg>
+            <span class="balak-label">6/6</span>
+          </div>
+        </div>
+        <input type="hidden" id="start-balak" value="0/0" />
+      </div>
+      <div id="player-names-group" class="form-group">
+        <label class="form-label">Nama Pemain</label>
+        <div id="player-inputs" class="player-inputs-grid"></div>
+      </div>
+      <button id="btn-mulai" class="btn btn-primary btn-lg btn-full" onclick="startGame()">Mulai Permainan</button>
+    </div>
+  </div>
+
+  <!-- ===== PAGE: DASHBOARD ===== -->
+  <div id="page-dashboard" class="page">
+    <div class="page-header dashboard-header">
+      <div class="game-meta">
+        <h2 id="dash-game-name" class="dash-game-name">Gaple Score</h2>
+        <span id="dash-status-badge" class="status-badge status-active">Berlangsung</span>
+        <span id="dash-start-balak" class="status-badge" style="background: var(--rank-3-bg); color: var(--text-primary); border-color: var(--border-color); display: inline-flex; align-items: center; gap: 0.25rem;">Mulai: 0/0</span>
+      </div>
+      <div class="header-actions">
+        <button class="icon-btn" onclick="exportData()" title="Export">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+            <polyline points="7 10 12 15 17 10" />
+            <line x1="12" y1="15" x2="12" y2="3" />
+          </svg>
+        </button>
+        <button class="icon-btn" onclick="startNewGame()" title="Game Baru">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19" />
+            <line x1="5" y1="12" x2="19" y2="12" />
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <div class="dashboard-body">
+      <!-- Leaderboard -->
+      <div class="section">
+        <div class="section-header">
+          <h3 class="section-title">Leaderboard</h3>
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <span id="dash-round-info" class="round-badge">Ronde 0</span>
+            <span id="dash-gaple-info" class="gaple-header-badge hidden">Gaple 3/3</span>
+          </div>
+        </div>
+        <div id="leaderboard-list" class="leaderboard-list"></div>
+      </div>
+
+      <!-- Input Skor Ronde -->
+      <div id="score-input-section" class="section">
+        <div class="section-header">
+          <h3 class="section-title" id="score-input-title">Tambah Skor Ronde</h3>
+        </div>
+        <div id="score-inputs" class="score-inputs"></div>
+        <div class="score-actions">
+          <button id="btn-save-round" class="btn btn-primary btn-full" onclick="saveRound()">Simpan Ronde</button>
+        </div>
+      </div>
+
+      <!-- History -->
+      <div class="section">
+        <div class="section-header">
+          <h3 class="section-title">Riwayat Ronde</h3>
+          <button id="btn-undo" class="btn-undo hidden" onclick="undoLastDelete()" title="Batalkan hapus terakhir">
+            ↩ Undo
+          </button>
+        </div>
+        <div id="round-history" class="round-history"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== PAGE: GAME OVER ===== -->
+  <div id="page-gameover" class="page">
+    <div class="gameover-container">
+      <div class="gameover-badge">GAME OVER</div>
+      <h1 class="gameover-title">Permainan Selesai</h1>
+      <p class="gameover-subtitle" id="gameover-subtitle">Seorang pemain telah mencapai batas skor.</p>
+      <div id="gameover-leaderboard" class="gameover-leaderboard"></div>
+      
+      <!-- Gaple Momen Stats -->
+      <div id="gameover-gaple-stats" class="gameover-gaple-stats hidden" style="margin-bottom: 3rem; width: 100%;">
+        <h3 class="section-title" style="margin-bottom: 1.25rem; display: flex; align-items: center; gap: 0.4rem;">
+          Momen Gaple 
+          <svg viewBox="0 0 16 10" width="20" height="12" style="image-rendering: pixelated; display: inline-block;">
+            <rect x="0" y="0" width="16" height="10" rx="1" fill="#1A1C1E" />
+            <rect x="1" y="1" width="6" height="8" rx="0.5" fill="#FFFFFF" />
+            <rect x="9" y="1" width="6" height="8" rx="0.5" fill="#FFFFFF" />
+            <rect x="7" y="1" width="2" height="8" fill="#FF5252" />
+            <rect x="3.5" y="4.5" width="1" height="1" fill="#FF5252" />
+            <rect x="11.5" y="4.5" width="1" height="1" fill="#FF5252" />
+          </svg>
+        </h3>
+        <div id="gameover-gaple-list" style="display: flex; flex-direction: column; gap: 0.75rem;"></div>
+      </div>
+
+      <div class="gameover-actions">
+        <button class="btn btn-primary btn-lg" onclick="startNewGame()">Main Lagi</button>
+        <button class="btn btn-outline btn-lg" onclick="exportData()">Export</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== PAGE: HISTORY LIST ===== -->
+  <div id="page-history" class="page">
+    <div class="page-header">
+      <button class="btn-back" onclick="showPage('home')" title="Kembali">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+          stroke-linecap="round" stroke-linejoin="round">
+          <path d="M19 12H5" />
+          <path d="M12 19l-7-7 7-7" />
+        </svg>
+      </button>
+      <h2 class="page-title">Riwayat Game</h2>
+    </div>
+    <div id="history-list-container" class="history-list-container"></div>
+  </div>
+
+  <!-- ===== MODAL: HAPUS RONDE ===== -->
+  <div id="modal-delete" class="modal-overlay hidden">
+    <div class="modal-card">
+      <div class="modal-icon modal-icon-danger">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="3 6 5 6 21 6" />
+          <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+          <path d="M10 11v6" />
+          <path d="M14 11v6" />
+          <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+        </svg>
+      </div>
+      <h3 class="modal-title">Hapus Ronde?</h3>
+      <p class="modal-body">Semua skor pada ronde ini akan dibatalkan dan total skor diperbarui.</p>
+      <div class="modal-actions">
+        <button class="btn btn-outline" onclick="closeModal('modal-delete')">Batal</button>
+        <button class="btn btn-primary" onclick="confirmDeleteRound()">Ya, Hapus</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== MODAL: AKHIR PERMAINAN ===== -->
+  <div id="modal-gameover" class="modal-overlay hidden">
+    <div class="modal-card">
+      <div class="modal-icon modal-icon-success">🏁</div>
+      <h3 class="modal-title">Permainan Selesai</h3>
+      <p id="modal-gameover-body" class="modal-body">Seorang pemain telah mencapai 100 poin.</p>
+      <div class="modal-actions">
+        <button class="btn btn-outline" onclick="closeModal('modal-gameover')">Periksa Lagi</button>
+        <button class="btn btn-primary" onclick="endGame()">Lihat Hasil</button>
+      </div>
+    </div>
+  </div>
+
+
+
+  <!-- ===== MODAL: EDIT RONDE ===== -->
+  <div id="modal-edit" class="modal-overlay hidden">
+    <div class="modal-card modal-card-wide">
+      <h3 class="modal-title">Edit Ronde <span id="edit-round-num"></span></h3>
+      <div id="edit-inputs" class="score-inputs"></div>
+      <div class="modal-actions">
+        <button class="btn btn-outline" onclick="closeModal('modal-edit')">Batal</button>
+        <button class="btn btn-primary" onclick="saveEditRound()">Simpan</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== MODAL: GAPLE CARD SELECT ===== -->
+  <div id="modal-gaple-card" class="modal-overlay hidden">
+    <div class="modal-card">
+      <div class="modal-icon" style="display: flex; justify-content: center; margin-bottom: 1.25rem;">
+        <svg viewBox="0 0 16 10" width="48" height="30" style="image-rendering: pixelated;">
+          <rect x="0" y="0" width="16" height="10" rx="1.5" fill="#1A1C1E" />
+          <rect x="1" y="1" width="6" height="8" rx="0.5" fill="#FFFFFF" />
+          <rect x="9" y="1" width="6" height="8" rx="0.5" fill="#FFFFFF" />
+          <rect x="7" y="1" width="2" height="8" fill="#FF5252" />
+          <rect x="3" y="4" width="2" height="2" rx="0.5" fill="#FF5252" />
+          <rect x="11" y="4" width="2" height="2" rx="0.5" fill="#FF5252" />
+        </svg>
+      </div>
+      <h3 class="modal-title">Ada Gaple!</h3>
+      <p class="modal-body" style="font-size: 1.2rem; margin-bottom: 1.5rem; text-transform: uppercase;">
+        Kartu Balak berapa yang dijadikan Gaple?
+      </p>
+      
+      <!-- Selection Grid of Balak Cards -->
+      <div class="balak-grid" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.75rem; margin-bottom: 1.5rem;">
+        <button class="btn btn-sm btn-outline balak-opt" onclick="selectGapleCard('0/0')">0/0</button>
+        <button class="btn btn-sm btn-outline balak-opt" onclick="selectGapleCard('1/1')">1/1</button>
+        <button class="btn btn-sm btn-outline balak-opt" onclick="selectGapleCard('2/2')">2/2</button>
+        <button class="btn btn-sm btn-outline balak-opt" onclick="selectGapleCard('3/3')">3/3</button>
+        <button class="btn btn-sm btn-outline balak-opt" onclick="selectGapleCard('4/4')">4/4</button>
+        <button class="btn btn-sm btn-outline balak-opt" onclick="selectGapleCard('5/5')">5/5</button>
+        <button class="btn btn-sm btn-outline balak-opt" onclick="selectGapleCard('6/6')">6/6</button>
+        <button class="btn btn-sm btn-outline balak-opt" onclick="selectGapleCard('Lainnya')">?</button>
+      </div>
+
+      <!-- Custom Input (hidden by default) -->
+      <div id="gaple-custom-input-wrap" class="hidden" style="margin-bottom: 1.5rem;">
+        <label class="form-label" for="gaple-custom-card">Kartu Lainnya</label>
+        <input id="gaple-custom-card" class="form-input" type="text" placeholder="Contoh: 5/6" maxlength="10" style="text-align: center;" onkeydown="if(event.key === 'Enter') confirmGapleCustom()" />
+      </div>
+
+      <div class="modal-actions">
+        <button class="btn btn-outline" onclick="cancelGapleModal()">Batal</button>
+        <button id="btn-confirm-gaple" class="btn btn-primary hidden" onclick="confirmGapleCustom()">Simpan</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== MODAL: CUSTOMIZE PLAYER ===== -->
+  <div id="modal-customize-player" class="modal-overlay hidden">
+    <div class="modal-card modal-card-wide">
+      <h3 class="modal-title">Kustomisasi Pemain</h3>
+      
+      <!-- Input Nama -->
+      <div class="form-group" style="margin-bottom: 1.25rem;">
+        <label class="form-label">Nama Pemain</label>
+        <input id="custom-player-name" class="form-input" type="text" maxlength="20" placeholder="Nama..." style="text-align: center;" onkeydown="if(event.key === 'Enter') confirmCustomizePlayer()" />
+      </div>
+
+      <!-- Pilihan Avatar -->
+      <div class="form-group" style="margin-bottom: 1.25rem;">
+        <label class="form-label">Pilih Avatar</label>
+        <div class="avatar-selector-grid" style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 0.5rem;">
+          <!-- Dibuat secara dinamis oleh JavaScript -->
+        </div>
+        <input type="hidden" id="custom-player-avatar" value="fox" />
+      </div>
+
+      <!-- Pilihan Warna Badge -->
+      <div class="form-group" style="margin-bottom: 1.5rem;">
+        <label class="form-label">Warna Badge</label>
+        <div class="color-selector-grid" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.5rem;">
+          <button id="color-opt-FF5252" class="btn btn-sm color-opt" style="background-color: #FF5252;" onclick="selectCustomColor('#FF5252')"></button>
+          <button id="color-opt-448AFF" class="btn btn-sm color-opt" style="background-color: #448AFF;" onclick="selectCustomColor('#448AFF')"></button>
+          <button id="color-opt-69F0AE" class="btn btn-sm color-opt" style="background-color: #69F0AE;" onclick="selectCustomColor('#69F0AE')"></button>
+          <button id="color-opt-FFD740" class="btn btn-sm color-opt" style="background-color: #FFD740;" onclick="selectCustomColor('#FFD740')"></button>
+          <button id="color-opt-E040FB" class="btn btn-sm color-opt" style="background-color: #E040FB;" onclick="selectCustomColor('#E040FB')"></button>
+          <button id="color-opt-FF9100" class="btn btn-sm color-opt" style="background-color: #FF9100;" onclick="selectCustomColor('#FF9100')"></button>
+          <button id="color-opt-00E5FF" class="btn btn-sm color-opt" style="background-color: #00E5FF;" onclick="selectCustomColor('#00E5FF')"></button>
+          <button id="color-opt-FF4081" class="btn btn-sm color-opt" style="background-color: #FF4081;" onclick="selectCustomColor('#FF4081')"></button>
+        </div>
+        <input type="hidden" id="custom-player-color" value="#FF5252" />
+      </div>
+
+      <div class="modal-actions">
+        <button class="btn btn-outline" onclick="closeModal('modal-customize-player')">Batal</button>
+        <button class="btn btn-primary" onclick="confirmCustomizePlayer()">Simpan</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== CONFETTI CANVAS ===== -->
+  <canvas id="confetti-canvas" class="confetti-canvas"></canvas>
+
+  <!-- ===== TOAST ===== -->
+  <div id="toast" class="toast hidden"></div>
+
+  <script src="app.js?v=2.6"></script>
+</body>
+
+</html>
