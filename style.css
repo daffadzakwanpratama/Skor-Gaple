@@ -1000,17 +1000,116 @@ body {
 }
 
 /* ---------- RESPONSIVE & GRID ---------- */
-@media (max-width: 400px) {
-  .page-header { padding: 1rem 1rem; }
+@media (max-width: 480px) {
+  .page-header { 
+    padding: 0.75rem 1rem;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+  .game-meta {
+    gap: 0.4rem;
+    flex-wrap: wrap;
+    flex: 1;
+    min-width: 0;
+  }
+  .dash-game-name {
+    font-size: 0.75rem;
+    width: 100%;
+  }
+  .page-title {
+    font-size: 0.8rem;
+  }
+  
+  .home-container {
+    padding: 1.5rem 1rem;
+  }
+  .home-title {
+    font-size: 1.4rem;
+  }
+  .home-logo svg {
+    width: 140px;
+    height: 140px;
+  }
+  
   .setup-container { padding: 1.5rem 1rem 3rem; }
   .dashboard-body { padding: 1.5rem 1rem 4rem; }
-  .modal-card { padding: 2rem 1.25rem; }
+  
+  /* Leaderboard mobile styling */
+  .lb-item {
+    padding: 0.75rem 1rem;
+    gap: 0.75rem;
+  }
+  .lb-score {
+    font-size: 1.8rem;
+    min-width: 60px;
+  }
+  .lb-name {
+    font-size: 1.3rem;
+  }
+  
+  /* Player Badge responsive override */
+  .player-badge {
+    font-size: 1.15rem !important;
+    padding: 0.15rem 0.35rem !important;
+    border-width: 2px !important;
+    box-shadow: 1.5px 1.5px 0px #1A1C1E !important;
+  }
+  
+  /* Score Input Row stacking for clean layout */
+  .score-input-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+  }
+  .score-player-name {
+    display: flex !important;
+    justify-content: flex-start !important;
+    width: 100%;
+  }
+  .score-input-row > div {
+    display: flex !important;
+    justify-content: flex-end !important;
+    width: 100%;
+  }
+  
+  /* Round History mobile compact */
+  .round-card-header {
+    padding: 0.6rem 0.8rem;
+  }
+  .round-card-body {
+    padding: 0.6rem 0.8rem;
+  }
+  .round-score-row {
+    font-size: 1.4rem;
+  }
+  
+  /* Game Over Page */
   .gameover-container { padding: 2.5rem 1rem; }
+  .gameover-title { font-size: 1.3rem; }
+  .go-lb-item {
+    padding: 1rem;
+    gap: 0.75rem;
+  }
+  .go-lb-name {
+    font-size: 1.5rem;
+  }
+  .go-lb-score {
+    font-size: 1.8rem;
+  }
+  
+  /* Modal & Buttons */
+  .modal-card { padding: 2rem 1.25rem; }
+  .btn-lg {
+    padding: 0.9rem 1.4rem;
+    font-size: 0.75rem;
+  }
 }
 
 @media (min-width: 640px) {
   .home-container { max-width: 440px; margin: 0 auto; }
 }
+
 
 /* 2-Column Responsive Dashboard for Desktop Screens */
 @media (min-width: 800px) {
