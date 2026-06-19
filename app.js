@@ -647,6 +647,7 @@ function renderSetupPlayerInputs(tempNames = null) {
         class="form-input"
         type="text"
         placeholder="Nama Pemain ${i + 1}"
+        aria-label="Nama Pemain ${i + 1}"
         value="${escapeHtml(val)}"
         maxlength="20"
         autocomplete="off"
@@ -933,6 +934,7 @@ function renderScoreInputs(containerId) {
           type="number"
           placeholder="0"
           inputmode="numeric"
+          aria-label="Skor Ronde ${p.name}"
           autocomplete="off"
         />
         <div id="minus-options-${containerId}-${i}" class="minus-options-popover hidden">

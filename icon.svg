@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="512" height="512">
+  <!-- Background for App Icon -->
+  <rect width="100" height="100" rx="20" fill="#1A1C1E" />
+  
+  <g style="image-rendering: pixelated; filter: drop-shadow(3px 3px 0px rgba(0,0,0,0.5));">
+    <!-- Left Domino Card (tilted slightly left) -->
+    <g transform="translate(18, 10) rotate(-8 25 40)">
+      <!-- Card Base -->
+      <rect x="2" y="2" width="36" height="64" rx="4" fill="#1A1C1E" />
+      <rect x="5" y="5" width="30" height="58" rx="2" fill="#FFFFFF" />
+      <!-- Divider -->
+      <rect x="5" y="33" width="30" height="3" fill="#FF5252" />
+      <!-- Dots Top (1 dot in center) -->
+      <rect x="17.5" y="16.5" width="5" height="5" fill="#FF5252" />
+      
+      <!-- Dots Bottom (5 dots in X shape) -->
+      <!-- Top-left -->
+      <rect x="10" y="41" width="5" height="5" fill="#FF5252" />
+      <!-- Top-right -->
+      <rect x="25" y="41" width="5" height="5" fill="#FF5252" />
+      <!-- Center -->
+      <rect x="17.5" y="49" width="5" height="5" fill="#FF5252" />
+      <!-- Bottom-left -->
+      <rect x="10" y="57" width="5" height="5" fill="#FF5252" />
+      <!-- Bottom-right -->
+      <rect x="25" y="57" width="5" height="5" fill="#FF5252" />
+    </g>
+
+    <!-- Right Domino Card (tilted slightly right) -->
+    <g transform="translate(46, 12) rotate(12 25 40)">
+      <!-- Card Base -->
+      <rect x="2" y="2" width="36" height="64" rx="4" fill="#1A1C1E" />
+      <rect x="5" y="5" width="30" height="58" rx="2" fill="#FFFFFF" />
+      <!-- Divider -->
+      <rect x="5" y="33" width="30" height="3" fill="#FF5252" />
+      
+      <!-- Dots Top (3 dots diagonal) -->
+      <rect x="10" y="10" width="5" height="5" fill="#FF5252" />
+      <rect x="17.5" y="19.5" width="5" height="5" fill="#FF5252" />
+      <rect x="25" y="29" width="5" height="5" fill="#FF5252" />
+      
+      <!-- Dots Bottom (blank) -->
+    </g>
+  </g>
+</svg>
