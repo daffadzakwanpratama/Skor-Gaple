@@ -560,6 +560,9 @@ function showPage(pageId) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   const target = document.getElementById('page-' + pageId);
   if (target) target.classList.add('active');
+  if (pageId === 'home') {
+    renderHomePage();
+  }
 }
 
 // ─────────────────────────────────────────────
