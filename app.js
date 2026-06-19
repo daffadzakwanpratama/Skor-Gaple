@@ -1433,44 +1433,7 @@ function renderHistoryListPage() {
   });
 }
 
-// ─────────────────────────────────────────────
-// EXPORT
-// ─────────────────────────────────────────────
-function exportData() {
-  const g = state.currentGame;
-  if (!g) { showToast('Tidak ada game aktif.'); return; }
 
-  const sorted = [...g.players].sort((a, b) => a.total - b.total);
-  const date = new Date(g.createdAt).toLocaleDateString('id-ID', {
-    day: 'numeric', month: 'long', year: 'numeric',
-  });
-
-  let csv = `GAPLE SCORE TRACKER\n`;
-  csv += `Game: ${g.name}\n`;
-  csv += `Tanggal: ${date}\n`;
-  csv += `Total Ronde: ${g.rounds.length}\n\n`;
-
-  // Leaderboard
-  csv += `LEADERBOARD\n`;
-  sorted.forEach((p, i) => {
-    csv += `${i + 1}. ${p.name},${p.total}\n`;
-  });
-
-  csv += `\nRIWAYAT RONDE\n`;
-  csv += `Ronde,` + g.players.map(p => p.name).join(',') + `\n`;
-  g.rounds.forEach((round, i) => {
-    csv += `${i + 1},` + round.scores.join(',') + `\n`;
-  });
-
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `gaple-${g.name.replace(/\s+/g, '_')}-${Date.now()}.csv`;
-  a.click();
-  URL.revokeObjectURL(url);
-  showToast('File CSV diunduh ✓');
-}
 
 // ─────────────────────────────────────────────
 // COPY RESULT
