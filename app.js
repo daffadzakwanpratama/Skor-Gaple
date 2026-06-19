@@ -516,6 +516,13 @@ document.addEventListener('DOMContentLoaded', () => {
   showPage('home');
 });
 
+// Close minus options popovers when clicking outside
+document.addEventListener('click', e => {
+  if (!e.target.closest('.score-input-control')) {
+    document.querySelectorAll('.minus-options-popover').forEach(p => p.classList.add('hidden'));
+  }
+});
+
 // Delegated keydown listener for score inputs to handle Enter key navigation
 document.addEventListener('keydown', e => {
   if (e.key === 'Enter' && e.target.classList.contains('score-input-field')) {
@@ -911,12 +918,12 @@ function renderScoreInputs(containerId) {
         ${dealerBadge}
         ${firstBadge}
       </span>
-      <div style="display: flex; align-items: center; gap: 0.5rem; flex-shrink: 0;">
+      <div class="score-input-control">
         <button
           type="button"
           class="btn-minus-toggle"
-          onclick="toggleMinusSign('score-${containerId}-${i}')"
-          title="Ubah Positif/Negatif"
+          onclick="toggleMinusOptions(event, '${containerId}', ${i})"
+          title="Pilih Skor Negatif"
         >
           ±
         </button>
@@ -928,30 +935,52 @@ function renderScoreInputs(containerId) {
           inputmode="numeric"
           autocomplete="off"
         />
+        <div id="minus-options-${containerId}-${i}" class="minus-options-popover hidden">
+          <button type="button" class="minus-opt-btn" onclick="selectMinusVal('${containerId}', ${i}, -10)">-10</button>
+          <button type="button" class="minus-opt-btn" onclick="selectMinusVal('${containerId}', ${i}, -15)">-15</button>
+          <button type="button" class="minus-opt-btn" onclick="selectMinusVal('${containerId}', ${i}, -20)">-20</button>
+          <button type="button" class="minus-opt-btn" onclick="selectMinusVal('${containerId}', ${i}, -25)">-25</button>
+          <button type="button" class="minus-opt-btn" onclick="selectMinusVal('${containerId}', ${i}, -30)">-30</button>
+        </div>
       </div>
     `;
     container.appendChild(row);
   });
 }
 
-function toggleMinusSign(inputId) {
-  const el = document.getElementById(inputId);
-  if (!el) return;
-  
-  let val = el.value.toString().trim();
-  
-  if (val === '' || val === '0') {
-    el.value = '-10';
+function toggleMinusOptions(event, containerId, playerIdx) {
+  event.stopPropagation();
+  const popoverId = `minus-options-${containerId}-${playerIdx}`;
+  const popover = document.getElementById(popoverId);
+  if (!popover) return;
+
+  const isHidden = popover.classList.contains('hidden');
+
+  // Close all other popovers
+  document.querySelectorAll('.minus-options-popover').forEach(p => {
+    p.classList.add('hidden');
+  });
+
+  if (isHidden) {
+    popover.classList.remove('hidden');
   } else {
-    if (val.startsWith('-')) {
-      el.value = val.substring(1);
-    } else {
-      el.value = '-' + val;
-    }
+    popover.classList.add('hidden');
+  }
+}
+
+function selectMinusVal(containerId, playerIdx, val) {
+  const inputId = `score-${containerId}-${playerIdx}`;
+  const el = document.getElementById(inputId);
+  if (el) {
+    el.value = val;
+    el.dispatchEvent(new Event('input', { bubbles: true }));
   }
   
-  // Trigger input event to let standard handlers know of value change
-  el.dispatchEvent(new Event('input', { bubbles: true }));
+  const popoverId = `minus-options-${containerId}-${playerIdx}`;
+  const popover = document.getElementById(popoverId);
+  if (popover) {
+    popover.classList.add('hidden');
+  }
 }
 
 function renderRoundHistory() {
