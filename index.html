@@ -60,9 +60,9 @@
             <rect x="5" y="33" width="30" height="3" fill="#FF5252" />
 
             <!-- Dots Top (3 dots diagonal) -->
-            <rect x="10" y="10" width="5" height="5" fill="#FF5252" />
-            <rect x="17.5" y="19.5" width="5" height="5" fill="#FF5252" />
-            <rect x="25" y="29" width="5" height="5" fill="#FF5252" />
+            <rect x="10" y="9" width="5" height="5" fill="#FF5252" />
+            <rect x="17.5" y="18" width="5" height="5" fill="#FF5252" />
+            <rect x="25" y="27" width="5" height="5" fill="#FF5252" />
 
             <!-- Dots Bottom (blank) -->
           </g>
@@ -72,8 +72,7 @@
       <p class="home-subtitle">Dung Tak Dung Dung Wawwwwww</p>
       <div class="home-actions">
         <button id="btn-start-local" class="btn btn-primary btn-lg" onclick="startLocalSetup()">Main Lokal</button>
-        <button id="btn-start-online" class="btn btn-outline btn-lg" style="border-color: var(--secondary); background: #FFFDE7;" onclick="showOnlineMenu()">Main Online 🌐</button>
-        <button id="btn-history" class="btn btn-ghost btn-sm" onclick="showHistory()">Riwayat Game</button>
+        <button id="btn-history" class="btn btn-outline btn-lg" style="background: var(--accent-gold); color: var(--text-primary); border-color: var(--border-color);" onclick="showHistory()">Riwayat Game</button>
       </div>
       <div id="saved-game-banner" class="saved-banner hidden">
         <div class="saved-banner-inner">
@@ -228,52 +227,7 @@
     </div>
   </div>
 
-  <!-- ===== PAGE: ONLINE MENU ===== -->
-  <div id="page-online-menu" class="page">
-    <div class="page-header">
-      <button class="btn-back" onclick="showPage('home')" title="Kembali">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
-          stroke-linecap="round" stroke-linejoin="round">
-          <path d="M19 12H5" />
-          <path d="M12 19l-7-7 7-7" />
-        </svg>
-      </button>
-      <h2 class="page-title">Menu Online</h2>
-    </div>
-    <div class="setup-container">
-      <div style="text-align: center; margin-bottom: 2rem;">
-        <p style="font-family: var(--font-primary); font-size: 0.9rem; color: var(--text-secondary); line-height: 1.5; margin-bottom: 1.5rem;">
-          Main bareng teman secara online! Satu orang membuat Room (Host) dan yang lainnya bergabung menggunakan Kode Room.
-        </p>
-        <button id="btn-create-online-room" class="btn btn-primary btn-lg btn-full" style="margin-bottom: 1rem;" onclick="startOnlineSetup()">Buat Room Baru 🏠</button>
-        <button id="btn-join-online-room" class="btn btn-outline btn-lg btn-full" style="border-color: var(--secondary); background: #FFFDE7; margin-bottom: 1rem;" onclick="showJoinRoomPage()">Gabung Room 🌐</button>
-      </div>
-    </div>
-  </div>
 
-  <!-- ===== PAGE: JOIN ROOM ===== -->
-  <div id="page-join" class="page">
-    <div class="page-header">
-      <button class="btn-back" onclick="showPage('online-menu')" title="Kembali">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
-          stroke-linecap="round" stroke-linejoin="round">
-          <path d="M19 12H5" />
-          <path d="M12 19l-7-7 7-7" />
-        </svg>
-      </button>
-      <h2 class="page-title">Gabung Room</h2>
-    </div>
-    <div class="setup-container">
-      <div class="form-group" style="text-align: center;">
-        <label class="form-label" for="room-code-input" style="font-size: 1.1rem; margin-bottom: 1rem;">Masukkan Kode Room</label>
-        <input id="room-code-input" class="form-input" type="text" placeholder="ABCD" maxlength="4"
-          style="font-family: var(--font-title); font-size: 2.2rem; text-align: center; text-transform: uppercase; letter-spacing: 0.3rem; padding: 0.75rem; border: var(--border-width) solid var(--border-color); box-shadow: var(--pixel-shadow); background: #FFFFFF; color: #1A1C1E; width: 100%; max-width: 280px; margin: 0 auto 1.5rem;"
-          oninput="this.value = this.value.toUpperCase()"
-          onkeydown="if(event.key === 'Enter') joinRoom()" />
-      </div>
-      <button id="btn-join-room-action" class="btn btn-primary btn-lg btn-full" onclick="joinRoom()">Gabung Sekarang 🚀</button>
-    </div>
-  </div>
 
   <!-- ===== PAGE: DASHBOARD ===== -->
   <div id="page-dashboard" class="page">
@@ -291,8 +245,6 @@
         <span id="dash-start-balak" class="status-badge"
           style="background: var(--rank-3-bg); color: var(--text-primary); border-color: var(--border-color); display: inline-flex; align-items: center; gap: 0.25rem;">Mulai:
           0/0</span>
-        <span id="dash-online-badge" class="status-badge hidden"
-          style="background: #E8F5E9; color: #2E7D32; border-color: #2E7D32;">ONLINE: —</span>
       </div>
       <div class="header-actions">
         <button class="icon-btn" onclick="startNewGame()" title="Game Baru">
@@ -486,6 +438,14 @@
     <div class="modal-card modal-card-wide">
       <h3 class="modal-title">Kustomisasi Pemain</h3>
 
+      <!-- Live Preview Badge -->
+      <div style="text-align: center; margin-bottom: 1.5rem; padding: 0.85rem; border: var(--border-width) dashed var(--border-color); background: #FFFFFF; box-shadow: var(--pixel-shadow-sm); display: flex; flex-direction: column; align-items: center; justify-content: center;">
+        <div class="form-label" style="margin-bottom: 0.5rem; font-size: 0.65rem;">Pratinjau</div>
+        <div id="custom-player-preview-badge-wrap" style="display: inline-block;">
+          <!-- Dibuat secara dinamis -->
+        </div>
+      </div>
+
       <!-- Input Nama -->
       <div class="form-group" style="margin-bottom: 1.25rem;">
         <label class="form-label" for="custom-player-name">Nama Pemain</label>
@@ -533,155 +493,11 @@
     </div>
   </div>
 
-  <!-- ===== PAGE: GAME LOBBY ===== -->
-  <div id="page-game-lobby" class="page">
-    <div class="page-header">
-      <button class="btn-back" onclick="leaveOnlineGame()" title="Keluar dari Lobby">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
-          stroke-linecap="round" stroke-linejoin="round">
-          <path d="M19 12H5" />
-          <path d="M12 19l-7-7 7-7" />
-        </svg>
-      </button>
-      <h2 class="page-title">Lobby Game</h2>
-    </div>
-    <div class="setup-container" style="max-width: var(--max-w); margin: 0 auto; padding: 2rem 1.5rem; text-align: center;">
-      <h3 style="font-family: var(--font-title); font-size: 0.7rem; margin-bottom: 0.5rem; text-transform: uppercase;">Kode Room Anda</h3>
-      <div id="lobby-code-display" style="font-family: var(--font-title); font-size: 2.2rem; letter-spacing: 0.2rem; background: var(--accent-gold); color: #1A1C1E; border: var(--border-width) solid var(--border-color); box-shadow: var(--pixel-shadow); padding: 0.75rem; margin-bottom: 2rem; display: inline-block;">—</div>
-      
-      <div style="margin-bottom: 2rem; text-align: left;">
-        <label class="form-label">Pemain Terhubung (Maks 4)</label>
-        <div id="lobby-players-list" style="display: flex; flex-direction: column; gap: 0.75rem;">
-          <!-- Diisi dinamis -->
-        </div>
-      </div>
-      
-      <div id="lobby-actions-host" class="hidden">
-        <button class="btn btn-primary btn-lg btn-full" onclick="startOnlineGamePlay()">Mulai Game 🚀</button>
-      </div>
-      <div id="lobby-actions-client">
-        <p class="form-hint" style="text-align: center; color: var(--text-secondary);">Menunggu Host memulai permainan...</p>
-      </div>
-    </div>
-  </div>
 
-  <!-- ===== PAGE: GAME BOARD ===== -->
-  <div id="page-game-board" class="page" style="background-color: #1B5E20; min-height: 100vh; position: relative;">
-    <div class="page-header" style="background-color: #2E7D32; color: #FFFFFF; border-bottom: 3px solid #1A1C1E;">
-      <button class="btn-back" onclick="openLeaveGameModal()" title="Keluar Game" style="background: #E8F5E9;">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
-          stroke-linecap="round" stroke-linejoin="round">
-          <path d="M19 12H5" />
-          <path d="M12 19l-7-7 7-7" />
-        </svg>
-      </button>
-      <div style="display: flex; align-items: center; gap: 0.5rem; flex: 1;">
-        <span id="board-room-code" style="font-family: var(--font-title); font-size: 0.7rem; background: var(--accent-gold); color: #1A1C1E; padding: 2px 6px; border: 2px solid #1A1C1E; font-weight: bold;">ROOM: —</span>
-        <span id="board-round-num" class="round-badge" style="font-size: 0.55rem; padding: 2px 6px;">Ronde 1</span>
-      </div>
-    </div>
-    
-    <div class="board-body" style="padding: 0.5rem; display: flex; flex-direction: column; height: calc(100vh - 65px); justify-content: space-between; box-sizing: border-box;">
-      <!-- Top Opponent Row -->
-      <div style="display: flex; justify-content: center; margin-bottom: 0.25rem;">
-        <div id="opponent-top-container" style="min-height: 52px; display: flex; align-items: center; justify-content: center;">
-          <!-- Top player info -->
-        </div>
-      </div>
-      
-      <!-- Middle Row: Left Opponent - Center Table - Right Opponent -->
-      <div style="display: flex; flex: 1; align-items: stretch; gap: 0.5rem; margin: 0.25rem 0; min-height: 180px;">
-        <!-- Left Opponent Container -->
-        <div id="opponent-left-container" style="width: 100px; display: flex; flex-direction: column; align-items: center; justify-content: center; flex-shrink: 0;">
-          <!-- Left player info -->
-        </div>
-        
-        <!-- Center Board Table (Wood texture) -->
-        <div id="table-board" style="flex: 1; border: 3px solid #1A1C1E; border-radius: 8px; position: relative; overflow: auto; display: flex; align-items: center; justify-content: center; padding: 1.5rem; box-shadow: inset 0 0 20px rgba(0,0,0,0.6); background: #3d2314; background-image: radial-gradient(circle, #5c3a21 0%, #2b170c 100%);">
-          <!-- Leather center pad decoration -->
-          <div style="position: absolute; border: 2px dashed rgba(255,255,255,0.08); width: 85%; height: 80%; border-radius: 8px; pointer-events: none; box-sizing: border-box;"></div>
-          
-          <div id="table-tiles-chain" style="display: flex; align-items: center; gap: 6px; flex-wrap: nowrap; justify-content: center; transition: all 0.3s ease;">
-            <div style="color: rgba(255,255,255,0.3); font-size: 1rem; font-family: var(--font-title); text-align: center; text-transform: uppercase;">Meja Kosong<br/><span style="font-size: 0.75rem; font-family: var(--font-pixel);">Silakan pasang kartu pertama</span></div>
-          </div>
-        </div>
-        
-        <!-- Right Opponent Container -->
-        <div id="opponent-right-container" style="width: 100px; display: flex; flex-direction: column; align-items: center; justify-content: center; flex-shrink: 0;">
-          <!-- Right player info -->
-        </div>
-      </div>
-      
-      <!-- Bottom Layer: Player Hand -->
-      <div style="background-color: rgba(0,0,0,0.3); padding: 0.75rem; border-top: 3px solid #1A1C1E; border-radius: 8px; margin-top: auto;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-          <span style="font-family: var(--font-title); font-size: 0.65rem; color: #C8E6C9;">KARTU ANDA:</span>
-          <span id="game-turn-indicator" style="font-family: var(--font-title); font-size: 0.6rem; color: var(--accent-gold);">GILIRAN ANDA!</span>
-        </div>
-        
-        <div id="player-hand-container" style="display: flex; gap: 0.5rem; justify-content: center; overflow-x: auto; padding: 0.5rem 0; min-height: 85px; align-items: flex-end;">
-          <!-- Dynamic cards in hand -->
-        </div>
-        
-        <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem;">
-          <button id="btn-game-pass" class="btn btn-outline btn-sm btn-full" onclick="passOnlineTurn()" style="background-color: #FF5252; color: #FFF; border-color: #1A1C1E;">LEWAT (PASS)</button>
-        </div>
-      </div>
-    </div>
-  </div>
 
-  <!-- ===== MODAL: PLACEMENT CHOICE ===== -->
-  <div id="modal-placement-choice" class="modal-overlay hidden">
-    <div class="modal-card">
-      <div class="modal-icon" style="font-size: 2rem;">🀱</div>
-      <h3 class="modal-title">Pasang Kartu</h3>
-      <p class="modal-body">Kartu Anda cocok dengan kedua ujung meja. Ingin pasang di sebelah mana?</p>
-      <div class="modal-actions" style="display: flex; flex-direction: column; gap: 0.75rem;">
-        <button class="btn btn-primary btn-full" onclick="confirmPlacement('left')">Pasang di Kiri</button>
-        <button class="btn btn-primary btn-full" onclick="confirmPlacement('right')">Pasang di Kanan</button>
-        <button class="btn btn-outline btn-full" onclick="closeModal('modal-placement-choice')">Batal</button>
-      </div>
-    </div>
-  </div>
 
-  <!-- ===== MODAL: LEAVE GAME ===== -->
-  <div id="modal-leave-game" class="modal-overlay hidden">
-    <div class="modal-card">
-      <div class="modal-icon modal-icon-danger">🚪</div>
-      <h3 class="modal-title">Keluar Permainan?</h3>
-      <p class="modal-body">Apakah Anda yakin ingin keluar? Permainan online yang sedang berjalan akan dihentikan.</p>
-      <div class="modal-actions">
-        <button class="btn btn-outline" onclick="closeModal('modal-leave-game')">Batal</button>
-        <button class="btn btn-primary" onclick="confirmLeaveOnlineGame()">Ya, Keluar</button>
-      </div>
-    </div>
-  </div>
 
-  <!-- ===== MODAL: ROUND OVER ===== -->
-  <div id="modal-round-over" class="modal-overlay hidden">
-    <div class="modal-card">
-      <div class="modal-icon" style="font-size: 2rem;">🏆</div>
-      <h3 class="modal-title" id="round-over-title">Ronde Selesai</h3>
-      <div id="round-over-results" style="margin-bottom: 1.5rem; text-align: left; width: 100%;">
-        <!-- Dynamic results -->
-      </div>
-      <div class="modal-actions" style="display: flex; flex-direction: column; gap: 0.75rem; width: 100%;">
-        <button id="btn-next-round" class="btn btn-primary btn-full hidden" onclick="startNextOnlineRound()">Mulai Ronde Baru 🚀</button>
-        <p id="lbl-next-round-wait" class="form-hint" style="text-align: center; color: var(--text-secondary);">Menunggu Host memulai ronde baru...</p>
-      </div>
-    </div>
-  </div>
-
-  <!-- ===== CONFETTI CANVAS ===== -->
-  <canvas id="confetti-canvas" class="confetti-canvas"></canvas>
-
-  <!-- ===== TOAST ===== -->
-  <div id="toast" class="toast hidden"></div>
-
-  <!-- Firebase Compat SDK -->
-  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
-  <script src="app.js?v=2.8"></script>
+  <script src="app.js?v=3.0"></script>
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {

@@ -920,6 +920,32 @@ body {
   max-width: 360px;
   width: 100%;
   box-shadow: var(--pixel-shadow);
+  animation: pixelModalPop 0.25s steps(4) forwards;
+}
+
+/* Hover and active states for interactive player items */
+.player-badge, .lb-name {
+  transition: transform var(--transition), box-shadow var(--transition);
+}
+.player-badge:hover, .lb-name:hover {
+  transform: scale(1.05) translateY(-2px);
+}
+.player-badge:active, .lb-name:active {
+  transform: scale(0.95) translateY(1px);
+}
+
+@keyframes pixelModalPop {
+  0% {
+    transform: scale(0.7) translateY(15px);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.05) translateY(-5px);
+  }
+  100% {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+  }
 }
 
 .modal-card-wide { max-width: 460px; }
@@ -1451,4 +1477,66 @@ body {
 .minus-opt-btn:active {
   transform: translate(1px, 1px);
   box-shadow: 0px 0px 0px var(--border-color);
+}
+
+/* Custom Retro Scrollbar for Table Board */
+#table-board::-webkit-scrollbar {
+  height: 8px;
+}
+#table-board::-webkit-scrollbar-track {
+  background: #1A1C1E;
+  border-top: 2px solid #3d2314;
+}
+#table-board::-webkit-scrollbar-thumb {
+  background: var(--accent-gold);
+  border: 1px solid #1A1C1E;
+  border-radius: 0px;
+}
+#table-board::-webkit-scrollbar-thumb:hover {
+  background: #FFFDE7;
+}
+
+/* ---------- LANDSCAPE WARNING ANIMATION ---------- */
+@keyframes rotatePhone {
+  0%, 100% { transform: rotate(0deg); }
+  50% { transform: rotate(-90deg); }
+}
+
+/* ---------- CUSTOMIZER PIXEL ANIMATIONS ---------- */
+@keyframes pixelSelectPop {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.2) translateY(-4px); }
+  100% { transform: scale(1.1); }
+}
+
+@keyframes pixelAvatarJump {
+  0% { transform: translateY(0) scale(1, 1); }
+  20% { transform: translateY(2px) scale(1.1, 0.8); }
+  50% { transform: translateY(-10px) scale(0.9, 1.2); }
+  80% { transform: translateY(1px) scale(1.05, 0.9); }
+  100% { transform: translateY(0) scale(1, 1); }
+}
+
+@keyframes pixelFlash {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+
+/* Continuous floating animation for active avatar option */
+.avatar-opt.active svg {
+  animation: pixelIdleFloat 1s steps(4) infinite alternate;
+}
+
+@keyframes pixelIdleFloat {
+  0% { transform: translateY(0); }
+  100% { transform: translateY(-3px); }
+}
+
+/* Transition and animations for options */
+.avatar-opt {
+  transition: border-color 0.1s steps(2), background-color 0.1s steps(2);
+}
+
+.avatar-opt.active {
+  animation: pixelSelectPop 0.3s steps(3) 1;
 }
