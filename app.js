@@ -21,6 +21,16 @@ let state = {
   editingPlayerIndex: null, // Track which player is being renamed
   customizerMode: 'setup',
   customizerPlayerIndex: null,
+  
+  // Dual-mode and Online Game state additions
+  mode: 'tracker',       // 'tracker' | 'game'
+  isOnline: false,
+  isHost: false,
+  roomCode: '',
+  myPlayerIndex: -1,     // index of local player in the online game list (0-3)
+  onlineDbRef: null,     // Firebase database reference
+  selectedTileIndex: -1, // track selected tile in hand when choosing left/right placement
+  onlineGame: null,      // active online game synced from Firebase
 };
 
 // Game schema:
@@ -256,15 +266,98 @@ function getPixelDominoSVG(balakVal, color = '#FF5252', size = 16) {
     rightVal = parts[1];
   }
   
-  const dotsHTML1 = getDominoFaceDotsHTML(leftVal, 1, color);
-  const dotsHTML2 = getDominoFaceDotsHTML(rightVal, 9, color);
+  const n1 = parseInt(leftVal, 10);
+  const n2 = parseInt(rightVal, 10);
+  
+  const getDotsHTML = (n, cx, cy) => {
+    let pts = [];
+    if (n === 1) {
+      pts = [{x: cx, y: cy}];
+    } else if (n === 2) {
+      pts = [{x: cx - 10, y: cy - 10}, {x: cx + 10, y: cy + 10}];
+    } else if (n === 3) {
+      pts = [{x: cx - 10, y: cy - 10}, {x: cx, y: cy}, {x: cx + 10, y: cy + 10}];
+    } else if (n === 4) {
+      pts = [
+        {x: cx - 10, y: cy - 10}, {x: cx + 10, y: cy - 10},
+        {x: cx - 10, y: cy + 10}, {x: cx + 10, y: cy + 10}
+      ];
+    } else if (n === 5) {
+      pts = [
+        {x: cx - 10, y: cy - 10}, {x: cx + 10, y: cy - 10},
+        {x: cx, y: cy},
+        {x: cx - 10, y: cy + 10}, {x: cx + 10, y: cy + 10}
+      ];
+    } else if (n === 6) {
+      pts = [
+        {x: cx - 10, y: cy - 10}, {x: cx, y: cy - 10}, {x: cx + 10, y: cy - 10},
+        {x: cx - 10, y: cy + 10}, {x: cx, y: cy + 10}, {x: cx + 10, y: cy + 10}
+      ];
+    }
+    return pts.map(p => `<circle cx="${p.x}" cy="${p.y}" r="4.5" fill="${color}" />`).join('');
+  };
+
+  const dotsHTML1 = getDotsHTML(n1, 20, 20);
+  const dotsHTML2 = getDotsHTML(n2, 60, 20);
   
   return `
-    <svg viewBox="0 0 16 10" width="${size * 1.6}" height="${size}" style="image-rendering: pixelated; display: inline-block; vertical-align: middle;">
-      <rect x="0" y="0" width="16" height="10" rx="1" fill="#1A1C1E" />
-      <rect x="1" y="1" width="6" height="8" rx="0.5" fill="#FFFFFF" />
-      <rect x="9" y="1" width="6" height="8" rx="0.5" fill="#FFFFFF" />
-      <rect x="7" y="1" width="2" height="8" fill="${color}" />
+    <svg viewBox="0 0 80 40" width="${size * 2}" height="${size}" style="display: inline-block; vertical-align: middle; filter: drop-shadow(2px 2px 2px rgba(0,0,0,0.45));">
+      <rect x="1.5" y="1.5" width="77" height="37" rx="4" fill="#FFFFFF" stroke="#1A1C1E" stroke-width="2.5" />
+      <line x1="40" y1="2.5" x2="40" y2="37.5" stroke="${color}" stroke-width="2.5" />
+      ${dotsHTML1}
+      ${dotsHTML2}
+    </svg>
+  `;
+}
+
+function getPixelDominoVerticalSVG(balakVal, color = '#FF5252', size = 16) {
+  let topVal = '1';
+  let bottomVal = '1';
+  
+  if (balakVal && balakVal.includes('/')) {
+    const parts = balakVal.split('/');
+    topVal = parts[0];
+    bottomVal = parts[1];
+  }
+  
+  const n1 = parseInt(topVal, 10);
+  const n2 = parseInt(bottomVal, 10);
+  
+  const getDotsHTML = (n, cx, cy) => {
+    let pts = [];
+    if (n === 1) {
+      pts = [{x: cx, y: cy}];
+    } else if (n === 2) {
+      pts = [{x: cx - 10, y: cy - 10}, {x: cx + 10, y: cy + 10}];
+    } else if (n === 3) {
+      pts = [{x: cx - 10, y: cy - 10}, {x: cx, y: cy}, {x: cx + 10, y: cy + 10}];
+    } else if (n === 4) {
+      pts = [
+        {x: cx - 10, y: cy - 10}, {x: cx + 10, y: cy - 10},
+        {x: cx - 10, y: cy + 10}, {x: cx + 10, y: cy + 10}
+      ];
+    } else if (n === 5) {
+      pts = [
+        {x: cx - 10, y: cy - 10}, {x: cx + 10, y: cy - 10},
+        {x: cx, y: cy},
+        {x: cx - 10, y: cy + 10}, {x: cx + 10, y: cy + 10}
+      ];
+    } else if (n === 6) {
+      pts = [
+        {x: cx - 10, y: cy - 10}, {x: cx - 10, y: cy}, {x: cx - 10, y: cy + 10},
+        {x: cx + 10, y: cy - 10}, {x: cx + 10, y: cy}, {x: cx + 10, y: cy + 10}
+      ];
+    }
+    return pts.map(p => `<circle cx="${p.x}" cy="${p.y}" r="4.5" fill="${color}" />`).join('');
+  };
+
+  const dotsHTML1 = getDotsHTML(n1, 20, 20);
+  const dotsHTML2 = getDotsHTML(n2, 20, 60);
+  
+  return `
+    <svg viewBox="0 0 40 80" width="${size}" height="${size * 2}" style="display: inline-block; vertical-align: middle; filter: drop-shadow(2px 2px 2px rgba(0,0,0,0.45));">
+      <rect x="1.5" y="1.5" width="37" height="77" rx="4" fill="#FFFFFF" stroke="#1A1C1E" stroke-width="2.5" />
+      <line x1="2.5" y1="40" x2="37.5" y2="40" stroke="${color}" stroke-width="2.5" />
       ${dotsHTML1}
       ${dotsHTML2}
     </svg>
@@ -493,6 +586,7 @@ function loadState() {
 // INIT
 // ─────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
+  initFirebase();
   loadState();
   loadSetupPlayerData();
   renderAvatarSelectionGrid();
@@ -662,6 +756,10 @@ function renderSetupPlayerInputs(tempNames = null) {
 }
 
 function startGame() {
+  if (state.isOnline && state.isHost) {
+    createOnlineRoom();
+    return;
+  }
   const gameName = document.getElementById('game-name').value.trim() || 'Gaple Game';
   const players = [];
   const namesToSave = [];
@@ -733,7 +831,7 @@ function renderDashboard() {
 
   const startBalakEl = document.getElementById('dash-start-balak');
   if (startBalakEl) {
-    startBalakEl.innerHTML = `${getPixelDominoSVG('#FF5252', 12)} Mulai: ${g.startBalak || '0/0'}`;
+    startBalakEl.innerHTML = `${getPixelDominoSVG(g.startBalak || '0/0', '#FF5252', 12)} Mulai: ${g.startBalak || '0/0'}`;
   }
 
   const gapleBadgeEl = document.getElementById('dash-gaple-info');
@@ -1877,6 +1975,1055 @@ function confirmCustomizePlayer() {
 // Keep for backward compatibility with leaderboard click
 function openRenamePlayerModal(playerIdx) {
   openDashboardCustomizeModal(playerIdx);
+}
+
+// ─────────────────────────────────────────────
+// ONLINE MULTIPLAYER GAME ENGINE (FIREBASE)
+// ─────────────────────────────────────────────
+let db;
+let roomListener = null;
+let mySessionId = localStorage.getItem('gaple_sessionId');
+if (!mySessionId) {
+  mySessionId = 'user_' + Math.random().toString(36).substring(2, 9);
+  localStorage.setItem('gaple_sessionId', mySessionId);
+}
+
+function initFirebase() {
+  if (typeof firebase === 'undefined') {
+    console.warn('Firebase SDK is not loaded. Online mode will run in simulated mode.');
+    return;
+  }
+  
+  // Public configurations that connect to default Firebase Realtime DB
+  const firebaseConfig = {
+    apiKey: "AIzaSyBySWc8w-BkMMahPE6DU5J5gAdbL0ih1mw",
+    authDomain: "gamegaple-skor.firebaseapp.com",
+    databaseURL: "https://gamegaple-skor-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "gamegaple-skor",
+    storageBucket: "gamegaple-skor.firebasestorage.app",
+    messagingSenderId: "766667897814",
+    appId: "1:766667897814:web:904ac4b5cf8b34fdb4c277"
+  };
+
+  try {
+    firebase.initializeApp(firebaseConfig);
+    db = firebase.database();
+    console.log("Firebase initialized successfully.");
+  } catch (e) {
+    console.error("Firebase initialization failed:", e);
+  }
+}
+
+function startLocalSetup() {
+  state.isOnline = false;
+  state.isHost = false;
+  state.roomCode = '';
+  state.myPlayerIndex = -1;
+  
+  // Restore setup inputs
+  const countDisplay = document.getElementById('player-count-display');
+  if (countDisplay) {
+    setupPlayerCount = parseInt(localStorage.getItem('gaple_lastPlayerCount') || '4', 10);
+    countDisplay.textContent = setupPlayerCount;
+    document.getElementById('count-minus').disabled = setupPlayerCount <= 2;
+    document.getElementById('count-plus').disabled = setupPlayerCount >= 6;
+  }
+  document.getElementById('game-name').value = '';
+  document.getElementById('btn-mulai').textContent = "Mulai Permainan";
+  
+  renderSetupPlayerInputs();
+  showPage('setup');
+}
+
+function showOnlineMenu() {
+  showPage('online-menu');
+}
+
+function startOnlineSetup() {
+  state.isOnline = true;
+  state.isHost = true;
+  setupPlayerCount = 4;
+  
+  const display = document.getElementById('player-count-display');
+  if (display) display.textContent = 4;
+  document.getElementById('count-minus').disabled = true;
+  document.getElementById('count-plus').disabled = true;
+  document.getElementById('game-name').value = "Gaple Online Room";
+  
+  renderSetupPlayerInputs();
+  
+  // Pre-fill waiting status for online players in setup form
+  for (let i = 1; i < 4; i++) {
+    const el = document.getElementById(`player-name-${i}`);
+    if (el) {
+      el.value = "Menunggu Pemain...";
+      el.disabled = true;
+    }
+    const btn = document.getElementById(`setup-avatar-btn-${i}`);
+    if (btn) btn.disabled = true;
+  }
+  
+  document.getElementById('btn-mulai').textContent = "Buat Room & Masuk Lobby";
+  showPage('setup');
+}
+
+function showJoinRoomPage() {
+  document.getElementById('room-code-input').value = '';
+  showPage('join');
+  setTimeout(() => {
+    document.getElementById('room-code-input').focus();
+  }, 120);
+}
+
+function generateRoomCode() {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let code = '';
+  for (let i = 0; i < 4; i++) {
+    code += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return code;
+}
+
+function createOnlineRoom() {
+  const hostName = document.getElementById('player-name-0').value.trim() || 'Host';
+  const custom = setupPlayerData[0] || { avatar: getPlayerDefaultAvatar(0), color: getPlayerDefaultColor(0) };
+  
+  const hostPlayer = {
+    id: mySessionId,
+    name: hostName,
+    avatar: custom.avatar,
+    color: custom.color,
+    totalScore: 0
+  };
+  
+  const startBalak = document.getElementById('start-balak').value || '0/0';
+  state.roomCode = generateRoomCode();
+  state.myPlayerIndex = 0;
+  
+  const roomData = {
+    id: Date.now().toString(),
+    name: document.getElementById('game-name').value.trim() || 'Gaple Online',
+    status: 'lobby',
+    startBalak: startBalak,
+    hostId: mySessionId,
+    players: [hostPlayer],
+    lastUpdated: Date.now()
+  };
+  
+  if (db) {
+    db.ref('rooms/' + state.roomCode).set(roomData)
+      .then(() => {
+        // Automatically clean up room from database if Host disconnects
+        db.ref('rooms/' + state.roomCode).onDisconnect().remove();
+        listenToRoom(state.roomCode);
+        showPage('game-lobby');
+      })
+      .catch(err => {
+        showToast('Gagal membuat room online di Firebase.');
+        console.error(err);
+      });
+  } else {
+    // Simulated offline/demo mode if Firebase not available
+    console.warn("Using offline room simulation.");
+    window.mockRoomData = roomData;
+    listenToRoom(state.roomCode);
+    showPage('game-lobby');
+    showToast('Mode Simulasi Online Diaktifkan (Offline)');
+  }
+}
+
+function joinRoom() {
+  const code = document.getElementById('room-code-input').value.trim().toUpperCase();
+  if (code.length !== 4) {
+    showToast('Masukkan 4 digit kode room!');
+    return;
+  }
+  
+  if (db) {
+    db.ref('rooms/' + code).once('value')
+      .then(snapshot => {
+        const data = snapshot.val();
+        if (!data) {
+          showToast('Room tidak ditemukan!');
+          return;
+        }
+        if (data.status !== 'lobby') {
+          showToast('Game sudah dimulai atau sudah selesai.');
+          return;
+        }
+        if (data.players.length >= 4) {
+          showToast('Room ini sudah penuh!');
+          return;
+        }
+        
+        const customName = localStorage.getItem('gaple_lastPlayerNames') ? JSON.parse(localStorage.getItem('gaple_lastPlayerNames'))[0] : 'Pemain ' + (data.players.length + 1);
+        const playerObj = {
+          id: mySessionId,
+          name: customName || 'Pemain ' + (data.players.length + 1),
+          avatar: getPlayerDefaultAvatar(data.players.length),
+          color: getPlayerDefaultColor(data.players.length),
+          totalScore: 0
+        };
+        
+        const existingIdx = data.players.findIndex(p => p.id === mySessionId);
+        if (existingIdx !== -1) {
+          state.myPlayerIndex = existingIdx;
+          state.isOnline = true;
+          state.isHost = false;
+          listenToRoom(code);
+          showPage('game-lobby');
+          return;
+        }
+        
+        const updatedPlayers = [...data.players, playerObj];
+        db.ref('rooms/' + code + '/players').set(updatedPlayers)
+          .then(() => {
+            state.isOnline = true;
+            state.isHost = false;
+            state.myPlayerIndex = updatedPlayers.length - 1;
+            listenToRoom(code);
+            showPage('game-lobby');
+            showToast('Berhasil bergabung ke room!');
+          });
+      })
+      .catch(err => {
+        showToast('Gagal tersambung ke Firebase.');
+        console.error(err);
+      });
+  } else {
+    // Mock simulation join
+    if (window.mockRoomData && code === state.roomCode) {
+      const playerObj = {
+        id: mySessionId,
+        name: 'Pemain ' + (window.mockRoomData.players.length + 1),
+        avatar: getPlayerDefaultAvatar(window.mockRoomData.players.length),
+        color: getPlayerDefaultColor(window.mockRoomData.players.length),
+        totalScore: 0
+      };
+      window.mockRoomData.players.push(playerObj);
+      state.isOnline = true;
+      state.isHost = false;
+      state.myPlayerIndex = window.mockRoomData.players.length - 1;
+      localStorage.setItem('gaple_mock_room_' + code, JSON.stringify(window.mockRoomData));
+      listenToRoom(code);
+      showPage('game-lobby');
+      showToast('Berhasil bergabung ke room (Simulasi)!');
+    } else {
+      showToast('Room tidak ditemukan (Simulasi).');
+    }
+  }
+}
+
+function listenToRoom(code) {
+  state.roomCode = code;
+  
+  if (db) {
+    if (roomListener) {
+      db.ref('rooms/' + state.roomCode).off('value', roomListener);
+    }
+    roomListener = db.ref('rooms/' + state.roomCode).on('value', snapshot => {
+      const data = snapshot.val();
+      if (!data) {
+        showToast('Room tidak ditemukan atau sudah ditutup.');
+        leaveOnlineGame();
+        return;
+      }
+      state.onlineGame = data;
+      if (!state.isHost) {
+        const myIndex = data.players.findIndex(p => p.id === mySessionId);
+        if (myIndex !== -1) {
+          state.myPlayerIndex = myIndex;
+        }
+      }
+      
+      if (data.status === 'lobby') {
+        renderLobbyUI();
+      } else if (data.status === 'playing') {
+        renderGameBoardUI();
+      } else if (data.status === 'round_over') {
+        renderRoundOverUI();
+      } else if (data.status === 'game_over') {
+        renderGameOverUI();
+      }
+    });
+  } else {
+    state.onlineGame = window.mockRoomData;
+    renderLobbyUI();
+  }
+}
+
+// Window Storage Sync Event Listener for local multi-tab simulation
+window.addEventListener('storage', (e) => {
+  if (state.isOnline && e.key === 'gaple_mock_room_' + state.roomCode) {
+    const data = JSON.parse(e.newValue);
+    if (data) {
+      state.onlineGame = data;
+      window.mockRoomData = data;
+      if (!state.isHost) {
+        const myIndex = data.players.findIndex(p => p.id === mySessionId);
+        if (myIndex !== -1) {
+          state.myPlayerIndex = myIndex;
+        }
+      }
+      if (data.status === 'lobby') {
+        renderLobbyUI();
+      } else if (data.status === 'playing') {
+        renderGameBoardUI();
+      } else if (data.status === 'round_over') {
+        renderRoundOverUI();
+      } else if (data.status === 'game_over') {
+        renderGameOverUI();
+      }
+    }
+  }
+});
+
+function renderLobbyUI() {
+  const g = state.onlineGame;
+  if (!g) return;
+  
+  document.getElementById('lobby-code-display').textContent = state.roomCode;
+  
+  const listEl = document.getElementById('lobby-players-list');
+  listEl.innerHTML = '';
+  
+  for (let i = 0; i < 4; i++) {
+    const p = g.players[i];
+    const row = document.createElement('div');
+    row.className = 'lb-item';
+    row.style.padding = '0.75rem 1rem';
+    
+    if (p) {
+      const isMe = p.id === mySessionId;
+      const meText = isMe ? ' <span style="font-size: 0.55rem; color: var(--accent-gold); background: #1A1C1E; padding: 1px 4px; border-radius: 2px;">ANDA</span>' : '';
+      row.innerHTML = `
+        <div class="lb-rank">${i + 1}</div>
+        <div class="lb-item-inner">
+          <div class="lb-name" style="font-size: 1.5rem; display: inline-flex; align-items: center; gap: 0.5rem;">
+            ${renderPlayerBadgeHTML(p, 'sm')}
+            ${meText}
+          </div>
+        </div>
+      `;
+    } else {
+      row.innerHTML = `
+        <div class="lb-rank" style="opacity: 0.4;">${i + 1}</div>
+        <div class="lb-item-inner">
+          <div class="lb-name" style="font-size: 1.3rem; color: var(--text-muted); font-style: italic; opacity: 0.6;">
+            Menunggu pemain lain...
+          </div>
+        </div>
+      `;
+    }
+    listEl.appendChild(row);
+  }
+  
+  if (state.isHost) {
+    document.getElementById('lobby-actions-host').classList.remove('hidden');
+    document.getElementById('lobby-actions-client').classList.add('hidden');
+  } else {
+    document.getElementById('lobby-actions-host').classList.add('hidden');
+    document.getElementById('lobby-actions-client').classList.remove('hidden');
+  }
+}
+
+function startOnlineGamePlay() {
+  const g = state.onlineGame;
+  if (!g) return;
+  
+  if (g.players.length < 4) {
+    showToast('Menambahkan bot pemain agar lobby terisi 4 pemain 🤖');
+    while (g.players.length < 4) {
+      const idx = g.players.length;
+      g.players.push({
+        id: 'bot_' + idx,
+        name: 'Bot ' + idx + ' 🤖',
+        avatar: getPlayerDefaultAvatar(idx),
+        color: getPlayerDefaultColor(idx),
+        totalScore: 0,
+        isBot: true
+      });
+    }
+  }
+  
+  const deck = [];
+  for (let i = 0; i <= 6; i++) {
+    for (let j = i; j <= 6; j++) {
+      deck.push([i, j]);
+    }
+  }
+  
+  for (let i = deck.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [deck[i], deck[j]] = [deck[j], deck[i]];
+  }
+  
+  for (let i = 0; i < 4; i++) {
+    g.players[i].hand = deck.slice(i * 7, (i + 1) * 7);
+  }
+  
+  const startBalak = g.startBalak || '0/0';
+  let firstTurnIndex = 0;
+  let firstTurnTile = startBalak.split('/').map(Number);
+  
+  for (let i = 0; i < 4; i++) {
+    const hasBalak = g.players[i].hand.some(tile => 
+      (tile[0] === firstTurnTile[0] && tile[1] === firstTurnTile[1]) || 
+      (tile[0] === firstTurnTile[1] && tile[1] === firstTurnTile[0])
+    );
+    if (hasBalak) {
+      firstTurnIndex = i;
+      break;
+    }
+  }
+  
+  g.status = 'playing';
+  g.currentPlayerIndex = firstTurnIndex;
+  g.board = {
+    tiles: [],
+    leftVal: -1,
+    rightVal: -1
+  };
+  g.lastMove = {
+    playerIndex: -1,
+    action: 'start'
+  };
+  g.roundNum = 1;
+  g.lastUpdated = Date.now();
+  
+  updateOnlineGameData();
+}
+
+function updateOnlineGameData() {
+  if (db) {
+    db.ref('rooms/' + state.roomCode).set(state.onlineGame);
+  } else {
+    localStorage.setItem('gaple_mock_room_' + state.roomCode, JSON.stringify(state.onlineGame));
+    listenToRoom(state.roomCode);
+  }
+}
+
+function renderGameBoardUI() {
+  const g = state.onlineGame;
+  if (!g) return;
+  
+  showPage('game-board');
+  
+  document.getElementById('board-room-code').textContent = 'ROOM: ' + state.roomCode;
+  document.getElementById('board-round-num').textContent = 'Ronde ' + (g.roundNum || 1);
+  
+  const leftContainer = document.getElementById('opponent-left-container');
+  const topContainer = document.getElementById('opponent-top-container');
+  const rightContainer = document.getElementById('opponent-right-container');
+  
+  if (leftContainer) leftContainer.innerHTML = '';
+  if (topContainer) topContainer.innerHTML = '';
+  if (rightContainer) rightContainer.innerHTML = '';
+  
+  for (let offset = 1; offset <= 3; offset++) {
+    const idx = (state.myPlayerIndex + offset) % 4;
+    const p = g.players[idx];
+    if (!p) continue;
+    
+    const isCurrentTurn = g.currentPlayerIndex === idx;
+    const turnIndicator = isCurrentTurn ? ' <span style="color: var(--accent-gold); animation: pulse 0.5s infinite alternate;">⬤</span>' : '';
+    const activeBorder = isCurrentTurn ? '3px solid var(--accent-gold)' : '2px solid var(--border-color)';
+    const cardCount = p.hand ? p.hand.length : 7;
+    
+    const oppCard = document.createElement('div');
+    oppCard.className = 'player-badge';
+    oppCard.style.padding = '0.3rem 0.5rem';
+    oppCard.style.border = activeBorder;
+    oppCard.style.backgroundColor = p.color || '#FF5252';
+    oppCard.style.color = getTextColorForBg(p.color);
+    oppCard.style.boxShadow = 'var(--pixel-shadow-sm)';
+    oppCard.style.fontSize = '1rem';
+    oppCard.style.display = 'flex';
+    oppCard.style.flexDirection = 'column';
+    oppCard.style.alignItems = 'center';
+    oppCard.style.gap = '0.2rem';
+    oppCard.style.width = '95px';
+    oppCard.style.boxSizing = 'border-box';
+    
+    // Label relation based on offset
+    let relLabel = 'LAWAN';
+    if (offset === 1) relLabel = 'LAWAN 1';
+    else if (offset === 2) relLabel = 'KAWAN';
+    else if (offset === 3) relLabel = 'LAWAN 2';
+    
+    const avatarSVG = getPixelArtSVG(getSanitizedAvatar(p.avatar), 16);
+    oppCard.innerHTML = `
+      <div style="font-family: var(--font-title); font-size: 0.5rem; opacity: 0.85; margin-bottom: 2px; letter-spacing: 0.5px;">${relLabel}</div>
+      <div style="display: flex; align-items: center; gap: 0.2rem; font-weight: bold; text-transform: uppercase; width: 100%; justify-content: center; font-size: 0.75rem;">
+        ${avatarSVG} <span style="max-width: 50px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHtml(p.name)}</span> ${turnIndicator}
+      </div>
+      <div style="font-size: 0.65rem; font-family: var(--font-title); color: #FFF; background: #1A1C1E; padding: 1px 4px; border-radius: 2px; width: 100%; text-align: center; margin-top: 3px; box-sizing: border-box;">
+        🀱 ${cardCount} KARTU
+      </div>
+    `;
+    
+    if (offset === 1 && leftContainer) {
+      leftContainer.appendChild(oppCard);
+    } else if (offset === 2 && topContainer) {
+      topContainer.appendChild(oppCard);
+    } else if (offset === 3 && rightContainer) {
+      rightContainer.appendChild(oppCard);
+    }
+  }
+  
+  const tableChain = document.getElementById('table-tiles-chain');
+  tableChain.innerHTML = '';
+  
+  if (!g.board || !g.board.tiles || g.board.tiles.length === 0) {
+    tableChain.innerHTML = `
+      <div style="color: rgba(255,255,255,0.3); font-size: 1rem; font-family: var(--font-title); text-align: center; text-transform: uppercase; line-height: 1.4;">
+        MEJA KOSONG<br/>
+        <span style="font-size: 0.75rem; font-family: var(--font-pixel); color: var(--accent-gold);">Mulai dengan Balak ${g.startBalak}</span>
+      </div>
+    `;
+  } else {
+    g.board.tiles.forEach(tile => {
+      const isBalak = tile[0] === tile[1];
+      const valStr = tile[0] + '/' + tile[1];
+      const item = document.createElement('div');
+      item.style.display = 'inline-flex';
+      item.style.alignItems = 'center';
+      item.style.margin = '2px';
+      
+      // If balak/double, render vertically. Otherwise, render horizontally.
+      if (isBalak) {
+        item.innerHTML = getPixelDominoVerticalSVG(valStr, '#FF5252', 34);
+      } else {
+        item.innerHTML = getPixelDominoSVG(valStr, '#FF5252', 34);
+      }
+      tableChain.appendChild(item);
+    });
+  }
+  
+  const handContainer = document.getElementById('player-hand-container');
+  handContainer.innerHTML = '';
+  
+  const myPlayer = g.players[state.myPlayerIndex];
+  const myHand = myPlayer ? myPlayer.hand : [];
+  const isMyTurn = g.currentPlayerIndex === state.myPlayerIndex;
+  
+  const turnIndicatorEl = document.getElementById('game-turn-indicator');
+  if (isMyTurn) {
+    turnIndicatorEl.textContent = 'GILIRAN ANDA!';
+    turnIndicatorEl.style.color = 'var(--accent-gold)';
+  } else {
+    const currentName = g.players[g.currentPlayerIndex] ? g.players[g.currentPlayerIndex].name : 'Lawan';
+    turnIndicatorEl.textContent = 'GILIRAN ' + currentName.toUpperCase();
+    turnIndicatorEl.style.color = '#C8E6C9';
+  }
+  
+  if (myHand && myHand.length > 0) {
+    myHand.forEach((tile, tileIdx) => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.style.background = 'none';
+      btn.style.border = 'none';
+      btn.style.padding = '2px';
+      btn.style.cursor = isMyTurn ? 'pointer' : 'default';
+      btn.style.transition = 'transform 0.1s ease';
+      
+      // Hand tiles are always displayed vertically & in larger size (48px width, 96px height)
+      const valStr = tile[0] + '/' + tile[1];
+      btn.innerHTML = getPixelDominoVerticalSVG(valStr, '#FF5252', 48);
+      
+      let isPlayable = false;
+      if (isMyTurn) {
+        if (!g.board || !g.board.tiles || g.board.tiles.length === 0) {
+          const startTile = g.startBalak.split('/').map(Number);
+          isPlayable = (tile[0] === startTile[0] && tile[1] === startTile[1]) || (tile[0] === startTile[1] && tile[1] === startTile[0]);
+        } else {
+          const l = g.board.leftVal;
+          const r = g.board.rightVal;
+          isPlayable = tile[0] === l || tile[1] === l || tile[0] === r || tile[1] === r;
+        }
+      }
+      
+      if (isMyTurn && !isPlayable) {
+        btn.style.opacity = '0.4';
+      }
+      
+      if (isPlayable) {
+        btn.style.transform = 'translateY(-6px)';
+        btn.style.filter = 'drop-shadow(0px 0px 8px #69F0AE)';
+        btn.onclick = () => selectHandTile(tileIdx);
+      }
+      
+      handContainer.appendChild(btn);
+    });
+  } else {
+    handContainer.innerHTML = '<div style="color: #FFF; font-style: italic; opacity: 0.6;">Tidak ada kartu tersisa.</div>';
+  }
+  
+  const passBtn = document.getElementById('btn-game-pass');
+  let hasPlayableCard = false;
+  if (isMyTurn && myHand) {
+    if (!g.board || !g.board.tiles || g.board.tiles.length === 0) {
+      hasPlayableCard = true;
+    } else {
+      const l = g.board.leftVal;
+      const r = g.board.rightVal;
+      hasPlayableCard = myHand.some(tile => tile[0] === l || tile[1] === l || tile[0] === r || tile[1] === r);
+    }
+  }
+  
+  if (isMyTurn && !hasPlayableCard) {
+    passBtn.disabled = false;
+    passBtn.style.opacity = '1';
+  } else {
+    passBtn.disabled = true;
+    passBtn.style.opacity = '0.3';
+  }
+  
+  if (state.isHost && g.players[g.currentPlayerIndex] && g.players[g.currentPlayerIndex].isBot && g.status === 'playing') {
+    setTimeout(executeBotTurn, 1500);
+  }
+}
+
+function selectHandTile(idx) {
+  const g = state.onlineGame;
+  if (!g || g.currentPlayerIndex !== state.myPlayerIndex) return;
+  
+  const tile = g.players[state.myPlayerIndex].hand[idx];
+  
+  if (!g.board || !g.board.tiles || g.board.tiles.length === 0) {
+    g.board.tiles = [tile];
+    g.board.leftVal = tile[0];
+    g.board.rightVal = tile[1];
+    removeTileFromHand(state.myPlayerIndex, idx);
+    advanceTurn();
+    updateOnlineGameData();
+    return;
+  }
+  
+  const l = g.board.leftVal;
+  const r = g.board.rightVal;
+  
+  const matchesLeft = tile[0] === l || tile[1] === l;
+  const matchesRight = tile[0] === r || tile[1] === r;
+  
+  if (matchesLeft && matchesRight) {
+    state.selectedTileIndex = idx;
+    openModal('modal-placement-choice');
+  } else if (matchesLeft) {
+    playTileAt('left', idx);
+  } else if (matchesRight) {
+    playTileAt('right', idx);
+  }
+}
+
+function confirmPlacement(direction) {
+  if (state.selectedTileIndex === -1) return;
+  playTileAt(direction, state.selectedTileIndex);
+  closeModal('modal-placement-choice');
+  state.selectedTileIndex = -1;
+}
+
+function playTileAt(direction, handIdx) {
+  const g = state.onlineGame;
+  if (!g) return;
+  
+  const tile = g.players[g.currentPlayerIndex].hand[handIdx];
+  const l = g.board.leftVal;
+  const r = g.board.rightVal;
+  
+  if (direction === 'left') {
+    if (tile[1] === l) {
+      g.board.tiles.unshift(tile);
+      g.board.leftVal = tile[0];
+    } else {
+      g.board.tiles.unshift([tile[1], tile[0]]);
+      g.board.leftVal = tile[1];
+    }
+  } else if (direction === 'right') {
+    if (tile[0] === r) {
+      g.board.tiles.push(tile);
+      g.board.rightVal = tile[1];
+    } else {
+      g.board.tiles.push([tile[1], tile[0]]);
+      g.board.rightVal = tile[0];
+    }
+  }
+  
+  removeTileFromHand(g.currentPlayerIndex, handIdx);
+  
+  if (g.players[g.currentPlayerIndex].hand.length === 0) {
+    endOnlineRound(g.currentPlayerIndex);
+  } else {
+    advanceTurn();
+  }
+  
+  updateOnlineGameData();
+}
+
+function removeTileFromHand(playerIdx, handIdx) {
+  const g = state.onlineGame;
+  if (g && g.players[playerIdx] && g.players[playerIdx].hand) {
+    g.players[playerIdx].hand.splice(handIdx, 1);
+  }
+}
+
+function advanceTurn() {
+  const g = state.onlineGame;
+  if (!g) return;
+  
+  g.currentPlayerIndex = (g.currentPlayerIndex + 1) % 4;
+  
+  if (checkDeadlock()) {
+    resolveDeadlock();
+  }
+}
+
+function passOnlineTurn() {
+  const g = state.onlineGame;
+  if (!g || g.currentPlayerIndex !== state.myPlayerIndex) return;
+  
+  g.currentPlayerIndex = (g.currentPlayerIndex + 1) % 4;
+  g.lastMove = {
+    playerIndex: state.myPlayerIndex,
+    action: 'pass'
+  };
+  
+  if (checkDeadlock()) {
+    resolveDeadlock();
+  } else {
+    updateOnlineGameData();
+  }
+}
+
+function checkDeadlock() {
+  const g = state.onlineGame;
+  if (!g || !g.board || g.board.leftVal === -1) return false;
+  
+  const l = g.board.leftVal;
+  const r = g.board.rightVal;
+  
+  for (let i = 0; i < 4; i++) {
+    const hand = g.players[i].hand;
+    if (hand && hand.length > 0) {
+      const hasPlayable = hand.some(tile => tile[0] === l || tile[1] === l || tile[0] === r || tile[1] === r);
+      if (hasPlayable) {
+        return false;
+      }
+    }
+  }
+  return true;
+}
+
+function resolveDeadlock() {
+  const g = state.onlineGame;
+  if (!g) return;
+  
+  const sums = g.players.map(p => {
+    if (!p.hand) return 0;
+    return p.hand.reduce((sum, tile) => sum + tile[0] + tile[1], 0);
+  });
+  
+  let minSum = Infinity;
+  let winnerIdx = 0;
+  
+  sums.forEach((sum, idx) => {
+    if (sum < minSum) {
+      minSum = sum;
+      winnerIdx = idx;
+    }
+  });
+  
+  showToast('GAPLE! Jalan Terkunci. Menghitung jumlah sisa kartu...', 4000);
+  setTimeout(() => {
+    endOnlineRound(winnerIdx, true);
+  }, 2500);
+}
+
+function endOnlineRound(winnerIdx, isGaple = false) {
+  const g = state.onlineGame;
+  if (!g) return;
+  
+  g.players.forEach((p, idx) => {
+    if (idx !== winnerIdx) {
+      const penalty = p.hand ? p.hand.reduce((sum, tile) => sum + tile[0] + tile[1], 0) : 0;
+      p.totalScore += penalty;
+    }
+  });
+  
+  const gameOver = g.players.some(p => p.totalScore >= 100);
+  
+  if (gameOver) {
+    g.status = 'game_over';
+  } else {
+    g.status = 'round_over';
+    g.roundWinnerIndex = winnerIdx;
+    g.isGapleWin = isGaple;
+  }
+  
+  updateOnlineGameData();
+}
+
+function startNextOnlineRound() {
+  const g = state.onlineGame;
+  if (!g) return;
+  
+  const deck = [];
+  for (let i = 0; i <= 6; i++) {
+    for (let j = i; j <= 6; j++) {
+      deck.push([i, j]);
+    }
+  }
+  
+  for (let i = deck.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [deck[i], deck[j]] = [deck[j], deck[i]];
+  }
+  
+  for (let i = 0; i < 4; i++) {
+    g.players[i].hand = deck.slice(i * 7, (i + 1) * 7);
+  }
+  
+  g.status = 'playing';
+  g.currentPlayerIndex = g.roundWinnerIndex !== undefined ? g.roundWinnerIndex : 0;
+  g.board = {
+    tiles: [],
+    leftVal: -1,
+    rightVal: -1
+  };
+  g.lastMove = {
+    playerIndex: -1,
+    action: 'start'
+  };
+  g.roundNum = (g.roundNum || 1) + 1;
+  g.lastUpdated = Date.now();
+  
+  closeModal('modal-round-over');
+  updateOnlineGameData();
+}
+
+function renderRoundOverUI() {
+  const g = state.onlineGame;
+  if (!g) return;
+  
+  closeModal('modal-placement-choice');
+  openModal('modal-round-over');
+  
+  const winner = g.players[g.roundWinnerIndex];
+  const titleEl = document.getElementById('round-over-title');
+  if (titleEl) titleEl.textContent = `Ronde ${g.roundNum} Selesai`;
+  
+  const resultsEl = document.getElementById('round-over-results');
+  if (resultsEl) {
+    resultsEl.innerHTML = '';
+    
+    const isMeWinner = g.roundWinnerIndex === state.myPlayerIndex;
+    let winMsg = isMeWinner ? '🎉 ANDA MENANG RONDE INI!' : `🏆 ${winner.name.toUpperCase()} MENANG RONDE INI!`;
+    if (g.isGapleWin) winMsg += ' (GAPLE!)';
+    
+    const h4 = document.createElement('h4');
+    h4.style.fontFamily = 'var(--font-title)';
+    h4.style.fontSize = '0.65rem';
+    h4.style.color = 'var(--accent-gold)';
+    h4.style.marginBottom = '1.25rem';
+    h4.style.textAlign = 'center';
+    h4.textContent = winMsg;
+    resultsEl.appendChild(h4);
+    
+    g.players.forEach((p, idx) => {
+      const row = document.createElement('div');
+      row.style.display = 'flex';
+      row.style.justifyContent = 'space-between';
+      row.style.alignItems = 'center';
+      row.style.marginBottom = '0.6rem';
+      row.style.fontSize = '1.4rem';
+      row.style.borderBottom = '2px dashed rgba(0,0,0,0.1)';
+      row.style.paddingBottom = '0.3rem';
+      
+      const isMe = p.id === mySessionId;
+      const nameStr = isMe ? `${p.name} (Anda)` : p.name;
+      const isWinner = idx === g.roundWinnerIndex;
+      const additionText = isWinner ? 'Menang' : `+${p.hand ? p.hand.reduce((sum, tile) => sum + tile[0] + tile[1], 0) : 0} Poin`;
+      
+      row.innerHTML = `
+        <span style="font-weight: ${isMe ? 'bold' : 'normal'}; display: inline-flex; align-items: center; gap: 0.3rem;">
+          ${renderPlayerBadgeHTML(p, 'sm')}
+        </span>
+        <span style="font-family: var(--font-title); font-size: 0.6rem; color: ${isWinner ? 'var(--accent-green)' : 'var(--primary)'}; font-weight: bold;">
+          ${additionText} (Total: ${p.totalScore})
+        </span>
+      `;
+      resultsEl.appendChild(row);
+    });
+  }
+  
+  const nextBtn = document.getElementById('btn-next-round');
+  const waitLbl = document.getElementById('lbl-next-round-wait');
+  
+  if (state.isHost) {
+    nextBtn.classList.remove('hidden');
+    waitLbl.classList.add('hidden');
+  } else {
+    nextBtn.classList.add('hidden');
+    waitLbl.classList.remove('hidden');
+  }
+}
+
+function renderGameOverUI() {
+  const g = state.onlineGame;
+  if (!g) return;
+  
+  closeModal('modal-round-over');
+  
+  state.currentGame = {
+    id: g.id,
+    name: g.name,
+    players: g.players.map(p => ({
+      name: p.name,
+      total: p.totalScore,
+      avatar: p.avatar,
+      color: p.color
+    })),
+    rounds: [],
+    status: 'done',
+    createdAt: new Date().toISOString()
+  };
+  
+  renderGameOver();
+  showPage('gameover');
+  startConfetti();
+  
+  if (db && state.roomCode) {
+    db.ref('rooms/' + state.roomCode).off('value', roomListener);
+  }
+}
+
+function executeBotTurn() {
+  const g = state.onlineGame;
+  if (!g || g.status !== 'playing') return;
+  
+  const bot = g.players[g.currentPlayerIndex];
+  if (!bot || !bot.isBot) return;
+  
+  const hand = bot.hand || [];
+  if (hand.length === 0) return;
+  
+  if (!g.board || !g.board.tiles || g.board.tiles.length === 0) {
+    const startTile = g.startBalak.split('/').map(Number);
+    const tileIdx = hand.findIndex(tile => 
+      (tile[0] === startTile[0] && tile[1] === startTile[1]) || 
+      (tile[0] === startTile[1] && tile[1] === startTile[0])
+    );
+    const actualIdx = tileIdx !== -1 ? tileIdx : 0;
+    const tile = hand[actualIdx];
+    
+    g.board.tiles = [tile];
+    g.board.leftVal = tile[0];
+    g.board.rightVal = tile[1];
+    removeTileFromHand(g.currentPlayerIndex, actualIdx);
+    advanceTurn();
+    updateOnlineGameData();
+    return;
+  }
+  
+  const l = g.board.leftVal;
+  const r = g.board.rightVal;
+  
+  const playableIdxs = [];
+  hand.forEach((tile, idx) => {
+    if (tile[0] === l || tile[1] === l || tile[0] === r || tile[1] === r) {
+      playableIdxs.push(idx);
+    }
+  });
+  
+  if (playableIdxs.length === 0) {
+    g.currentPlayerIndex = (g.currentPlayerIndex + 1) % 4;
+    g.lastMove = {
+      playerIndex: g.currentPlayerIndex,
+      action: 'pass'
+    };
+    
+    if (checkDeadlock()) {
+      resolveDeadlock();
+    } else {
+      updateOnlineGameData();
+    }
+    return;
+  }
+  
+  const chosenIdx = playableIdxs[0];
+  const tile = hand[chosenIdx];
+  
+  const matchesLeft = tile[0] === l || tile[1] === l;
+  const matchesRight = tile[0] === r || tile[1] === r;
+  
+  let direction = 'right';
+  if (matchesLeft && matchesRight) {
+    direction = Math.random() > 0.5 ? 'left' : 'right';
+  } else if (matchesLeft) {
+    direction = 'left';
+  } else if (matchesRight) {
+    direction = 'right';
+  }
+  
+  if (direction === 'left') {
+    if (tile[1] === l) {
+      g.board.tiles.unshift(tile);
+      g.board.leftVal = tile[0];
+    } else {
+      g.board.tiles.unshift([tile[1], tile[0]]);
+      g.board.leftVal = tile[1];
+    }
+  } else {
+    if (tile[0] === r) {
+      g.board.tiles.push(tile);
+      g.board.rightVal = tile[1];
+    } else {
+      g.board.tiles.push([tile[1], tile[0]]);
+      g.board.rightVal = tile[0];
+    }
+  }
+  
+  removeTileFromHand(g.currentPlayerIndex, chosenIdx);
+  
+  if (bot.hand.length === 0) {
+    endOnlineRound(g.currentPlayerIndex);
+  } else {
+    advanceTurn();
+  }
+  
+  updateOnlineGameData();
+}
+
+function openLeaveGameModal() {
+  openModal('modal-leave-game');
+}
+
+function confirmLeaveOnlineGame() {
+  closeModal('modal-leave-game');
+  leaveOnlineGame();
+}
+
+function leaveOnlineGame() {
+  if (db && state.roomCode) {
+    if (state.isHost) {
+      db.ref('rooms/' + state.roomCode).remove();
+    } else {
+      const g = state.onlineGame;
+      if (g && g.players) {
+        const filtered = g.players.filter(p => p.id !== mySessionId);
+        db.ref('rooms/' + state.roomCode + '/players').set(filtered);
+      }
+    }
+    db.ref('rooms/' + state.roomCode).off('value', roomListener);
+  }
+  
+  state.isOnline = false;
+  state.isHost = false;
+  state.roomCode = '';
+  state.myPlayerIndex = -1;
+  state.onlineGame = null;
+  
+  showPage('home');
 }
 
 

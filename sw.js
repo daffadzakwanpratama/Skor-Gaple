@@ -1,4 +1,5 @@
-const CACHE_NAME = 'gaple-tracker-v1';
+const CACHE_NAME = 'gaple-tracker-v4';
+
 const ASSETS = [
   './',
   './index.html',
@@ -7,7 +8,9 @@ const ASSETS = [
   './manifest.json',
   './icon.svg',
   './icon-192.png',
-  './icon-512.png'
+  './icon-512.png',
+  'https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js',
+  'https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js'
 ];
 
 // Install Event - cache core assets
