@@ -982,8 +982,15 @@ body {
   border: var(--border-width) solid var(--border-color);
   box-shadow: var(--pixel-shadow);
   z-index: 200;
-  white-space: nowrap;
   pointer-events: none;
+  
+  /* Responsive & Wrapper Styles */
+  width: max-content;
+  max-width: calc(100% - 2rem);
+  box-sizing: border-box;
+  white-space: normal;
+  word-wrap: break-word;
+  text-align: center;
 }
 
 .toast.hidden {
