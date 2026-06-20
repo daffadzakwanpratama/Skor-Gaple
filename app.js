@@ -201,7 +201,7 @@ function getPixelArtSVG(avatarKey, size = 32) {
   const colors = data.colors;
   const width = rows[0].length;
   const height = rows.length;
-  
+
   let svg = `<svg viewBox="0 0 ${width} ${height}" width="${size}" height="${size}" style="image-rendering: pixelated; display: inline-block; vertical-align: middle;">`;
   for (let y = 0; y < height; y++) {
     const row = rows[y];
@@ -219,7 +219,7 @@ function getPixelArtSVG(avatarKey, size = 32) {
 function getDominoFaceDotsHTML(val, offsetX, color) {
   const n = parseInt(val, 10);
   if (isNaN(n) || n < 0 || n > 6) return '';
-  
+
   const center = { x: 3, y: 4 };
   const topLeft = { x: 2, y: 2 };
   const topRight = { x: 5, y: 2 };
@@ -227,7 +227,7 @@ function getDominoFaceDotsHTML(val, offsetX, color) {
   const bottomRight = { x: 5, y: 6 };
   const midLeft = { x: 2, y: 4 };
   const midRight = { x: 5, y: 4 };
-  
+
   let dots = [];
   if (n === 1) {
     dots = [center];
@@ -242,46 +242,46 @@ function getDominoFaceDotsHTML(val, offsetX, color) {
   } else if (n === 6) {
     dots = [topLeft, topRight, midLeft, midRight, bottomLeft, bottomRight];
   }
-  
+
   return dots.map(d => `<rect x="${offsetX + d.x}" y="${1 + d.y}" width="1" height="1" fill="${color}" />`).join('');
 }
 
 function getPixelDominoSVG(balakVal, color = '#FF5252', size = 16) {
   let leftVal = '1';
   let rightVal = '1';
-  
+
   if (balakVal && balakVal.includes('/')) {
     const parts = balakVal.split('/');
     leftVal = parts[0];
     rightVal = parts[1];
   }
-  
+
   const n1 = parseInt(leftVal, 10);
   const n2 = parseInt(rightVal, 10);
-  
+
   const getDotsHTML = (n, cx, cy) => {
     let pts = [];
     if (n === 1) {
-      pts = [{x: cx, y: cy}];
+      pts = [{ x: cx, y: cy }];
     } else if (n === 2) {
-      pts = [{x: cx - 10, y: cy - 10}, {x: cx + 10, y: cy + 10}];
+      pts = [{ x: cx - 10, y: cy - 10 }, { x: cx + 10, y: cy + 10 }];
     } else if (n === 3) {
-      pts = [{x: cx - 10, y: cy - 10}, {x: cx, y: cy}, {x: cx + 10, y: cy + 10}];
+      pts = [{ x: cx - 10, y: cy - 10 }, { x: cx, y: cy }, { x: cx + 10, y: cy + 10 }];
     } else if (n === 4) {
       pts = [
-        {x: cx - 10, y: cy - 10}, {x: cx + 10, y: cy - 10},
-        {x: cx - 10, y: cy + 10}, {x: cx + 10, y: cy + 10}
+        { x: cx - 10, y: cy - 10 }, { x: cx + 10, y: cy - 10 },
+        { x: cx - 10, y: cy + 10 }, { x: cx + 10, y: cy + 10 }
       ];
     } else if (n === 5) {
       pts = [
-        {x: cx - 10, y: cy - 10}, {x: cx + 10, y: cy - 10},
-        {x: cx, y: cy},
-        {x: cx - 10, y: cy + 10}, {x: cx + 10, y: cy + 10}
+        { x: cx - 10, y: cy - 10 }, { x: cx + 10, y: cy - 10 },
+        { x: cx, y: cy },
+        { x: cx - 10, y: cy + 10 }, { x: cx + 10, y: cy + 10 }
       ];
     } else if (n === 6) {
       pts = [
-        {x: cx - 10, y: cy - 10}, {x: cx, y: cy - 10}, {x: cx + 10, y: cy - 10},
-        {x: cx - 10, y: cy + 10}, {x: cx, y: cy + 10}, {x: cx + 10, y: cy + 10}
+        { x: cx - 10, y: cy - 10 }, { x: cx, y: cy - 10 }, { x: cx + 10, y: cy - 10 },
+        { x: cx - 10, y: cy + 10 }, { x: cx, y: cy + 10 }, { x: cx + 10, y: cy + 10 }
       ];
     }
     return pts.map(p => `<circle cx="${p.x}" cy="${p.y}" r="6" fill="${color}" />`).join('');
@@ -289,7 +289,7 @@ function getPixelDominoSVG(balakVal, color = '#FF5252', size = 16) {
 
   const dotsHTML1 = getDotsHTML(n1, 20, 20);
   const dotsHTML2 = getDotsHTML(n2, 60, 20);
-  
+
   return `
     <svg viewBox="0 0 80 40" width="${size * 2}" height="${size}" style="display: inline-block; vertical-align: middle; filter: drop-shadow(2px 2px 2px rgba(0,0,0,0.45));">
       <rect x="1.5" y="1.5" width="77" height="37" rx="4" fill="#FFFFFF" stroke="#1A1C1E" stroke-width="2.5" />
@@ -303,39 +303,39 @@ function getPixelDominoSVG(balakVal, color = '#FF5252', size = 16) {
 function getPixelDominoVerticalSVG(balakVal, color = '#FF5252', size = 16) {
   let topVal = '1';
   let bottomVal = '1';
-  
+
   if (balakVal && balakVal.includes('/')) {
     const parts = balakVal.split('/');
     topVal = parts[0];
     bottomVal = parts[1];
   }
-  
+
   const n1 = parseInt(topVal, 10);
   const n2 = parseInt(bottomVal, 10);
-  
+
   const getDotsHTML = (n, cx, cy) => {
     let pts = [];
     if (n === 1) {
-      pts = [{x: cx, y: cy}];
+      pts = [{ x: cx, y: cy }];
     } else if (n === 2) {
-      pts = [{x: cx - 10, y: cy - 10}, {x: cx + 10, y: cy + 10}];
+      pts = [{ x: cx - 10, y: cy - 10 }, { x: cx + 10, y: cy + 10 }];
     } else if (n === 3) {
-      pts = [{x: cx - 10, y: cy - 10}, {x: cx, y: cy}, {x: cx + 10, y: cy + 10}];
+      pts = [{ x: cx - 10, y: cy - 10 }, { x: cx, y: cy }, { x: cx + 10, y: cy + 10 }];
     } else if (n === 4) {
       pts = [
-        {x: cx - 10, y: cy - 10}, {x: cx + 10, y: cy - 10},
-        {x: cx - 10, y: cy + 10}, {x: cx + 10, y: cy + 10}
+        { x: cx - 10, y: cy - 10 }, { x: cx + 10, y: cy - 10 },
+        { x: cx - 10, y: cy + 10 }, { x: cx + 10, y: cy + 10 }
       ];
     } else if (n === 5) {
       pts = [
-        {x: cx - 10, y: cy - 10}, {x: cx + 10, y: cy - 10},
-        {x: cx, y: cy},
-        {x: cx - 10, y: cy + 10}, {x: cx + 10, y: cy + 10}
+        { x: cx - 10, y: cy - 10 }, { x: cx + 10, y: cy - 10 },
+        { x: cx, y: cy },
+        { x: cx - 10, y: cy + 10 }, { x: cx + 10, y: cy + 10 }
       ];
     } else if (n === 6) {
       pts = [
-        {x: cx - 10, y: cy - 10}, {x: cx - 10, y: cy}, {x: cx - 10, y: cy + 10},
-        {x: cx + 10, y: cy - 10}, {x: cx + 10, y: cy}, {x: cx + 10, y: cy + 10}
+        { x: cx - 10, y: cy - 10 }, { x: cx - 10, y: cy }, { x: cx - 10, y: cy + 10 },
+        { x: cx + 10, y: cy - 10 }, { x: cx + 10, y: cy }, { x: cx + 10, y: cy + 10 }
       ];
     }
     return pts.map(p => `<circle cx="${p.x}" cy="${p.y}" r="6" fill="${color}" />`).join('');
@@ -343,7 +343,7 @@ function getPixelDominoVerticalSVG(balakVal, color = '#FF5252', size = 16) {
 
   const dotsHTML1 = getDotsHTML(n1, 20, 20);
   const dotsHTML2 = getDotsHTML(n2, 20, 60);
-  
+
   return `
     <svg viewBox="0 0 40 80" width="${size}" height="${size * 2}" style="display: inline-block; vertical-align: middle; filter: drop-shadow(2px 2px 2px rgba(0,0,0,0.45));">
       <rect x="1.5" y="1.5" width="37" height="77" rx="4" fill="#FFFFFF" stroke="#1A1C1E" stroke-width="2.5" />
@@ -381,7 +381,7 @@ function getRoundWinnerIndex(round) {
   if (minusTwenty !== -1) return minusTwenty;
   const minusTen = round.scores.indexOf(-10);
   if (minusTen !== -1) return minusTen;
-  
+
   let minScore = Infinity;
   let winnerIdx = -1;
   round.scores.forEach((score, idx) => {
@@ -393,10 +393,26 @@ function getRoundWinnerIndex(round) {
   return minScore <= 0 ? winnerIdx : -1;
 }
 
+function isPlayerOnFire(playerIdx) {
+  const g = state.currentGame;
+  if (!g || !g.rounds || g.rounds.length === 0) return false;
+
+  let onFire = false;
+  for (let r = 0; r < g.rounds.length; r++) {
+    const roundScore = g.rounds[r].scores[playerIdx];
+    if (roundScore === -30) {
+      onFire = true;
+    } else if (onFire && roundScore > 0) {
+      onFire = false;
+    }
+  }
+  return onFire;
+}
+
 function getPlayerCurrentStreak(playerIdx) {
   const g = state.currentGame;
   if (!g || g.rounds.length === 0) return 0;
-  
+
   let streak = 0;
   for (let i = g.rounds.length - 1; i >= 0; i--) {
     const winnerIdx = getRoundWinnerIndex(g.rounds[i]);
@@ -420,13 +436,13 @@ function getPixelFlameSVG(size = 18) {
     [0, 1, 2, 2, 2, 2, 1, 0],
     [0, 0, 1, 1, 1, 1, 0, 0]
   ];
-  
+
   const colors = {
     1: '#FF1744', // Red
     2: '#FF9100', // Orange
     3: '#FFD740'  // Yellow
   };
-  
+
   let rects = [];
   for (let r = 0; r < 8; r++) {
     for (let c = 0; c < 8; c++) {
@@ -436,7 +452,7 @@ function getPixelFlameSVG(size = 18) {
       }
     }
   }
-  
+
   return `
     <svg class="pixel-flame" viewBox="0 0 8 8" width="${size}" height="${size}" style="image-rendering: pixelated; display: inline-block; vertical-align: middle; filter: drop-shadow(1px 1px 0px rgba(0, 0, 0, 0.4));">
       ${rects.join('')}
@@ -449,13 +465,13 @@ function renderPlayerBadgeHTML(player, size = 'md') {
   const avatar = getSanitizedAvatar(player.avatar);
   const color = player.color || '#FF5252';
   const textColor = getTextColorForBg(color);
-  
+
   let padding = '0.2rem 0.5rem';
   let fontSize = '1.5rem';
   let shadow = '2px 2px 0px #1A1C1E';
   let border = '3px solid #1A1C1E';
   let svgSize = 20;
-  
+
   if (size === 'sm') {
     padding = '0.1rem 0.4rem';
     fontSize = '1.3rem';
@@ -469,9 +485,9 @@ function renderPlayerBadgeHTML(player, size = 'md') {
     shadow = '3px 3px 0px #1A1C1E';
     svgSize = 24;
   }
-  
+
   const avatarSVG = getPixelArtSVG(avatar, svgSize);
-  
+
   const g = state.currentGame;
   let playerIdx = -1;
   if (g && g.players) {
@@ -484,7 +500,7 @@ function renderPlayerBadgeHTML(player, size = 'md') {
         <span style="font-family: var(--font-title); font-size: ${size === 'sm' ? '0.55rem' : '0.65rem'}; color: #FFD740; text-shadow: 1px 1px 0px #000; font-weight: bold; line-height: 1;">${streak}</span>
        </span>`
     : '';
-  
+
   return `
     <span class="player-badge" style="background-color: ${color}; color: ${textColor}; display: inline-flex; align-items: center; gap: 0.4rem; padding: ${padding}; border: ${border}; box-shadow: ${shadow}; font-weight: bold; text-transform: uppercase; font-size: ${fontSize}; line-height: 1.2; vertical-align: middle;">
       <span class="player-avatar" style="line-height: 1; flex-shrink: 0; display: flex; align-items: center;">${avatarSVG}</span>
@@ -547,7 +563,7 @@ function loadState() {
     const ag = localStorage.getItem(LS_ALL);
     state.currentGame = cg ? JSON.parse(cg) : null;
     state.allGames = ag ? JSON.parse(ag) : [];
-    
+
     // Sanitize players of current game
     if (state.currentGame && state.currentGame.players) {
       state.currentGame.players.forEach((p, idx) => {
@@ -555,7 +571,7 @@ function loadState() {
         if (!p.color) p.color = getPlayerDefaultColor(idx);
       });
     }
-    
+
     // Sanitize players of archived games
     state.allGames.forEach(game => {
       if (game.players) {
@@ -717,7 +733,7 @@ function renderSetupPlayerInputs(tempNames = null) {
     const val = defaultNames[i] || '';
     const row = document.createElement('div');
     row.className = 'player-input-row';
-    
+
     const custom = setupPlayerData[i] || { avatar: getPlayerDefaultAvatar(i), color: getPlayerDefaultColor(i) };
     setupPlayerData[i] = custom;
 
@@ -758,8 +774,8 @@ function startGame() {
     const val = document.getElementById(`player-name-${i}`).value.trim();
     const name = val || `Pemain ${i + 1}`;
     const custom = setupPlayerData[i] || { avatar: getPlayerDefaultAvatar(i), color: getPlayerDefaultColor(i) };
-    players.push({ 
-      name: name, 
+    players.push({
+      name: name,
       total: 0,
       avatar: custom.avatar,
       color: custom.color
@@ -913,7 +929,7 @@ function renderLeaderboard() {
   const dealerIdx = getDealerPlayerIndex();
   // Jalan Duluan: Pemain yang dapat skor -10 di ronde terakhir
   const firstPlayerIdx = getFirstPlayerIndex();
-  
+
   // Gaple Terakhir: Pemain yang dapat skor -20 di ronde terakhir
   let gaplePlayerIdx = -1;
   let gapleCardVal = null;
@@ -931,9 +947,10 @@ function renderLeaderboard() {
     const firstBadge = isFirst ? `<span class="first-badge-sm" title="Jalan Duluan">🚀 Jalan Duluan</span>` : '';
 
     const item = document.createElement('div');
-    item.className = 'lb-item';
+    const onFire = isPlayerOnFire(p.idx);
+    item.className = `lb-item${onFire ? ' fire-border' : ''}`;
     const barPct = maxScore > 0 ? Math.round((p.total / 100) * 100) : 0;
-    
+
     // Tentukan warna progress bar berdasarkan tingkat bahaya (skor mendekati 100)
     let barColorClass = 'bar-success';
     if (p.total >= 80) {
@@ -1068,7 +1085,7 @@ function selectMinusVal(containerId, playerIdx, val) {
     el.value = val;
     el.dispatchEvent(new Event('input', { bubbles: true }));
   }
-  
+
   const popoverId = `minus-options-${containerId}-${playerIdx}`;
   const popover = document.getElementById(popoverId);
   if (popover) {
@@ -1165,11 +1182,11 @@ function saveRound() {
   } else {
     // Add round normally
     g.rounds.push({ scores });
-    finalizeSaveRound();
+    finalizeSaveRound(scores);
   }
 }
 
-function finalizeSaveRound() {
+function finalizeSaveRound(scores) {
   const g = state.currentGame;
   if (!g) return;
 
@@ -1177,6 +1194,10 @@ function finalizeSaveRound() {
   recalcTotals();
   saveState();
   renderDashboard();
+
+  if (scores) {
+    triggerAppreciationIfNeeded(scores);
+  }
 
   // Check win condition
   checkGameOver();
@@ -1278,7 +1299,7 @@ function renderGameOver() {
   const gapleStatsEl = document.getElementById('gameover-gaple-stats');
   const gapleListEl = document.getElementById('gameover-gaple-list');
   gapleListEl.innerHTML = '';
-  
+
   const gapleRounds = [];
   g.rounds.forEach((r, roundIdx) => {
     if (r.gapleCard) {
@@ -1417,15 +1438,18 @@ function saveEditRound() {
     g.rounds[state.editingRoundIndex].scores = scores;
     delete g.rounds[state.editingRoundIndex].gapleCard; // Remove gaple label if it's no longer -20
     state.editingRoundIndex = null;
-    finalizeEditRound();
+    finalizeEditRound(scores);
   }
 }
 
-function finalizeEditRound() {
+function finalizeEditRound(scores) {
   recalcTotals();
   saveState();
   closeModal('modal-edit');
   renderDashboard();
+  if (scores) {
+    triggerAppreciationIfNeeded(scores);
+  }
   showToast('Ronde diperbarui ✓');
 }
 
@@ -1539,7 +1563,7 @@ function copyResult() {
     text += `${medals[i] || (i + 1 + '.')} ${getAvatarEmoji(p.avatar)} ${p.name}: ${p.total} poin\n`;
   });
   text += `━━━━━━━━━━━━━━━━━━\n`;
-  
+
   // List Gaple events if any
   const gapleEvents = [];
   g.rounds.forEach((r, idx) => {
@@ -1551,13 +1575,13 @@ function copyResult() {
       }
     }
   });
-  
+
   if (gapleEvents.length > 0) {
     text += `MOMEN GAPLE 🀱:\n`;
     text += gapleEvents.join('\n') + `\n`;
     text += `━━━━━━━━━━━━━━━━━━\n`;
   }
-  
+
   text += `Total ${g.rounds.length} ronde`;
 
   if (navigator.clipboard) {
@@ -1787,9 +1811,9 @@ function commitPendingRound(gapleCardVal) {
   closeModal('modal-gaple-card');
 
   if (isEditing) {
-    finalizeEditRound();
+    finalizeEditRound(scores);
   } else {
-    finalizeSaveRound();
+    finalizeSaveRound(scores);
   }
 }
 
@@ -1823,7 +1847,7 @@ function renderAvatarSelectionGrid() {
   const grid = document.querySelector('.avatar-selector-grid');
   if (!grid) return;
   grid.innerHTML = '';
-  
+
   const avatars = ['fox', 'frog', 'cat', 'panda', 'tiger', 'koala', 'pig', 'lion', 'chicken', 'monkey'];
   avatars.forEach(avatarKey => {
     const btn = document.createElement('button');
@@ -1840,17 +1864,17 @@ function updateCustomizerPreview() {
   const nameInput = document.getElementById('custom-player-name');
   const avatarInput = document.getElementById('custom-player-avatar');
   const colorInput = document.getElementById('custom-player-color');
-  
+
   const name = nameInput ? nameInput.value.trim() || 'Pemain' : 'Pemain';
   const avatar = avatarInput ? avatarInput.value : 'fox';
   const color = colorInput ? colorInput.value : '#FF5252';
-  
+
   const mockPlayer = {
     name: name,
     avatar: avatar,
     color: color
   };
-  
+
   const wrap = document.getElementById('custom-player-preview-badge-wrap');
   if (wrap) {
     wrap.innerHTML = renderPlayerBadgeHTML(mockPlayer, 'lg');
@@ -1894,7 +1918,7 @@ function openCustomizePlayerModal(mode, idx) {
     const nameInput = document.getElementById('custom-player-name');
     if (nameInput) {
       nameInput.focus();
-      try { nameInput.select(); } catch (e) {}
+      try { nameInput.select(); } catch (e) { }
     }
   }, 120);
 }
@@ -2022,7 +2046,125 @@ function startLocalSetup() {
   }
   document.getElementById('game-name').value = '';
   document.getElementById('btn-mulai').textContent = "Mulai Permainan";
-  
+
   renderSetupPlayerInputs();
   showPage('setup');
+}
+
+// ─────────────────────────────────────────────
+// APPRECIATION CELEBRATION FUNCTIONS
+// ─────────────────────────────────────────────
+function triggerAppreciationIfNeeded(scores) {
+  const g = state.currentGame;
+  if (!g) return;
+
+  const celebratedPlayers = [];
+  scores.forEach((score, idx) => {
+    if (score === -25 || score === -30) {
+      celebratedPlayers.push({
+        player: g.players[idx],
+        score: score
+      });
+    }
+  });
+
+  if (celebratedPlayers.length === 0) return;
+
+  celebratedPlayers.forEach((item, index) => {
+    setTimeout(() => {
+      showAppreciationOverlay(item.player, item.score);
+    }, index * 4500);
+  });
+}
+
+function showAppreciationOverlay(player, score) {
+  const existing = document.getElementById('appreciation-overlay');
+  if (existing) existing.remove();
+
+  const overlay = document.createElement('div');
+  overlay.id = 'appreciation-overlay';
+  overlay.className = 'appreciation-overlay';
+
+  const playerNameHtml = renderPlayerBadgeHTML(player, 'lg');
+
+  let message = 'TANGGUH SEKALI! 🏆';
+  if (score === -30) {
+    message = 'DUNG TAK DUNG DUNG WAWWWW! 🥁🔥';
+  } else if (score === -25) {
+    message = 'GACORRRR KINGGGG GAPLE! 👑⚡';
+  }
+
+  overlay.innerHTML = `
+    <div class="appreciation-sunburst"></div>
+    <div class="appreciation-container">
+      <h2 class="appreciation-title">HEBAT!</h2>
+      <p class="appreciation-subtitle">${message}</p>
+      
+      <div class="appreciation-card">
+        <div class="appreciation-player-showcase">
+          ${playerNameHtml}
+        </div>
+        <div class="appreciation-score-badge">${score} POIN</div>
+        <div class="appreciation-sparkles" id="appreciation-sparkles-container"></div>
+      </div>
+      
+      <button class="btn btn-primary btn-lg" style="min-width: 160px;" onclick="dismissAppreciationOverlay()">
+        LANJUT 🚀
+      </button>
+    </div>
+  `;
+
+  document.body.appendChild(overlay);
+
+  const sparklesContainer = overlay.querySelector('#appreciation-sparkles-container');
+  if (sparklesContainer) {
+    for (let i = 0; i < 35; i++) {
+      createSparkle(sparklesContainer);
+    }
+  }
+
+  const showcaseBadge = overlay.querySelector('.appreciation-player-showcase .player-badge');
+  if (showcaseBadge) {
+    showcaseBadge.style.animation = 'pixelAvatarJump 0.5s steps(4) infinite alternate';
+  }
+
+  const autoDismissTimer = setTimeout(() => {
+    dismissAppreciationOverlay();
+  }, 4000);
+
+  window.dismissAppreciationOverlay = () => {
+    clearTimeout(autoDismissTimer);
+    overlay.style.transition = 'opacity 0.2s ease-out';
+    overlay.style.opacity = '0';
+    setTimeout(() => {
+      overlay.remove();
+    }, 200);
+  };
+}
+
+function createSparkle(container) {
+  const sparkle = document.createElement('div');
+  sparkle.className = 'sparkle';
+
+  const x = Math.random() * 100;
+  const y = Math.random() * 100;
+  sparkle.style.left = `${x}%`;
+  sparkle.style.top = `${y}%`;
+
+  const angle = Math.random() * 2 * Math.PI;
+  const distance = Math.random() * 150 + 50;
+  const dx = (Math.cos(angle) * distance) + 'px';
+  const dy = (Math.sin(angle) * distance) + 'px';
+  sparkle.style.setProperty('--dx', dx);
+  sparkle.style.setProperty('--dy', dy);
+
+  const scale = Math.random() * 0.8 + 0.4;
+  sparkle.style.transform = `scale(${scale})`;
+  sparkle.style.animationDelay = `${Math.random() * 1.5}s`;
+
+  const colors = ['#FFD740', '#00E5FF', '#69F0AE', '#FF5252', '#E040FB'];
+  sparkle.style.background = colors[Math.floor(Math.random() * colors.length)];
+  sparkle.style.boxShadow = `0 0 6px ${sparkle.style.background}`;
+
+  container.appendChild(sparkle);
 }
