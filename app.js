@@ -5,6 +5,8 @@
 
 'use strict';
 
+let socket = null;
+
 // ─────────────────────────────────────────────
 // STATE
 // ─────────────────────────────────────────────
@@ -601,6 +603,12 @@ document.addEventListener('DOMContentLoaded', () => {
     customNameInput.addEventListener('input', updateCustomizerPreview);
   }
 
+  // Real-time socket check
+  if (typeof io !== 'undefined') {
+    socket = io();
+    setupSocketListeners();
+  }
+
   // Load last player count if saved
   try {
     const savedCount = localStorage.getItem('gaple_lastPlayerCount');
@@ -617,6 +625,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   renderHomePage();
   renderSetupPlayerInputs();
+  updateMuteIcon();
   showPage('home');
 });
 
@@ -1457,6 +1466,10 @@ function finalizeEditRound(scores) {
 // NEW GAME
 // ─────────────────────────────────────────────
 function startNewGame() {
+  if (state.mode === 'online') {
+    if (socket) socket.emit('rematch');
+    return;
+  }
   stopConfetti();
   // Archive current game if exists
   const g = state.currentGame;
@@ -2027,6 +2040,9 @@ function confirmCustomizePlayer() {
 
   closeModal('modal-customize-player');
   showToast('Kustomisasi pemain diperbarui ✓');
+  if (typeof updateOnlineProfilePreview === 'function') {
+    updateOnlineProfilePreview();
+  }
 }
 
 // Keep for backward compatibility with leaderboard click
@@ -2168,3 +2184,774 @@ function createSparkle(container) {
 
   container.appendChild(sparkle);
 }
+
+// ─────────────────────────────────────────────
+// MULTIPLAYER ONLINE GAME ENGINE - CLIENT SIDE
+// ─────────────────────────────────────────────
+
+function setupSocketListeners() {
+  if (!socket) return;
+
+  socket.on('roomJoined', ({ room, myId }) => {
+    state.mode = 'online';
+    if (myId) {
+      state.myId = myId;
+    }
+    state.onlineRoom = room;
+    renderOnlineLobby();
+    showPage('online-lobby');
+  });
+
+  socket.on('gameStateUpdate', (game) => {
+    state.mode = 'online';
+    
+    // Check transitions for sound play before updating the state
+    if (state.onlineRoom && state.onlineRoom.game) {
+      const oldGame = state.onlineRoom.game;
+      
+      // 1. Board length increased => card play
+      if (game.board.length > oldGame.board.length) {
+        playRetroSound('click');
+      } 
+      // 2. Pass count increased => pass sound
+      else if (game.passCount > oldGame.passCount) {
+        playRetroSound('pass');
+      }
+      
+      // 3. New round start detection
+      if (game.roundsCount > oldGame.roundsCount) {
+        playRetroSound('roundStart');
+      }
+      
+      // 4. Turn alert for local player
+      const activePlayer = game.players[game.currentTurnIdx];
+      const oldActivePlayer = oldGame.players[oldGame.currentTurnIdx];
+      if (activePlayer && activePlayer.id === state.myId && (!oldActivePlayer || oldActivePlayer.id !== state.myId)) {
+        playRetroSound('turn');
+      }
+    } else {
+      // First game state update on round start
+      playRetroSound('roundStart');
+    }
+
+    state.onlineRoom.game = game;
+    // Sync local lobby state if lobby was bypassed
+    state.onlineRoom.players = game.players;
+    renderOnlineDashboard();
+  });
+
+  socket.on('roundEnded', ({ roundLog, players, nextRoundNum }) => {
+    state.mode = 'online';
+
+    // Play sound based on round outcome
+    const myPlayer = players.find(p => p.id === state.myId);
+    const myName = myPlayer ? myPlayer.name : '';
+    if (roundLog.type === 'gacor' || roundLog.type === 'dung_tak') {
+      playRetroSound('special');
+    } else if (roundLog.winnerName === myName) {
+      playRetroSound('win');
+    } else {
+      playRetroSound('lose');
+    }
+
+    state.onlineRoom.players = players;
+    state.onlineRoom.game.players = players;
+    state.onlineRoom.game.status = 'roundEnded';
+    showRoundEndModal(roundLog);
+  });
+
+  socket.on('gameOver', ({ players, rounds, leaderboard }) => {
+    state.mode = 'online';
+    state.onlineRoom.players = players;
+    state.onlineRoom.game.status = 'ended';
+    renderOnlineGameOver(players, rounds, leaderboard);
+  });
+
+  socket.on('playerDisconnected', ({ socketId }) => {
+    if (state.onlineRoom && state.onlineRoom.players) {
+      const p = state.onlineRoom.players.find(pl => pl.id === socketId);
+      if (p) {
+        showToast(`Pemain ${p.name} terputus dari permainan! 🛜`);
+      }
+    }
+  });
+
+  socket.on('errorMsg', (msg) => {
+    showToast(msg);
+  });
+}
+
+function showOnlineSetup() {
+  state.mode = 'online';
+  updateOnlineProfilePreview();
+  const joinInput = document.getElementById('online-join-code');
+  if (joinInput) joinInput.value = '';
+  showPage('online-setup');
+}
+
+function updateOnlineProfilePreview() {
+  const custom = setupPlayerData[0] || { avatar: getPlayerDefaultAvatar(0), color: getPlayerDefaultColor(0) };
+  const savedNames = JSON.parse(localStorage.getItem('gaple_lastPlayerNames') || '[]');
+  const name = savedNames[0] || 'Pemain 1';
+  const mockPlayer = { name, avatar: custom.avatar, color: custom.color };
+  const wrap = document.getElementById('online-profile-preview');
+  if (wrap) {
+    wrap.innerHTML = renderPlayerBadgeHTML(mockPlayer, 'lg');
+  }
+}
+
+function createRoomOnline() {
+  const custom = setupPlayerData[0] || { avatar: getPlayerDefaultAvatar(0), color: getPlayerDefaultColor(0) };
+  const savedNames = JSON.parse(localStorage.getItem('gaple_lastPlayerNames') || '[]');
+  const name = savedNames[0] || 'Pemain 1';
+
+  if (socket) {
+    socket.emit('createRoom', { name, avatar: custom.avatar, color: custom.color });
+  } else {
+    showToast('Koneksi server terputus.');
+  }
+}
+
+function joinRoomOnline() {
+  const codeEl = document.getElementById('online-join-code');
+  const code = codeEl ? codeEl.value.trim().toUpperCase() : '';
+  if (!code) {
+    showToast('Masukkan kode ruangan!');
+    return;
+  }
+
+  const custom = setupPlayerData[0] || { avatar: getPlayerDefaultAvatar(0), color: getPlayerDefaultColor(0) };
+  const savedNames = JSON.parse(localStorage.getItem('gaple_lastPlayerNames') || '[]');
+  const name = savedNames[0] || 'Pemain 1';
+
+  if (socket) {
+    socket.emit('joinRoom', { roomId: code, name, avatar: custom.avatar, color: custom.color });
+  } else {
+    showToast('Koneksi server terputus.');
+  }
+}
+
+function exitRoomOnline() {
+  if (socket) {
+    socket.disconnect();
+  }
+  window.location.reload();
+}
+
+function copyLobbyCode() {
+  const code = document.getElementById('lobby-code-display').textContent;
+  if (!code || code === '------') return;
+  
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(code)
+      .then(() => showToast('Kode disalin ✓'))
+      .catch(() => showToast('Gagal menyalin otomatis'));
+  }
+}
+
+function setLobbyStartingBalak(val) {
+  const input = document.getElementById('lobby-start-balak');
+  if (input) input.value = val;
+
+  document.querySelectorAll('.lobby-balak-btn').forEach(btn => {
+    btn.classList.remove('active');
+  });
+
+  const activeBtn = document.getElementById(`lobby-balak-btn-${val.replace('/', '-')}`);
+  if (activeBtn) activeBtn.classList.add('active');
+}
+
+function startOnlineMatch() {
+  const startBalak = document.getElementById('lobby-start-balak').value || '0/0';
+  if (socket) {
+    socket.emit('startGame', { startBalak });
+  }
+}
+
+function renderOnlineLobby() {
+  const room = state.onlineRoom;
+  if (!room) return;
+
+  document.getElementById('lobby-code-display').textContent = room.id;
+
+  const list = document.getElementById('lobby-players-list');
+  list.innerHTML = '';
+
+  for (let i = 0; i < 4; i++) {
+    const p = room.players[i];
+    const row = document.createElement('div');
+    if (p) {
+      row.className = 'lobby-player-row';
+      const isHost = p.id === room.hostId;
+      const hostTag = isHost ? `<span class="dealer-badge" style="background: var(--accent-gold); color: #1A1C1E; font-size: 0.65rem; border: 1.5px solid #1A1C1E; box-shadow: 1px 1px 0px #000; padding: 2px 4px; font-weight: bold; text-transform: uppercase;">👑 HOST</span>` : '';
+      row.innerHTML = `
+        <span>${renderPlayerBadgeHTML(p, 'sm')}</span>
+        ${hostTag}
+      `;
+    } else {
+      row.className = 'lobby-player-row empty-slot';
+      row.textContent = 'Menunggu Pemain...';
+    }
+    list.appendChild(row);
+  }
+
+  // Toggle host vs guest dashboard components
+  const isMyHost = state.myId === room.hostId;
+  if (isMyHost) {
+    document.getElementById('lobby-host-controls').classList.remove('hidden');
+    document.getElementById('lobby-guest-message').classList.add('hidden');
+  } else {
+    document.getElementById('lobby-host-controls').classList.add('hidden');
+    document.getElementById('lobby-guest-message').classList.remove('hidden');
+  }
+}
+
+function renderOnlineDashboard() {
+  const room = state.onlineRoom;
+  const game = room.game;
+  if (!room || !game) return;
+
+  // Header meta synchronization
+  document.getElementById('dashboard-header-local').classList.add('hidden');
+  const onlineHeader = document.getElementById('dashboard-header-online');
+  onlineHeader.classList.remove('hidden');
+  onlineHeader.style.display = 'flex';
+
+  document.getElementById('dash-room-id').textContent = room.id;
+  document.getElementById('dash-round-num').textContent = game.roundsCount + 1;
+  document.getElementById('dash-balak-val').textContent = game.startingBalak || '0/0';
+
+  // Swap scorecard input to multiplayer visual game board
+  document.getElementById('score-input-section').classList.add('hidden');
+  document.getElementById('game-board-section').classList.remove('hidden');
+
+  const activePlayer = game.players[game.currentTurnIdx];
+  const activePlayerId = activePlayer ? activePlayer.id : null;
+
+  // Populate scoreboard overlay (Top-Left)
+  const scoresEl = document.getElementById('online-board-scores');
+  if (scoresEl) {
+    scoresEl.innerHTML = room.players.map(p => {
+      const isActive = p.id === activePlayerId;
+      const badgeColor = p.color || '#FF5252';
+      return `
+        <div class="scoreboard-score-row" style="display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem; font-weight: bold; ${isActive ? 'color: var(--accent-gold);' : ''}">
+          <span style="display: inline-flex; align-items: center; gap: 4px;">
+            <span style="width: 8px; height: 8px; background: ${badgeColor}; display: inline-block; border: 1.5px solid #FFF;"></span>
+            ${p.name.substring(0, 10)}
+          </span>
+          <span>${p.total}</span>
+        </div>
+      `;
+    }).join('');
+  }
+
+  // Seating rotation to always keep the local player at the bottom
+  const myIdx = room.players.findIndex(p => p.id === state.myId) !== -1 
+    ? room.players.findIndex(p => p.id === state.myId) 
+    : 0;
+
+  const bottomPlayer = room.players[myIdx];
+  const leftPlayer = room.players[(myIdx + 1) % 4];
+  const topPlayer = room.players[(myIdx + 2) % 4];
+  const rightPlayer = room.players[(myIdx + 3) % 4];
+
+  // Render Bottom Player Slot (arya / Local)
+  const isBottomActive = bottomPlayer.id === activePlayerId;
+  const bottomEl = document.getElementById('online-player-bottom');
+  if (bottomEl) {
+    bottomEl.innerHTML = `
+      ${isBottomActive ? '<div style="font-family: var(--font-title); font-size: 0.5rem; color: var(--accent-gold); margin-bottom: 2px; text-shadow: 1px 1px 0px #000; animation: retroFloat 1.2s ease-in-out infinite;">👉 GILIRAN KAMU</div>' : ''}
+      <div class="player-slot-badge-wrap" style="display: flex; align-items: center; gap: 6px;">
+        <div class="${isBottomActive ? 'active-player-outline' : ''}" style="display: inline-block;">
+          ${renderPlayerBadgeHTML(bottomPlayer, 'sm')}
+        </div>
+        <div class="card-counter-indicator" title="Jumlah Kartu">
+          <span style="width: 6px; height: 10px; background: #8D6E63; display: inline-block; border: 1px solid #FFF; box-shadow: 0.5px 0.5px 0px #000; transform: rotate(-5deg);"></span>
+          <span>${game.hands[bottomPlayer.id] ? game.hands[bottomPlayer.id].count : 0}</span>
+        </div>
+      </div>
+    `;
+  }
+
+  // Render Left Player Slot
+  const isLeftActive = leftPlayer.id === activePlayerId;
+  const leftEl = document.getElementById('online-player-left');
+  if (leftEl) {
+    leftEl.innerHTML = `
+      <div class="player-slot-badge-wrap" style="display: flex; flex-direction: column; align-items: center; gap: 4px;">
+        <div class="${isLeftActive ? 'active-player-outline' : ''}" style="display: inline-block;">
+          ${renderPlayerBadgeHTML(leftPlayer, 'sm')}
+        </div>
+        <div class="card-counter-indicator" title="Jumlah Kartu">
+          <span style="width: 6px; height: 10px; background: #8D6E63; display: inline-block; border: 1px solid #FFF; box-shadow: 0.5px 0.5px 0px #000; transform: rotate(-5deg);"></span>
+          <span>${game.hands[leftPlayer.id] ? game.hands[leftPlayer.id].count : 0}</span>
+        </div>
+        ${isLeftActive ? '<div style="font-family: var(--font-title); font-size: 0.45rem; color: var(--accent-gold); text-shadow: 1px 1px 0px #000;">GILIRAN</div>' : ''}
+      </div>
+    `;
+  }
+
+  // Render Top Player Slot
+  const isTopActive = topPlayer.id === activePlayerId;
+  const topEl = document.getElementById('online-player-top');
+  if (topEl) {
+    topEl.innerHTML = `
+      <div class="player-slot-badge-wrap" style="display: flex; align-items: center; gap: 6px;">
+        <div class="${isTopActive ? 'active-player-outline' : ''}" style="display: inline-block;">
+          ${renderPlayerBadgeHTML(topPlayer, 'sm')}
+        </div>
+        <div class="card-counter-indicator" title="Jumlah Kartu">
+          <span style="width: 6px; height: 10px; background: #8D6E63; display: inline-block; border: 1px solid #FFF; box-shadow: 0.5px 0.5px 0px #000; transform: rotate(-5deg);"></span>
+          <span>${game.hands[topPlayer.id] ? game.hands[topPlayer.id].count : 0}</span>
+        </div>
+      </div>
+      ${isTopActive ? '<div style="font-family: var(--font-title); font-size: 0.45rem; color: var(--accent-gold); text-shadow: 1px 1px 0px #000; margin-top: 2px;">GILIRAN</div>' : ''}
+    `;
+  }
+
+  // Render Right Player Slot
+  const isRightActive = rightPlayer.id === activePlayerId;
+  const rightEl = document.getElementById('online-player-right');
+  if (rightEl) {
+    rightEl.innerHTML = `
+      <div class="player-slot-badge-wrap" style="display: flex; flex-direction: column; align-items: center; gap: 4px;">
+        <div class="${isRightActive ? 'active-player-outline' : ''}" style="display: inline-block;">
+          ${renderPlayerBadgeHTML(rightPlayer, 'sm')}
+        </div>
+        <div class="card-counter-indicator" title="Jumlah Kartu">
+          <span style="width: 6px; height: 10px; background: #8D6E63; display: inline-block; border: 1px solid #FFF; box-shadow: 0.5px 0.5px 0px #000; transform: rotate(-5deg);"></span>
+          <span>${game.hands[rightPlayer.id] ? game.hands[rightPlayer.id].count : 0}</span>
+        </div>
+        ${isRightActive ? '<div style="font-family: var(--font-title); font-size: 0.45rem; color: var(--accent-gold); text-shadow: 1px 1px 0px #000;">GILIRAN</div>' : ''}
+      </div>
+    `;
+  }
+
+  // Render Domino visual chain on board
+  const dominoChain = document.getElementById('domino-chain');
+  const emptyMsg = document.getElementById('board-empty-message');
+
+  if (game.board.length > 0) {
+    emptyMsg.classList.add('hidden');
+    dominoChain.innerHTML = game.board.map(tile => {
+      const [a, b] = tile.split('/').map(Number);
+      if (a === b) {
+        return `<div class="chain-tile balak-tile" style="margin: 0 4px; padding: 2px 0;">${getPixelDominoVerticalSVG(tile, '#FF5252', 15)}</div>`;
+      } else {
+        return `<div class="chain-tile normal-tile" style="margin: 0 2px;">${getPixelDominoSVG(tile, '#FF5252', 15)}</div>`;
+      }
+    }).join('');
+
+    // Smooth horizontal scroll to endpoints follow-up
+    setTimeout(() => {
+      const wrapper = document.getElementById('domino-chain-scroll-wrapper');
+      if (wrapper) {
+        wrapper.scrollLeft = wrapper.scrollWidth;
+      }
+    }, 50);
+  } else {
+    emptyMsg.classList.remove('hidden');
+    dominoChain.innerHTML = '';
+  }
+
+  // Render Hand tiles for local player
+  const isMyTurn = activePlayerId === state.myId;
+  const myHandObj = game.hands[state.myId];
+  const myTiles = myHandObj ? myHandObj.tiles : [];
+  renderPlayerHand(myTiles, game.leftValue, game.rightValue, isMyTurn);
+
+  // Sync round history inside the popup overlay list
+  const historyList = document.getElementById('online-round-history-list');
+  if (historyList) {
+    if (!game.rounds || game.rounds.length === 0) {
+      historyList.innerHTML = '<div class="no-history" style="text-align: center; padding: 1.5rem 0;">Belum ada ronde.</div>';
+    } else {
+      historyList.innerHTML = [...game.rounds].reverse().map(round => {
+        const gapleText = round.gapleCard ? ` <span class="gaple-history-badge" style="color: var(--primary); font-weight: bold; border: 1.5px solid var(--primary); padding: 1px 4px; font-size: 0.55rem; margin-left: 5px; text-transform: uppercase;">Gaple ${round.gapleCard}</span>` : '';
+        const scoresHtml = round.scores.map(item => {
+          const cls = item.score < 0 ? 'color: var(--primary); font-weight: bold;' : '';
+          return `
+            <div style="display: flex; justify-content: space-between; font-size: 0.8rem; margin-bottom: 2px;">
+              <span>${item.name}</span>
+              <span style="${cls}">${item.score >= 0 ? '+' : ''}${item.score}</span>
+            </div>
+          `;
+        }).join('');
+        return `
+          <div style="border: 2px solid #1A1C1E; background: #FFF; padding: 0.5rem; box-shadow: 1.5px 1.5px 0px #000; margin-bottom: 0.5rem;">
+            <div style="font-family: var(--font-title); font-size: 0.55rem; border-bottom: 1.5px solid #1A1C1E; padding-bottom: 2px; margin-bottom: 4px; display: flex; justify-content: space-between;">
+              <span>RONDE ${round.roundNum}</span>
+              ${gapleText}
+            </div>
+            ${scoresHtml}
+          </div>
+        `;
+      }).join('');
+    }
+  }
+
+  // Switch page
+  showPage('dashboard');
+}
+
+function renderPlayerHand(tiles, leftValue, rightValue, isMyTurn) {
+  const container = document.getElementById('player-hand-tiles');
+  container.innerHTML = '';
+
+  if (!tiles || tiles.length === 0) {
+    container.innerHTML = '<div style="font-family: var(--font-title); font-size: 0.55rem; color: var(--text-muted); padding: 0.5rem 0;">KARTU DI TANGAN HABIS</div>';
+    return;
+  }
+
+  // Card matching check helper
+  const isPlayable = (tile) => {
+    if (!isMyTurn) return false;
+    if (leftValue === null && rightValue === null) return true;
+    const [a, b] = tile.split('/').map(Number);
+    return a === leftValue || b === leftValue || a === rightValue || b === rightValue;
+  };
+
+  tiles.forEach(tile => {
+    const playable = isPlayable(tile);
+    const tileEl = document.createElement('div');
+    tileEl.className = `hand-tile${playable ? '' : ' unplayable'}`;
+    tileEl.innerHTML = getPixelDominoVerticalSVG(tile, '#FF5252', 20);
+
+    if (playable) {
+      tileEl.onclick = () => {
+        // Close side selector overlay if already open
+        document.getElementById('play-side-selector').classList.add('hidden');
+
+        // Check placement options
+        const [a, b] = tile.split('/').map(Number);
+        const canPlayLeft = leftValue === null || a === leftValue || b === leftValue;
+        const canPlayRight = rightValue === null || a === rightValue || b === rightValue;
+
+        if (canPlayLeft && canPlayRight && leftValue !== rightValue && leftValue !== null) {
+          // Player can drop this card on either left or right endpoint - show side selection helper
+          state.selectedTileForPlay = tile;
+          document.getElementById('side-sel-card-val').textContent = tile;
+          document.getElementById('play-side-selector').classList.remove('hidden');
+        } else if (canPlayLeft) {
+          playCardOnline(tile, 'left');
+        } else {
+          playCardOnline(tile, 'right');
+        }
+      };
+    }
+    container.appendChild(tileEl);
+  });
+
+  // Handle Turn Skip (Pass) button
+  const passBtn = document.getElementById('btn-pass-online');
+  const hasPlayableCard = tiles.some(tile => isPlayable(tile));
+  if (isMyTurn && !hasPlayableCard && leftValue !== null) {
+    passBtn.classList.remove('hidden');
+  } else {
+    passBtn.classList.add('hidden');
+  }
+}
+
+function playCardOnline(tile, side) {
+  if (socket) {
+    socket.emit('playCard', { tile, side });
+    document.getElementById('play-side-selector').classList.add('hidden');
+  }
+}
+
+function selectPlaySideOnline(side) {
+  if (state.selectedTileForPlay) {
+    playCardOnline(state.selectedTileForPlay, side);
+    state.selectedTileForPlay = null;
+  }
+}
+
+function cancelPlaySideOnline() {
+  document.getElementById('play-side-selector').classList.add('hidden');
+  state.selectedTileForPlay = null;
+}
+
+function passTurnOnline() {
+  if (socket) {
+    socket.emit('passTurn');
+  }
+}
+
+function renderOnlineRoundHistory(rounds) {
+  const container = document.getElementById('round-history');
+  container.innerHTML = '';
+
+  if (!rounds || rounds.length === 0) {
+    container.innerHTML = `<div class="no-history">Belum ada ronde. Menunggu kartu dibuang!</div>`;
+    return;
+  }
+
+  const reversed = [...rounds].reverse();
+  reversed.forEach(round => {
+    const card = document.createElement('div');
+    card.className = 'round-card';
+
+    const scoresHtml = round.scores.map(item => {
+      const cls = item.score < 0 ? 'negative' : '';
+      const mockPlayer = { name: item.name, avatar: item.avatar, color: item.color };
+      return `
+        <div class="round-score-row" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.25rem;">
+          <span class="round-score-name">${renderPlayerBadgeHTML(mockPlayer, 'sm')}</span>
+          <span class="round-score-val ${cls}" style="font-family: var(--font-title); font-size: 0.75rem;">${item.score >= 0 ? '+' : ''}${item.score}</span>
+        </div>
+      `;
+    }).join('');
+
+    const gapleText = round.gapleCard ? ` <span class="gaple-history-badge" style="color: var(--primary); font-weight: bold; border: 1.5px solid var(--primary); padding: 1px 4px; font-size: 0.55rem; margin-left: 5px; text-transform: uppercase;">Gaple ${round.gapleCard}</span>` : '';
+
+    card.innerHTML = `
+      <div class="round-card-header">
+        <span class="round-card-title">Ronde ${round.roundNum}${gapleText}</span>
+      </div>
+      <div class="round-card-body">${scoresHtml}</div>
+    `;
+    container.appendChild(card);
+  });
+}
+
+function showRoundEndModal(roundLog) {
+  const outcome = document.getElementById('round-end-outcome');
+  const typeLabel = roundLog.type === 'gaple' ? 'GAPLE!' : (roundLog.type === 'gacor' ? 'GACOR! ⚡' : (roundLog.type === 'dung_tak' ? 'DUNG TAK! 🔥' : 'MENANG!'));
+  
+  outcome.innerHTML = `🏆 ${roundLog.winnerName} ${typeLabel}`;
+
+  // Scoreboard populating
+  const board = document.getElementById('round-end-scoreboard');
+  board.innerHTML = '';
+
+  roundLog.scores.forEach(item => {
+    const mockPlayer = { name: item.name, avatar: item.avatar, color: item.color };
+    const row = document.createElement('div');
+    row.className = 'score-input-row';
+    row.style.justifyContent = 'space-between';
+
+    const change = item.score;
+    const scoreClass = change < 0 ? 'negative' : '';
+    const changeText = change >= 0 ? `+${change}` : `${change}`;
+
+    row.innerHTML = `
+      <span>${renderPlayerBadgeHTML(mockPlayer, 'sm')}</span>
+      <span class="${scoreClass}" style="font-family: var(--font-title); font-size: 0.95rem; font-weight: bold;">${changeText}</span>
+    `;
+    board.appendChild(row);
+  });
+
+  // Enable controls based on host permissions
+  const isMyHost = state.myId === state.onlineRoom.hostId;
+  if (isMyHost) {
+    document.getElementById('btn-next-round-online').classList.remove('hidden');
+    document.getElementById('guest-wait-next-round').classList.add('hidden');
+  } else {
+    document.getElementById('btn-next-round-online').classList.add('hidden');
+    document.getElementById('guest-wait-next-round').classList.remove('hidden');
+  }
+
+  // Trigger celebration visual effects on custom milestones
+  if (roundLog.type === 'gacor') {
+    showToast('GACORRRR KINGGGG! 👑⚡');
+  } else if (roundLog.type === 'dung_tak') {
+    showToast('DUNG TAK DUNG DUNG WAWWWW! 🥁🔥');
+  }
+
+  openModal('modal-round-end');
+}
+
+function nextRoundOnline() {
+  if (socket) {
+    socket.emit('nextRound');
+    closeModal('modal-round-end');
+  }
+}
+
+function renderOnlineGameOver(players, rounds, leaderboard) {
+  closeModal('modal-round-end');
+  stopConfetti();
+
+  const winner = leaderboard[0];
+  document.getElementById('gameover-subtitle').textContent = `🏆 ${winner.name} menang dengan ${winner.total} poin terkecil!`;
+
+  const container = document.getElementById('gameover-leaderboard');
+  container.innerHTML = '';
+
+  leaderboard.forEach((p, rank) => {
+    const item = document.createElement('div');
+    item.className = `go-lb-item ${rank === 0 ? 'rank-1' : ''}`;
+    item.innerHTML = `
+      <div class="go-lb-rank">${rank + 1}</div>
+      <div class="go-lb-name">${renderPlayerBadgeHTML(p)}</div>
+      <div class="go-lb-score">${p.total}</div>
+    `;
+    container.appendChild(item);
+  });
+
+  // Render Gaple statistical list
+  const gapleStatsEl = document.getElementById('gameover-gaple-stats');
+  const gapleListEl = document.getElementById('gameover-gaple-list');
+  gapleListEl.innerHTML = '';
+
+  const gapleRounds = rounds.filter(r => r.gapleCard);
+
+  if (gapleRounds.length > 0) {
+    gapleStatsEl.classList.remove('hidden');
+    gapleRounds.forEach(gr => {
+      const row = document.createElement('div');
+      row.className = 'go-lb-item';
+      row.style.borderColor = 'var(--primary)';
+      row.innerHTML = `
+        <div class="go-lb-name" style="font-size: 1.6rem; display: inline-flex; align-items: center; gap: 0.5rem;">
+          Ronde ${gr.roundNum}: ${gr.winnerName}
+        </div>
+        <div class="go-lb-score" style="color: var(--primary); font-size: 1.2rem; font-weight: bold;">BALAK ${gr.gapleCard}</div>
+      `;
+      gapleListEl.appendChild(row);
+    });
+  } else {
+    gapleStatsEl.classList.add('hidden');
+  }
+
+  // Rematch action logic handled in startNewGame online mode check
+  showPage('gameover');
+  startConfetti();
+}
+
+// ─────────────────────────────────────────────
+// RETRO SOUND SYNTHESIS & CONTROL
+// ─────────────────────────────────────────────
+let isMuted = false;
+try {
+  isMuted = localStorage.getItem('gaple_muted') === 'true';
+} catch (e) {}
+
+function playRetroSound(type) {
+  if (isMuted) return;
+  
+  const AudioContext = window.AudioContext || window.webkitAudioContext;
+  if (!AudioContext) return;
+  
+  const ctx = new AudioContext();
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  
+  osc.connect(gain);
+  gain.connect(ctx.destination);
+  
+  const now = ctx.currentTime;
+  
+  if (type === 'click') {
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(600, now);
+    osc.frequency.exponentialRampToValueAtTime(100, now + 0.08);
+    gain.gain.setValueAtTime(0.15, now);
+    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.08);
+    osc.start(now);
+    osc.stop(now + 0.08);
+  } else if (type === 'pass') {
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(120, now);
+    osc.frequency.linearRampToValueAtTime(60, now + 0.15);
+    gain.gain.setValueAtTime(0.2, now);
+    gain.gain.linearRampToValueAtTime(0.01, now + 0.15);
+    osc.start(now);
+    osc.stop(now + 0.15);
+  } else if (type === 'turn') {
+    osc.type = 'square';
+    osc.frequency.setValueAtTime(880, now);
+    gain.gain.setValueAtTime(0.05, now);
+    gain.gain.setValueAtTime(0, now + 0.05);
+    gain.gain.setValueAtTime(0.05, now + 0.08);
+    gain.gain.setValueAtTime(0, now + 0.13);
+    osc.frequency.setValueAtTime(1046.5, now + 0.08);
+    osc.start(now);
+    osc.stop(now + 0.15);
+  } else if (type === 'roundStart') {
+    const notes = [261.63, 329.63, 392.00, 523.25];
+    notes.forEach((freq, i) => {
+      const playTime = now + (i * 0.08);
+      const tempOsc = ctx.createOscillator();
+      const tempGain = ctx.createGain();
+      tempOsc.type = 'square';
+      tempOsc.frequency.setValueAtTime(freq, playTime);
+      tempGain.gain.setValueAtTime(0.04, playTime);
+      tempGain.gain.exponentialRampToValueAtTime(0.001, playTime + 0.07);
+      tempOsc.connect(tempGain);
+      tempGain.connect(ctx.destination);
+      tempOsc.start(playTime);
+      tempOsc.stop(playTime + 0.08);
+    });
+  } else if (type === 'win') {
+    const melody = [523.25, 659.25, 783.99, 1046.50, 783.99, 1046.50];
+    const rhythm = [0.1, 0.1, 0.1, 0.15, 0.1, 0.3];
+    let accumTime = now;
+    melody.forEach((freq, i) => {
+      const dur = rhythm[i];
+      const tempOsc = ctx.createOscillator();
+      const tempGain = ctx.createGain();
+      tempOsc.type = 'square';
+      tempOsc.frequency.setValueAtTime(freq, accumTime);
+      tempGain.gain.setValueAtTime(0.05, accumTime);
+      tempGain.gain.exponentialRampToValueAtTime(0.001, accumTime + dur - 0.01);
+      tempOsc.connect(tempGain);
+      tempGain.connect(ctx.destination);
+      tempOsc.start(accumTime);
+      tempOsc.stop(accumTime + dur);
+      accumTime += dur;
+    });
+  } else if (type === 'lose') {
+    const melody = [392.00, 349.23, 311.13, 261.63];
+    let accumTime = now;
+    melody.forEach((freq, i) => {
+      const dur = 0.15;
+      const tempOsc = ctx.createOscillator();
+      const tempGain = ctx.createGain();
+      tempOsc.type = 'sawtooth';
+      tempOsc.frequency.setValueAtTime(freq, accumTime);
+      tempGain.gain.setValueAtTime(0.05, accumTime);
+      tempGain.gain.exponentialRampToValueAtTime(0.001, accumTime + dur - 0.01);
+      tempOsc.connect(tempGain);
+      tempGain.connect(ctx.destination);
+      tempOsc.start(accumTime);
+      tempOsc.stop(accumTime + dur);
+      accumTime += dur;
+    });
+  } else if (type === 'special') {
+    const melody = [523.25, 587.33, 659.25, 698.46, 783.99, 880.00, 987.77, 1046.50];
+    let accumTime = now;
+    melody.forEach((freq, i) => {
+      const dur = 0.06;
+      const tempOsc = ctx.createOscillator();
+      const tempGain = ctx.createGain();
+      tempOsc.type = 'triangle';
+      tempOsc.frequency.setValueAtTime(freq, accumTime);
+      tempGain.gain.setValueAtTime(0.06, accumTime);
+      tempGain.gain.exponentialRampToValueAtTime(0.001, accumTime + dur - 0.005);
+      tempOsc.connect(tempGain);
+      tempGain.connect(ctx.destination);
+      tempOsc.start(accumTime);
+      tempOsc.stop(accumTime + dur);
+      accumTime += dur;
+    });
+  }
+}
+
+function toggleMuteSound() {
+  isMuted = !isMuted;
+  try {
+    localStorage.setItem('gaple_muted', isMuted);
+  } catch (e) {}
+  updateMuteIcon();
+  showToast(isMuted ? 'Suara dimatikan 🔈' : 'Suara diaktifkan 🔊');
+}
+
+function updateMuteIcon() {
+  const btn = document.querySelector('button[onclick="toggleMuteSound()"]');
+  if (btn) {
+    btn.textContent = isMuted ? '🔈' : '🔊';
+  }
+}
+

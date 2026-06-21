@@ -18,6 +18,7 @@
   <meta name="theme-color" content="#1A1C1E" />
   <link rel="apple-touch-icon" href="icon-192.png" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <script src="/socket.io/socket.io.js"></script>
 </head>
 
 <body>
@@ -70,9 +71,10 @@
       </div>
       <h1 class="home-title">Gaple Score</h1>
       <p class="home-subtitle">Dung Tak Dung Dung Wawwwwww</p>
-      <div class="home-actions">
-        <button id="btn-start-local" class="btn btn-primary btn-lg" onclick="startLocalSetup()">Main Lokal</button>
-        <button id="btn-history" class="btn btn-outline btn-lg" style="background: var(--accent-gold); color: var(--text-primary); border-color: var(--border-color);" onclick="showHistory()">Riwayat Game</button>
+      <div class="home-actions" style="display: flex; flex-direction: column; gap: 0.75rem; width: 100%; max-width: 320px; margin: 0 auto;">
+        <button id="btn-start-online" class="btn btn-primary btn-lg btn-full" onclick="showOnlineSetup()">Main Online</button>
+        <button id="btn-start-local" class="btn btn-outline btn-lg btn-full" onclick="startLocalSetup()">Papan Skor Lokal</button>
+        <button id="btn-history" class="btn btn-outline btn-lg btn-full" style="background: var(--accent-gold); color: var(--text-primary); border-color: var(--border-color);" onclick="showHistory()">Riwayat Game</button>
       </div>
       <div id="saved-game-banner" class="saved-banner hidden">
         <div class="saved-banner-inner">
@@ -82,6 +84,110 @@
           </div>
           <button class="btn btn-sm btn-primary" onclick="resumeGame()">Lanjutkan</button>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== PAGE: ONLINE SETUP ===== -->
+  <div id="page-online-setup" class="page">
+    <div class="page-header" style="background: #E8EAF6;">
+      <button class="btn-back" onclick="showPage('home')" title="Kembali">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+          stroke-linecap="round" stroke-linejoin="round">
+          <path d="M19 12H5" />
+          <path d="M12 19l-7-7 7-7" />
+        </svg>
+      </button>
+      <h2 class="page-title">Main Online</h2>
+    </div>
+    <div class="setup-container">
+      <div style="text-align: center; margin-bottom: 2rem; padding: 1.25rem; border: var(--border-width) solid var(--border-color); background: #FFFDE7; box-shadow: var(--pixel-shadow); display: flex; flex-direction: column; align-items: center; justify-content: center;">
+        <p class="form-label" style="font-size: 0.65rem; margin-bottom: 0.5rem;">Profil Anda</p>
+        <div id="online-profile-preview" style="margin-bottom: 1rem;">
+          <!-- Badge preview rendered dynamically -->
+        </div>
+        <button class="btn btn-sm btn-outline" onclick="openSetupCustomizeModal(0)">Kustomisasi Profil ✏️</button>
+      </div>
+
+      <!-- Create Room Card -->
+      <div class="section-card" style="border: var(--border-width) solid var(--border-color); box-shadow: var(--pixel-shadow); background: #FFF; padding: 1.5rem; margin-bottom: 2rem;">
+        <h3 class="section-title" style="margin-bottom: 1rem;">Buat Ruangan</h3>
+        <p class="form-hint" style="margin-bottom: 1.25rem;">Buat room baru dan undang teman bermain menggunakan kode.</p>
+        <button class="btn btn-primary btn-full" onclick="createRoomOnline()">Buat Room</button>
+      </div>
+
+      <!-- Join Room Card -->
+      <div class="section-card" style="border: var(--border-width) solid var(--border-color); box-shadow: var(--pixel-shadow); background: #FFF; padding: 1.5rem;">
+        <h3 class="section-title" style="margin-bottom: 1rem;">Gabung Ruangan</h3>
+        <div class="form-group" style="margin-bottom: 1.25rem;">
+          <input id="online-join-code" class="form-input" type="text" placeholder="KODE ROOM (Contoh: X8JK29)" maxlength="10" style="text-align: center; text-transform: uppercase;" />
+        </div>
+        <button class="btn btn-outline btn-full" onclick="joinRoomOnline()">Gabung Room</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== PAGE: ONLINE LOBBY ===== -->
+  <div id="page-online-lobby" class="page">
+    <div class="page-header" style="background: #E8EAF6;">
+      <button class="btn-back" onclick="exitRoomOnline()" title="Keluar Room">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+          stroke-linecap="round" stroke-linejoin="round">
+          <path d="M19 12H5" />
+          <path d="M12 19l-7-7 7-7" />
+        </svg>
+      </button>
+      <h2 class="page-title">Ruang Tunggu</h2>
+    </div>
+    <div class="setup-container">
+      <div style="text-align: center; margin-bottom: 2rem; padding: 1.25rem; border: var(--border-width) solid var(--border-color); background: var(--rank-2-bg); box-shadow: var(--pixel-shadow);">
+        <p class="form-label" style="font-size: 0.65rem; margin-bottom: 0.4rem;">Kode Ruangan</p>
+        <h1 id="lobby-code-display" style="font-family: var(--font-title); font-size: 1.8rem; letter-spacing: 2px; color: var(--text-primary); text-shadow: 2px 2px 0px #FFF; margin-bottom: 0.75rem;">------</h1>
+        <button class="btn btn-sm btn-outline" onclick="copyLobbyCode()">Salin Kode 📋</button>
+      </div>
+
+      <!-- Player Slots -->
+      <div class="form-group">
+        <label class="form-label">Pemain di Meja (4 Slot)</label>
+        <div id="lobby-players-list" style="display: flex; flex-direction: column; gap: 0.75rem; margin-bottom: 2rem;">
+          <!-- Dynamically generated list of player rows -->
+        </div>
+      </div>
+
+      <!-- Starting Balak Choice (Host Only) -->
+      <div id="lobby-host-controls" class="hidden">
+        <div class="form-group">
+          <label class="form-label">Mulai dengan Balak</label>
+          <div class="balak-selector-grid" style="grid-template-columns: repeat(4, 1fr);">
+            <div class="balak-select-btn lobby-balak-btn active" onclick="setLobbyStartingBalak('0/0')" id="lobby-balak-btn-0-0" style="padding: 0.4rem;">
+              <span class="balak-label" style="font-size: 0.65rem;">0/0</span>
+            </div>
+            <div class="balak-select-btn lobby-balak-btn" onclick="setLobbyStartingBalak('1/1')" id="lobby-balak-btn-1-1" style="padding: 0.4rem;">
+              <span class="balak-label" style="font-size: 0.65rem;">1/1</span>
+            </div>
+            <div class="balak-select-btn lobby-balak-btn" onclick="setLobbyStartingBalak('2/2')" id="lobby-balak-btn-2-2" style="padding: 0.4rem;">
+              <span class="balak-label" style="font-size: 0.65rem;">2/2</span>
+            </div>
+            <div class="balak-select-btn lobby-balak-btn" onclick="setLobbyStartingBalak('3/3')" id="lobby-balak-btn-3-3" style="padding: 0.4rem;">
+              <span class="balak-label" style="font-size: 0.65rem;">3/3</span>
+            </div>
+            <div class="balak-select-btn lobby-balak-btn" onclick="setLobbyStartingBalak('4/4')" id="lobby-balak-btn-4-4" style="padding: 0.4rem;">
+              <span class="balak-label" style="font-size: 0.65rem;">4/4</span>
+            </div>
+            <div class="balak-select-btn lobby-balak-btn" onclick="setLobbyStartingBalak('5/5')" id="lobby-balak-btn-5-5" style="padding: 0.4rem;">
+              <span class="balak-label" style="font-size: 0.65rem;">5/5</span>
+            </div>
+            <div class="balak-select-btn lobby-balak-btn" onclick="setLobbyStartingBalak('6/6')" id="lobby-balak-btn-6-6" style="padding: 0.4rem;">
+              <span class="balak-label" style="font-size: 0.65rem;">6/6</span>
+            </div>
+          </div>
+          <input type="hidden" id="lobby-start-balak" value="0/0" />
+        </div>
+        <button id="btn-start-online-match" class="btn btn-primary btn-lg btn-full" onclick="startOnlineMatch()">Mulai Main 🚀</button>
+      </div>
+
+      <div id="lobby-guest-message" class="hidden" style="text-align: center; padding: 1.5rem; border: var(--border-width) solid var(--border-color); background: var(--rank-1-bg); box-shadow: var(--pixel-shadow-sm);">
+        <p class="form-hint" style="animation: retroFloat 1.5s ease-in-out infinite;">Menunggu Host memulai permainan...</p>
       </div>
     </div>
   </div>
@@ -231,7 +337,9 @@
 
   <!-- ===== PAGE: DASHBOARD ===== -->
   <div id="page-dashboard" class="page">
-    <div class="page-header dashboard-header">
+    
+    <!-- Local Scorecard Header -->
+    <div id="dashboard-header-local" class="page-header dashboard-header">
       <button class="btn-back" onclick="showPage('home')" title="Kembali ke Menu Utama">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
           stroke-linecap="round" stroke-linejoin="round">
@@ -257,6 +365,26 @@
       </div>
     </div>
 
+    <!-- Online Multiplayer Top Bar Header -->
+    <div id="dashboard-header-online" class="page-header dashboard-header hidden" style="background: #1A1C1E; color: #FFFFFF; border-bottom: var(--border-width) solid #1A1C1E; box-shadow: none; font-family: var(--font-title); font-size: 0.65rem; justify-content: space-between; padding: 0.75rem 1.25rem; display: none;">
+      <div class="game-meta" style="display: flex; align-items: center; gap: 1rem; color: #FFF;">
+        <button class="btn-back" onclick="exitRoomOnline()" title="Keluar Room" style="background: #1A1C1E; border-color: #FFFFFF; color: #FFFFFF; padding: 0.35rem 0.5rem; box-shadow: none; display: flex; align-items: center; justify-content: center;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="19" y1="12" x2="5" y2="12" />
+            <line x1="12" y1="19" x2="5" y2="12" />
+            <line x1="12" y1="5" x2="5" y2="12" />
+          </svg>
+        </button>
+        <span style="color: var(--text-muted); font-size: 0.55rem; text-transform: uppercase;">ROOM</span> <span id="dash-room-id" style="color: var(--accent-gold); font-weight: bold; font-size: 0.65rem;">------</span>
+        <span style="color: var(--text-muted); font-size: 0.55rem; text-transform: uppercase; margin-left: 0.5rem;">RONDE</span> <span id="dash-round-num" style="color: #FFFFFF; font-weight: bold; font-size: 0.65rem;">0</span>
+        <span style="color: var(--text-muted); font-size: 0.55rem; text-transform: uppercase; margin-left: 0.5rem;">BALAK</span> <span id="dash-balak-val" style="color: #E040FB; font-weight: bold; font-size: 0.65rem;">0/0</span>
+      </div>
+      <div class="header-actions" style="display: flex; gap: 0.75rem; align-items: center;">
+        <button class="icon-btn" onclick="toggleMuteSound()" title="Suara" style="background: #1A1C1E; border-color: #FFFFFF; color: #FFFFFF; box-shadow: none; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; font-size: 0.9rem;">🔊</button>
+        <button class="icon-btn" onclick="openModal('modal-online-history')" title="Riwayat" style="background: #1A1C1E; border-color: #FFFFFF; color: #FFFFFF; box-shadow: none; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; font-size: 0.9rem;">🕒</button>
+      </div>
+    </div>
+
     <div class="dashboard-body">
       <!-- Leaderboard -->
       <div class="section">
@@ -268,6 +396,76 @@
           </div>
         </div>
         <div id="leaderboard-list" class="leaderboard-list"></div>
+      </div>
+
+      <!-- ===== MEJA PERMAINAN ONLINE ===== -->
+      <div id="game-board-section" class="section hidden" style="margin-bottom: 0;">
+        <!-- Wood Plank Board Container -->
+        <div class="felt-board wood-table" style="position: relative; width: 100%; height: 500px; border: var(--border-width) solid var(--border-color); box-shadow: var(--pixel-shadow); overflow: hidden; margin-bottom: 1.25rem; user-select: none;">
+          
+          <!-- Faint text watermark -->
+          <div class="wood-table-watermark">GAPLE 2026</div>
+
+          <!-- Scoreboard Box overlay (Top-Left) -->
+          <div class="scoreboard-box" style="position: absolute; top: 12px; left: 12px; border: 3px solid #1A1C1E; background: rgba(26,28,30,0.92); color: #FFF; width: 180px; padding: 0.5rem 0.75rem; box-shadow: 2px 2px 0px #000; z-index: 5;">
+            <div style="font-family: var(--font-title); font-size: 0.55rem; color: var(--accent-gold); border-bottom: 2px solid #FFF; padding-bottom: 4px; margin-bottom: 6px; text-transform: uppercase;">SKOR</div>
+            <div id="online-board-scores" style="display: flex; flex-direction: column; gap: 4px;">
+              <!-- Score rows populated dynamically -->
+            </div>
+          </div>
+
+          <!-- Player Slot: TOP (Player Index 2) -->
+          <div id="online-player-top" class="online-player-slot player-slot-top" style="position: absolute; top: 12px; left: 50%; transform: translateX(-50%); text-align: center; display: flex; flex-direction: column; align-items: center; gap: 4px; z-index: 4;">
+            <!-- Rendered badge & card count -->
+          </div>
+
+          <!-- Player Slot: LEFT (Player Index 1) -->
+          <div id="online-player-left" class="online-player-slot player-slot-left" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; align-items: center; gap: 4px; z-index: 4;">
+            <!-- Rendered badge & card count -->
+          </div>
+
+          <!-- Player Slot: RIGHT (Player Index 3) -->
+          <div id="online-player-right" class="online-player-slot player-slot-right" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; align-items: center; gap: 4px; z-index: 4;">
+            <!-- Rendered badge & card count -->
+          </div>
+
+          <!-- Player Slot: BOTTOM-LEFT (Player Index 0, Local player) -->
+          <div id="online-player-bottom" class="online-player-slot player-slot-bottom" style="position: absolute; bottom: 12px; left: 12px; display: flex; flex-direction: column; align-items: flex-start; gap: 4px; z-index: 4;">
+            <!-- Rendered badge, turn indicator, etc. -->
+          </div>
+
+          <!-- Center visual Domino Chain -->
+          <div id="domino-chain-scroll-wrapper" style="position: absolute; top: 100px; bottom: 130px; left: 180px; right: 180px; display: flex; align-items: center; justify-content: center; overflow-x: auto; overflow-y: hidden;">
+            <div id="domino-chain" style="display: flex; gap: 0.4rem; align-items: center; width: max-content; margin: 0 auto; transform: scale(1.05);">
+              <!-- Played domino tiles -->
+            </div>
+            <div id="board-empty-message" style="font-family: var(--font-title); font-size: 0.55rem; color: #FFF; text-align: center; text-transform: uppercase; text-shadow: 1px 1px 0px #000; pointer-events: none; position: absolute; width: 100%; top: 50%; transform: translateY(-50%);">
+              Meja Kosong.<br>Balak awal harus dimainkan!
+            </div>
+          </div>
+
+          <!-- Large center hand tiles for local player -->
+          <div id="local-player-hand-container" style="position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 4px; z-index: 5;">
+            <div id="player-hand-tiles" style="display: flex; gap: 0.65rem; align-items: flex-end; padding: 4px 10px; justify-content: center; min-height: 80px;">
+              <!-- Hand tiles -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Play Side Chooser dialog (shown when choosing left/right end for playable card) -->
+        <div id="play-side-selector" class="hidden" style="margin-bottom: 1.25rem; border: var(--border-width) solid var(--border-color); background: var(--rank-3-bg); padding: 0.75rem; text-align: center; box-shadow: var(--pixel-shadow-sm); font-family: var(--font-title); font-size: 0.65rem;">
+          <div class="form-label" style="font-size: 0.6rem; margin-bottom: 0.5rem; text-transform: uppercase;">Pilih Ujung Meja untuk kartu <span id="side-sel-card-val" style="font-weight: bold; color: var(--primary);"></span></div>
+          <div style="display: flex; gap: 0.75rem; justify-content: center;">
+            <button class="btn btn-sm btn-primary" onclick="selectPlaySideOnline('left')">⬅️ KIRI</button>
+            <button class="btn btn-sm btn-primary" onclick="selectPlaySideOnline('right')">KANAN ➡️</button>
+            <button class="btn btn-sm btn-outline" style="background: transparent;" onclick="cancelPlaySideOnline()">BATAL</button>
+          </div>
+        </div>
+
+        <!-- Active player hand section -->
+        <div id="active-play-controls" class="play-controls-wrap" style="text-align: center; margin-bottom: 1.25rem;">
+          <button id="btn-pass-online" class="btn btn-outline btn-full hidden" style="font-family: var(--font-title); font-size: 0.7rem; box-shadow: var(--pixel-shadow-sm); width: auto; min-width: 200px; margin: 0 auto;" onclick="passTurnOnline()">LEWAT GILIRAN (PASS)</button>
+        </div>
       </div>
 
       <!-- Input Skor Ronde -->
@@ -493,9 +691,39 @@
     </div>
   </div>
 
+  <!-- ===== MODAL: ROUND END DETAIL ===== -->
+  <div id="modal-round-end" class="modal-overlay hidden">
+    <div class="modal-card modal-card-wide">
+      <div class="modal-icon" style="font-size: 2rem; margin-bottom: 0.5rem; text-align: center;">🏁</div>
+      <h3 class="modal-title" style="margin-bottom: 0.5rem; text-align: center;">Ronde Selesai!</h3>
+      <p id="round-end-outcome" class="modal-body" style="font-size: 1.3rem; color: var(--primary); font-weight: bold; text-transform: uppercase; margin-bottom: 1.5rem; text-align: center;"></p>
+      
+      <div class="form-group" style="margin-bottom: 1.5rem;">
+        <label class="form-label" style="text-align: center;">Skor Ronde Ini</label>
+        <div id="round-end-scoreboard" style="display: flex; flex-direction: column; gap: 0.5rem;">
+          <!-- Dynamically populated scoreboard list -->
+        </div>
+      </div>
 
+      <div class="modal-actions" style="display: flex; flex-direction: column; gap: 0.75rem;">
+        <button id="btn-next-round-online" class="btn btn-primary btn-full hidden" onclick="nextRoundOnline()">Lanjut Ronde Berikutnya 🚀</button>
+        <p id="guest-wait-next-round" class="form-hint hidden" style="text-align: center; width: 100%;">Menunggu host memulai ronde berikutnya...</p>
+      </div>
+    </div>
+  </div>
 
-
+  <!-- ===== MODAL: ONLINE ROUND HISTORY ===== -->
+  <div id="modal-online-history" class="modal-overlay hidden">
+    <div class="modal-card modal-card-wide">
+      <h3 class="modal-title" style="margin-bottom: 1rem; text-align: center;">Riwayat Ronde</h3>
+      <div id="online-round-history-list" style="display: flex; flex-direction: column; gap: 0.75rem; max-height: 260px; overflow-y: auto; padding-right: 0.25rem;">
+        <!-- Filled dynamically -->
+      </div>
+      <div class="modal-actions" style="margin-top: 1.25rem;">
+        <button class="btn btn-outline btn-full" onclick="closeModal('modal-online-history')">Tutup</button>
+      </div>
+    </div>
+  </div>
 
   <script src="app.js?v=3.0"></script>
   <script>

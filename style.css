@@ -2193,3 +2193,176 @@ body {
   0% { transform: translateX(-50%) translateY(0) scale(0.95); }
   100% { transform: translateX(-50%) translateY(-4px) scale(1.05); }
 }
+
+/* =============================================
+   MULTIPLAYER ONLINE GAME VISUALS
+   ============================================= */
+
+/* Green felt domino board styling */
+.felt-board {
+  background-color: #1B5E20 !important;
+  background-image: radial-gradient(#2E7D32 20%, transparent 20%),
+                    radial-gradient(#2E7D32 20%, transparent 20%);
+  background-size: 8px 8px;
+  background-position: 0 0, 4px 4px;
+  border-radius: 4px;
+}
+
+/* Horizontal scrolling wrapper for domino chain */
+#domino-chain-scroll-wrapper::-webkit-scrollbar {
+  height: 8px;
+}
+#domino-chain-scroll-wrapper::-webkit-scrollbar-track {
+  background: #1B5E20;
+}
+#domino-chain-scroll-wrapper::-webkit-scrollbar-thumb {
+  background: var(--accent-gold);
+  border: 2px solid var(--border-color);
+}
+
+/* Hand cards styling with lifelike hover jumps */
+.hand-tile {
+  cursor: pointer;
+  transition: transform 0.15s ease-out;
+  flex-shrink: 0;
+}
+.hand-tile:hover {
+  transform: translateY(-8px) scale(1.05);
+}
+.hand-tile.unplayable {
+  opacity: 0.4;
+  filter: grayscale(80%) contrast(80%);
+  cursor: not-allowed;
+}
+.hand-tile.unplayable:hover {
+  transform: none;
+}
+
+/* Active turn indicator pulse */
+.active-turn-pulse {
+  animation: activeTurnBorderPulse 1s ease-in-out infinite alternate;
+}
+@keyframes activeTurnBorderPulse {
+  0% {
+    box-shadow: 0 0 4px var(--accent-gold);
+    border-color: var(--border-color);
+  }
+  100% {
+    box-shadow: 0 0 12px var(--accent-gold), 0 0 4px var(--accent-gold);
+    border-color: var(--accent-gold);
+  }
+}
+
+/* Lobby slots */
+.lobby-player-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  background: #FFFFFF;
+  border: var(--border-width) solid var(--border-color);
+  box-shadow: var(--pixel-shadow-sm);
+}
+.lobby-player-row.empty-slot {
+  background: #ECEFF1;
+  border-style: dashed;
+  color: var(--text-muted);
+  justify-content: center;
+  font-family: var(--font-title);
+  font-size: 0.55rem;
+}
+
+/* Section Card */
+.section-card {
+  transition: transform var(--transition);
+}
+.section-card:hover {
+  transform: translateY(-2px);
+}
+
+/* =============================================
+   MOCKUP VISUAL GRAPHICS & COMPASS LAYOUT
+   ============================================= */
+
+/* Flat Wood Planks Table Planking Background */
+.wood-table {
+  background-color: #5D4037 !important; /* Brown wood base */
+  background-image: 
+    linear-gradient(90deg, rgba(0, 0, 0, 0.22) 2px, transparent 2px),
+    linear-gradient(rgba(0,0,0,0.06) 50%, rgba(255,255,255,0.02) 50%);
+  background-size: 110px 100%, 100% 24px;
+}
+
+/* Faint pixelated rotated watermark */
+.wood-table-watermark {
+  position: absolute;
+  top: 50%;
+  left: 45%;
+  transform: translate(-50%, -50%) rotate(-10deg);
+  font-family: var(--font-title);
+  font-size: 2.8rem;
+  font-weight: 800;
+  color: rgba(0, 0, 0, 0.05); /* very faint red/brown watermark */
+  letter-spacing: 6px;
+  pointer-events: none;
+  z-index: 1;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+/* Scoreboard Overlay Box (Top-Left) */
+.scoreboard-box {
+  border-radius: 2px;
+  font-family: var(--font-pixel);
+  font-size: 1.4rem;
+}
+.scoreboard-score-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 1.1rem;
+  line-height: 1.3;
+}
+
+/* Card Counter Badge Icon */
+.card-counter-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #1A1C1E;
+  color: #FFF;
+  border: 2px solid var(--border-color);
+  padding: 2px 8px;
+  font-family: var(--font-title);
+  font-size: 0.55rem;
+  box-shadow: 1px 1px 0px #000;
+  font-weight: bold;
+}
+
+/* Compass players positioning */
+.player-slot-top {
+  transform: translateX(-50%);
+}
+.player-slot-left {
+  transform: translateY(-50%);
+}
+.player-slot-right {
+  transform: translateY(-50%);
+}
+
+/* Active Turn Outline Indicator Frame */
+.active-player-outline {
+  border: 3px solid var(--accent-gold) !important;
+  box-shadow: 0 0 14px var(--accent-gold), inset 0 0 6px var(--accent-gold) !important;
+}
+
+/* Domino visual size adjusters inside visual chain */
+.chain-tile {
+  display: inline-block;
+  vertical-align: middle;
+  transition: transform 0.2s ease;
+}
+.chain-tile:hover {
+  transform: scale(1.15) !important;
+  z-index: 10;
+}
