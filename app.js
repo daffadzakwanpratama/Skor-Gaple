@@ -1534,6 +1534,7 @@ function renderHistoryListPage() {
 
     const card = document.createElement('div');
     card.className = 'history-game-card';
+    card.style.cursor = 'pointer';
     card.innerHTML = `
       <div class="history-game-card-header">
         <span class="history-game-name">${escapeHtml(game.name)}</span>
@@ -1545,8 +1546,153 @@ function renderHistoryListPage() {
         <span>(${winner.total})</span>
       </p>
     `;
+    card.onclick = () => showHistoryDetail(game.id);
     container.appendChild(card);
   });
+}
+
+function showHistoryDetail(gameId) {
+  const game = state.allGames.find(g => g.id === gameId);
+  if (!game) return;
+
+  state.viewingHistoryGame = game;
+
+  document.getElementById('history-detail-title').textContent = game.name;
+  
+  const dateStr = new Date(game.createdAt).toLocaleDateString('id-ID', {
+    day: 'numeric', month: 'long', year: 'numeric',
+    hour: '2-digit', minute: '2-digit'
+  });
+  document.getElementById('history-detail-date').textContent = dateStr;
+
+  // Build Leaderboard
+  const sorted = [...game.players].sort((a, b) => a.total - b.total);
+  const maxScore = Math.max(...game.players.map(p => p.total), 1);
+  const lbContainer = document.getElementById('history-detail-leaderboard');
+  lbContainer.innerHTML = '';
+
+  sorted.forEach((p, rank) => {
+    const item = document.createElement('div');
+    item.className = 'lb-item';
+    
+    // Rank pastel bg decoration
+    if (rank === 0) item.style.background = 'var(--rank-1-bg)';
+    else if (rank === 1) item.style.background = 'var(--rank-2-bg)';
+    else if (rank === 2) item.style.background = 'var(--rank-3-bg)';
+
+    const barPct = maxScore > 0 ? Math.round((p.total / 100) * 100) : 0;
+    let barColorClass = 'bar-success';
+    if (p.total >= 80) {
+      barColorClass = 'bar-danger';
+    } else if (p.total >= 50) {
+      barColorClass = 'bar-warning';
+    }
+
+    item.innerHTML = `
+      <div class="lb-rank lb-rank-${rank + 1}">${rank + 1}</div>
+      <div class="lb-item-inner">
+        <div class="lb-name">
+          ${renderPlayerBadgeHTML(p)}
+        </div>
+        <div class="lb-bar-wrap">
+          <div class="lb-bar ${barColorClass}" style="width: ${Math.min(barPct, 100)}%"></div>
+        </div>
+      </div>
+      <div class="lb-score">${p.total}</div>
+    `;
+    lbContainer.appendChild(item);
+  });
+
+  // Build Rounds Score List
+  const roundsContainer = document.getElementById('history-detail-rounds');
+  roundsContainer.innerHTML = '';
+
+  if (!game.rounds || game.rounds.length === 0) {
+    roundsContainer.innerHTML = `<div class="no-history" style="padding: 1.5rem 1rem;">Belum ada ronde.</div>`;
+  } else {
+    const rounds = [...game.rounds].reverse();
+    rounds.forEach((round, revIdx) => {
+      const realIdx = game.rounds.length - 1 - revIdx;
+      const rCard = document.createElement('div');
+      rCard.className = 'round-card';
+      
+      const scoresHtml = game.players.map((p, i) => {
+        const score = round.scores[i];
+        const cls = score < 0 ? 'negative' : '';
+        return `
+          <div class="round-score-row" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.25rem;">
+            <span class="round-score-name">${renderPlayerBadgeHTML(p, 'sm')}</span>
+            <span class="round-score-val ${cls}">${score >= 0 ? '+' : ''}${score}</span>
+          </div>
+        `;
+      }).join('');
+
+      const gapleText = round.gapleCard ? ` <span class="gaple-history-badge" style="color: var(--primary); font-weight: bold; border: 1.5px solid var(--primary); padding: 1px 4px; font-size: 0.55rem; margin-left: 5px; text-transform: uppercase;">Gaple ${round.gapleCard}</span>` : '';
+      rCard.innerHTML = `
+        <div class="round-card-header" style="background: #F1F5F9; padding: 0.6rem 1rem; border-bottom: var(--border-width) solid var(--border-color);">
+          <span class="round-card-title">Ronde ${realIdx + 1}${gapleText}</span>
+        </div>
+        <div class="round-card-body" style="padding: 0.6rem 1rem; display: flex; flex-direction: column; gap: 0.4rem;">${scoresHtml}</div>
+      `;
+      roundsContainer.appendChild(rCard);
+    });
+  }
+
+  openModal('modal-history-detail');
+}
+
+function shareHistoryGame() {
+  const g = state.viewingHistoryGame;
+  if (!g) return;
+
+  const sorted = [...g.players].sort((a, b) => a.total - b.total);
+  const date = new Date(g.createdAt).toLocaleDateString('id-ID');
+  let text = `GAPLE SCORE — ${g.name} (${date})\n`;
+  text += `━━━━━━━━━━━━━━━━━━\n`;
+  const medals = ['🥇', '🥈', '🥉'];
+  sorted.forEach((p, i) => {
+    text += `${medals[i] || (i + 1 + '.')} ${getAvatarEmoji(p.avatar)} ${p.name}: ${p.total} poin\n`;
+  });
+  text += `━━━━━━━━━━━━━━━━━━\n`;
+
+  const gapleEvents = [];
+  g.rounds.forEach((r, idx) => {
+    if (r.gapleCard) {
+      const pIdx = r.scores.indexOf(-20);
+      if (pIdx !== -1) {
+        const p = g.players[pIdx];
+        gapleEvents.push(`• Ronde ${idx + 1}: ${getAvatarEmoji(p.avatar)} ${p.name} (Balak ${r.gapleCard})`);
+      }
+    }
+  });
+
+  if (gapleEvents.length > 0) {
+    text += `MOMEN GAPLE 🀱:\n`;
+    text += gapleEvents.join('\n') + `\n`;
+    text += `━━━━━━━━━━━━━━━━━━\n`;
+  }
+
+  text += `Total ${g.rounds.length} ronde`;
+
+  if (navigator.share) {
+    navigator.share({
+      title: `Hasil Game Gaple: ${g.name}`,
+      text: text
+    })
+    .then(() => showToast('Hasil dibagikan ✓'))
+    .catch(() => {
+      navigator.clipboard.writeText(text);
+      showToast('Hasil disalin ke clipboard ✓');
+    });
+  } else {
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(text)
+        .then(() => showToast('Hasil disalin ke clipboard ✓'))
+        .catch(() => fallbackCopy(text));
+    } else {
+      fallbackCopy(text);
+    }
+  }
 }
 
 

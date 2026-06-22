@@ -725,6 +725,33 @@
     </div>
   </div>
 
+  <!-- ===== MODAL: DETAIL RIWAYAT GAME ===== -->
+  <div id="modal-history-detail" class="modal-overlay hidden">
+    <div class="modal-card modal-card-wide" style="max-height: 90vh; display: flex; flex-direction: column; overflow: hidden; padding: 2rem 1.5rem 1.5rem;">
+      <h3 class="modal-title" style="margin-bottom: 0.5rem; text-align: center;" id="history-detail-title">Detail Game</h3>
+      <p id="history-detail-date" class="form-hint" style="text-align: center; margin-bottom: 1.25rem; font-size: 0.75rem; color: var(--text-secondary);">—</p>
+      
+      <div style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 1.5rem; padding-right: 0.25rem;">
+        <!-- Leaderboard section -->
+        <div>
+          <h4 class="section-title" style="margin-bottom: 0.75rem;">Klasemen Akhir</h4>
+          <div id="history-detail-leaderboard" style="display: flex; flex-direction: column; gap: 0.5rem;"></div>
+        </div>
+        
+        <!-- Rounds list section -->
+        <div>
+          <h4 class="section-title" style="margin-bottom: 0.75rem;">Detail Skor Ronde</h4>
+          <div id="history-detail-rounds" style="display: flex; flex-direction: column; gap: 0.75rem;"></div>
+        </div>
+      </div>
+      
+      <div class="modal-actions" style="margin-top: 1.5rem; width: 100%;">
+        <button class="btn btn-outline" style="flex: 1;" onclick="closeModal('modal-history-detail')">Tutup</button>
+        <button id="btn-share-history" class="btn btn-primary" style="flex: 1;" onclick="shareHistoryGame()">Bagikan 📋</button>
+      </div>
+    </div>
+  </div>
+
   <script src="app.js?v=3.0"></script>
   <script>
     if ('serviceWorker' in navigator) {
