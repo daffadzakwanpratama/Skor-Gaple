@@ -1512,10 +1512,56 @@ function startNewGame() {
 // HISTORY LIST PAGE
 // ─────────────────────────────────────────────
 function renderHistoryListPage() {
+  state.historyMode = state.historyMode || 'local';
+  
+  const toggle = document.getElementById('history-mode-selector');
+  const btnLocal = document.getElementById('btn-history-local');
+  const btnOnline = document.getElementById('btn-history-online');
+  
+  if (socket) {
+    if (toggle) toggle.classList.remove('hidden');
+    if (btnLocal && btnOnline) {
+      if (state.historyMode === 'local') {
+        btnLocal.className = 'btn btn-sm btn-primary';
+        btnOnline.className = 'btn btn-sm btn-outline';
+      } else {
+        btnLocal.className = 'btn btn-sm btn-outline';
+        btnOnline.className = 'btn btn-sm btn-primary';
+      }
+    }
+  } else {
+    state.historyMode = 'local';
+    if (toggle) toggle.classList.add('hidden');
+  }
+
+  if (state.historyMode === 'local') {
+    state.viewingHistoryList = state.allGames;
+    renderHistoryList(state.allGames);
+  } else {
+    const container = document.getElementById('history-list-container');
+    if (container) {
+      container.innerHTML = '<div class="no-history" style="text-align: center; padding: 2rem;">Memuat riwayat online...</div>';
+    }
+    if (socket) {
+      socket.emit('getOnlineHistory', (history) => {
+        state.viewingHistoryList = history;
+        renderHistoryList(history);
+      });
+    }
+  }
+}
+
+function switchHistoryMode(mode) {
+  state.historyMode = mode;
+  renderHistoryListPage();
+}
+
+function renderHistoryList(gamesArray) {
   const container = document.getElementById('history-list-container');
+  if (!container) return;
   container.innerHTML = '';
 
-  if (state.allGames.length === 0) {
+  if (!gamesArray || gamesArray.length === 0) {
     container.innerHTML = `
       <div class="no-history-games">
         <span class="empty-icon">📋</span>
@@ -1525,7 +1571,7 @@ function renderHistoryListPage() {
     return;
   }
 
-  state.allGames.forEach(game => {
+  gamesArray.forEach(game => {
     const sorted = [...game.players].sort((a, b) => a.total - b.total);
     const winner = sorted[0];
     const date = new Date(game.createdAt).toLocaleDateString('id-ID', {
@@ -1552,7 +1598,8 @@ function renderHistoryListPage() {
 }
 
 function showHistoryDetail(gameId) {
-  const game = state.allGames.find(g => g.id === gameId);
+  const gamesList = state.viewingHistoryList || state.allGames;
+  const game = gamesList.find(g => g.id === gameId) || state.allGames.find(g => g.id === gameId);
   if (!game) return;
 
   state.viewingHistoryGame = game;
@@ -3091,4 +3138,245 @@ function updateMuteIcon() {
     btn.textContent = isMuted ? '🔈' : '🔊';
   }
 }
+
+// ─────────────────────────────────────────────
+// LIFETIME STATISTICS DASHBOARD FUNCTIONS
+// ─────────────────────────────────────────────
+
+let statsCache = [];
+
+function showStatsPage() {
+  state.statsMode = state.statsMode || 'local';
+  state.statsSortKey = state.statsSortKey || 'wins';
+
+  const toggle = document.getElementById('stats-mode-selector');
+  const btnLocal = document.getElementById('btn-stats-local');
+  const btnOnline = document.getElementById('btn-stats-online');
+
+  if (socket) {
+    if (toggle) toggle.classList.remove('hidden');
+    if (btnLocal && btnOnline) {
+      if (state.statsMode === 'local') {
+        btnLocal.className = 'btn btn-sm btn-primary';
+        btnOnline.className = 'btn btn-sm btn-outline';
+      } else {
+        btnLocal.className = 'btn btn-sm btn-outline';
+        btnOnline.className = 'btn btn-sm btn-primary';
+      }
+    }
+  } else {
+    state.statsMode = 'local';
+    if (toggle) toggle.classList.add('hidden');
+  }
+
+  loadAndRenderStats();
+  showPage('stats');
+}
+
+function switchStatsMode(mode) {
+  state.statsMode = mode;
+  showStatsPage();
+}
+
+function calculateLocalLifetimeStats() {
+  const localStats = {};
+
+  // Filter completed local games
+  const completedGames = state.allGames.filter(g => g.status === 'done');
+
+  completedGames.forEach(game => {
+    if (!game.players || game.players.length === 0) return;
+
+    // Find final winner score
+    const sorted = [...game.players].sort((a, b) => a.total - b.total);
+    const minTotal = sorted[0].total;
+
+    game.players.forEach((p, playerIdx) => {
+      if (!localStats[p.name]) {
+        localStats[p.name] = {
+          name: p.name,
+          avatar: p.avatar,
+          color: p.color,
+          matchesPlayed: 0,
+          matchesWon: 0,
+          roundsWon: 0,
+          gapleCount: 0,
+          gacorCount: 0,
+          dungTakCount: 0,
+          longestStreak: 0
+        };
+      }
+
+      const stat = localStats[p.name];
+      stat.matchesPlayed++;
+      // Keep avatar and color updated to the latest one
+      stat.avatar = p.avatar;
+      stat.color = p.color;
+
+      if (p.total === minTotal) {
+        stat.matchesWon++;
+      }
+
+      // Streaks and rounds calculation
+      let currentStreak = 0;
+      game.rounds.forEach(round => {
+        const winnerIdx = getRoundWinnerIndex(round);
+        const isRoundWinner = winnerIdx === playerIdx;
+
+        if (isRoundWinner) {
+          stat.roundsWon++;
+          currentStreak++;
+          if (currentStreak > stat.longestStreak) {
+            stat.longestStreak = currentStreak;
+          }
+        } else {
+          currentStreak = 0;
+        }
+
+        // Special scores
+        if (round.scores && round.scores[playerIdx] !== undefined) {
+          const roundScore = round.scores[playerIdx];
+          if (roundScore === -20) {
+            stat.gapleCount++;
+          } else if (roundScore === -25) {
+            stat.gacorCount++;
+          } else if (roundScore === -30) {
+            stat.dungTakCount++;
+          }
+        }
+      });
+    });
+  });
+
+  return Object.values(localStats);
+}
+
+function loadAndRenderStats() {
+  if (state.statsMode === 'local') {
+    const localData = calculateLocalLifetimeStats();
+    statsCache = localData;
+    renderStatsList(localData);
+  } else {
+    const list = document.getElementById('stats-list');
+    if (list) {
+      list.innerHTML = '<div class="no-history" style="text-align: center; padding: 2rem;">Memuat statistik online...</div>';
+    }
+    if (socket) {
+      socket.emit('getAllLifetimeStats', (allStats) => {
+        // allStats is map of name -> stats
+        const statsArray = Object.values(allStats).map(p => ({
+          name: p.name,
+          avatar: p.avatar || 'fox',
+          color: p.color || '#FF5252',
+          matchesPlayed: p.totalMatchesPlayed || 0,
+          matchesWon: p.totalMatchesWon || 0,
+          roundsWon: p.totalRoundsWon || 0,
+          gapleCount: p.totalGaple || 0,
+          gacorCount: p.totalGacor || 0,
+          dungTakCount: p.totalDungTak || 0,
+          longestStreak: p.longestWinStreak || 0
+        }));
+        statsCache = statsArray;
+        renderStatsList(statsArray);
+      });
+    } else {
+      showToast('Koneksi terputus, beralih ke Lokal.');
+      state.statsMode = 'local';
+      loadAndRenderStats();
+    }
+  }
+}
+
+function sortStats(key) {
+  state.statsSortKey = key;
+
+  const btnMatches = document.getElementById('sort-btn-matches');
+  const btnWins = document.getElementById('sort-btn-wins');
+  if (btnMatches && btnWins) {
+    if (key === 'matches') {
+      btnMatches.className = 'btn btn-sm btn-primary';
+      btnWins.className = 'btn btn-sm btn-outline';
+    } else {
+      btnMatches.className = 'btn btn-sm btn-outline';
+      btnWins.className = 'btn btn-sm btn-primary';
+    }
+  }
+
+  renderStatsList(statsCache);
+}
+
+function renderStatsList(statsArray) {
+  const list = document.getElementById('stats-list');
+  if (!list) return;
+  list.innerHTML = '';
+
+  if (!statsArray || statsArray.length === 0) {
+    list.innerHTML = '<div class="no-history" style="text-align: center; padding: 2rem;">Belum ada data statistik.</div>';
+    return;
+  }
+
+  // Sort
+  const sorted = [...statsArray].sort((a, b) => {
+    if (state.statsSortKey === 'matches') {
+      if (b.matchesPlayed !== a.matchesPlayed) {
+        return b.matchesPlayed - a.matchesPlayed;
+      }
+      return b.matchesWon - a.matchesWon;
+    } else {
+      if (b.matchesWon !== a.matchesWon) {
+        return b.matchesWon - a.matchesWon;
+      }
+      return b.matchesPlayed - a.matchesPlayed;
+    }
+  });
+
+  sorted.forEach(p => {
+    const row = document.createElement('div');
+    row.className = 'stats-row';
+    row.onclick = () => openPlayerStatsDetail(p.name);
+    
+    row.innerHTML = `
+      <div class="stats-row-left">
+        ${renderPlayerBadgeHTML(p, 'sm')}
+      </div>
+      <div class="stats-row-right">
+        <span class="stats-row-val" title="Total Main">${p.matchesPlayed}</span>
+        <span class="stats-row-val" title="Total Menang" style="color: var(--accent-orange); font-size: 0.8rem;">${p.matchesWon}</span>
+      </div>
+    `;
+    list.appendChild(row);
+  });
+}
+
+function openPlayerStatsDetail(playerName) {
+  const p = statsCache.find(item => item.name === playerName);
+  if (!p) return;
+
+  const badgeWrap = document.getElementById('player-stats-detail-badge');
+  if (badgeWrap) {
+    badgeWrap.innerHTML = renderPlayerBadgeHTML(p, 'lg');
+  }
+
+  document.getElementById('stat-detail-matches').textContent = p.matchesPlayed;
+  document.getElementById('stat-detail-wins').textContent = p.matchesWon;
+
+  const winRate = p.matchesPlayed > 0 ? Math.round((p.matchesWon / p.matchesPlayed) * 100) : 0;
+  document.getElementById('stat-detail-winrate').textContent = winRate + '%';
+  document.getElementById('stat-detail-streak').textContent = p.longestStreak;
+
+  document.getElementById('stat-detail-gaple').textContent = p.gapleCount;
+  document.getElementById('stat-detail-gacor').textContent = p.gacorCount;
+  document.getElementById('stat-detail-dungtak').textContent = p.dungTakCount;
+
+  openModal('modal-player-stats-detail');
+
+  // Trigger preview avatar micro-animation
+  setTimeout(() => {
+    const detailBadgeAvatar = document.querySelector('#player-stats-detail-badge .player-avatar svg');
+    if (detailBadgeAvatar) {
+      detailBadgeAvatar.style.animation = 'pixelAvatarJump 0.5s steps(4) infinite alternate';
+    }
+  }, 100);
+}
+
 

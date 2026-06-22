@@ -213,6 +213,37 @@ function endRound(room, winnerId, isNormalWin) {
     room.status = 'ended';
     game.status = 'ended';
 
+    // Determine winner of match (lowest score)
+    const sorted = [...room.players].sort((a, b) => a.total - b.total);
+    const minTotal = sorted[0].total;
+    room.players.forEach(p => {
+      if (!p.isBot && p.total === minTotal) {
+        db.updatePlayerStats(p.name, { matchWon: true });
+      }
+    });
+
+    // Construct unified history object
+    const historyObj = {
+      id: room.id + '_' + Date.now(),
+      name: `Online Room ${room.id}`,
+      players: room.players.map(p => ({
+        name: p.name,
+        total: p.total,
+        avatar: p.avatar,
+        color: p.color
+      })),
+      rounds: game.rounds.map(r => ({
+        scores: room.players.map(p => {
+          const scoreRow = (r.scores || []).find(s => s.name === p.name);
+          return scoreRow ? scoreRow.score : 0;
+        }),
+        gapleCard: r.gapleCard
+      })),
+      status: 'done',
+      createdAt: new Date().toISOString()
+    };
+    db.saveGameToHistory(historyObj);
+
     // Broadcast Game Over
     io.to(room.id).emit('gameOver', {
       players: room.players,
@@ -430,6 +461,18 @@ io.on('connection', socket => {
   socket.on('getLifetimeStats', ({ name }, callback) => {
     const stats = db.getPlayerStats(name);
     callback(stats);
+  });
+
+  // Get All Long-term Stats
+  socket.on('getAllLifetimeStats', (callback) => {
+    const allStats = db.loadAllStats();
+    callback(allStats);
+  });
+
+  // Get Online Games History
+  socket.on('getOnlineHistory', (callback) => {
+    const history = db.loadAllHistory();
+    callback(history);
   });
 
   // Start Game

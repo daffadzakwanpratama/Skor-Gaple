@@ -74,7 +74,10 @@
       <div class="home-actions" style="display: flex; flex-direction: column; gap: 0.75rem; width: 100%; max-width: 320px; margin: 0 auto;">
         <button id="btn-start-online" class="btn btn-primary btn-lg btn-full" onclick="showOnlineSetup()">Main Online</button>
         <button id="btn-start-local" class="btn btn-outline btn-lg btn-full" onclick="startLocalSetup()">Papan Skor Lokal</button>
-        <button id="btn-history" class="btn btn-outline btn-lg btn-full" style="background: var(--accent-gold); color: var(--text-primary); border-color: var(--border-color);" onclick="showHistory()">Riwayat Game</button>
+        <div style="display: flex; gap: 0.75rem; width: 100%;">
+          <button id="btn-history" class="btn btn-outline btn-lg" style="flex: 1; padding: 0.85rem 0.5rem; font-size: 0.85rem; background: var(--accent-gold); color: var(--text-primary); border-color: var(--border-color); display: inline-flex; align-items: center; justify-content: center; gap: 4px;" onclick="showHistory()">Riwayat 🕒</button>
+          <button id="btn-stats" class="btn btn-outline btn-lg" style="flex: 1; padding: 0.85rem 0.5rem; font-size: 0.85rem; background: var(--secondary); color: var(--text-primary); border-color: var(--border-color); display: inline-flex; align-items: center; justify-content: center; gap: 4px;" onclick="showStatsPage()">Statistik 📊</button>
+        </div>
       </div>
       <div id="saved-game-banner" class="saved-banner hidden">
         <div class="saved-banner-inner">
@@ -524,7 +527,7 @@
 
   <!-- ===== PAGE: HISTORY LIST ===== -->
   <div id="page-history" class="page">
-    <div class="page-header">
+    <div class="page-header" style="background: #FFF9C4;">
       <button class="btn-back" onclick="showPage('home')" title="Kembali">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
           stroke-linecap="round" stroke-linejoin="round">
@@ -534,7 +537,49 @@
       </button>
       <h2 class="page-title">Riwayat Game</h2>
     </div>
-    <div id="history-list-container" class="history-list-container"></div>
+    <div class="setup-container" style="padding-top: 1.5rem; padding-bottom: 0;">
+      <!-- Toggle between Local vs Online History (if online socket connected) -->
+      <div id="history-mode-selector" class="toggle-mode-container hidden" style="display: flex; gap: 0.5rem; margin-bottom: 1rem; justify-content: center;">
+        <button id="btn-history-local" class="btn btn-sm btn-primary" onclick="switchHistoryMode('local')" style="min-width: 100px;">Lokal 🏠</button>
+        <button id="btn-history-online" class="btn btn-sm btn-outline" onclick="switchHistoryMode('online')" style="min-width: 100px;">Online 🌐</button>
+      </div>
+    </div>
+    <div id="history-list-container" class="history-list-container" style="padding-top: 0.5rem;"></div>
+  </div>
+
+  <!-- ===== PAGE: STATS ===== -->
+  <div id="page-stats" class="page">
+    <div class="page-header" style="background: #E0F2F1;">
+      <button class="btn-back" onclick="showPage('home')" title="Kembali">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+          stroke-linecap="round" stroke-linejoin="round">
+          <path d="M19 12H5" />
+          <path d="M12 19l-7-7 7-7" />
+        </svg>
+      </button>
+      <h2 class="page-title">Statistik Pemain</h2>
+    </div>
+    <div class="setup-container" style="max-width: 520px; padding-top: 1.5rem; padding-bottom: 3rem;">
+      <!-- Toggle between Local vs Online Stats (if online socket connected) -->
+      <div id="stats-mode-selector" class="toggle-mode-container hidden" style="display: flex; gap: 0.5rem; margin-bottom: 1.5rem; justify-content: center;">
+        <button id="btn-stats-local" class="btn btn-sm btn-primary" onclick="switchStatsMode('local')" style="min-width: 100px;">Lokal 🏠</button>
+        <button id="btn-stats-online" class="btn btn-sm btn-outline" onclick="switchStatsMode('online')" style="min-width: 100px;">Online 🌐</button>
+      </div>
+
+      <!-- Stats Leaderboard Table -->
+      <div class="section-card" style="border: var(--border-width) solid var(--border-color); box-shadow: var(--pixel-shadow); background: #FFF; padding: 1.25rem; border-radius: 12px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; border-bottom: 2px solid var(--border-color); padding-bottom: 0.5rem;">
+          <span style="font-family: var(--font-title); font-size: 0.55rem; text-transform: uppercase;">Pemain</span>
+          <div style="display: flex; gap: 0.75rem; font-family: var(--font-title); font-size: 0.5rem; text-transform: uppercase; color: var(--text-secondary); align-items: center;">
+            <button id="sort-btn-matches" class="btn btn-sm btn-outline" style="padding: 0.25rem 0.5rem; font-size: 0.55rem; box-shadow: none; border-width: 1.5px;" onclick="sortStats('matches')">Main 🔄</button>
+            <button id="sort-btn-wins" class="btn btn-sm btn-primary" style="padding: 0.25rem 0.5rem; font-size: 0.55rem; box-shadow: none; border-width: 1.5px;" onclick="sortStats('wins')">Menang 🏆</button>
+          </div>
+        </div>
+        <div id="stats-list" style="display: flex; flex-direction: column; gap: 0.75rem;">
+          <!-- Populated dynamically -->
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- ===== MODAL: HAPUS RONDE ===== -->
@@ -748,6 +793,65 @@
       <div class="modal-actions" style="margin-top: 1.5rem; width: 100%;">
         <button class="btn btn-outline" style="flex: 1;" onclick="closeModal('modal-history-detail')">Tutup</button>
         <button id="btn-share-history" class="btn btn-primary" style="flex: 1;" onclick="shareHistoryGame()">Bagikan 📋</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== MODAL: DETAIL STATS PEMAIN ===== -->
+  <div id="modal-player-stats-detail" class="modal-overlay hidden">
+    <div class="modal-card modal-card-wide" style="max-height: 90vh; display: flex; flex-direction: column; overflow: hidden; padding: 2rem 1.5rem 1.5rem;">
+      <h3 class="modal-title" style="text-align: center; margin-bottom: 1rem;">Statistik Detail</h3>
+      
+      <div id="player-stats-detail-badge" style="text-align: center; margin-bottom: 1.5rem;">
+        <!-- Player badge rendered dynamically -->
+      </div>
+
+      <div style="flex: 1; overflow-y: auto; padding-right: 0.25rem;">
+        <div class="stats-detail-grid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.75rem; margin-bottom: 1.5rem;">
+          <!-- Card: Total Main -->
+          <div class="stats-detail-card" style="border: 2.5px solid var(--border-color); padding: 0.75rem; border-radius: 8px; text-align: center; background: #F8FAFC; box-shadow: var(--pixel-shadow-sm);">
+            <div style="font-size: 0.65rem; color: var(--text-secondary); text-transform: uppercase; font-weight: bold; margin-bottom: 0.25rem;">Main</div>
+            <div id="stat-detail-matches" style="font-size: 1.8rem; font-weight: 800; color: var(--text-primary);">0</div>
+          </div>
+          <!-- Card: Total Menang -->
+          <div class="stats-detail-card" style="border: 2.5px solid var(--border-color); padding: 0.75rem; border-radius: 8px; text-align: center; background: #FFFDF0; box-shadow: var(--pixel-shadow-sm);">
+            <div style="font-size: 0.65rem; color: var(--text-secondary); text-transform: uppercase; font-weight: bold; margin-bottom: 0.25rem;">Menang</div>
+            <div id="stat-detail-wins" style="font-size: 1.8rem; font-weight: 800; color: var(--accent-orange);">0</div>
+          </div>
+          <!-- Card: Win Rate -->
+          <div class="stats-detail-card" style="border: 2.5px solid var(--border-color); padding: 0.75rem; border-radius: 8px; text-align: center; background: #F0F9FF; box-shadow: var(--pixel-shadow-sm);">
+            <div style="font-size: 0.65rem; color: var(--text-secondary); text-transform: uppercase; font-weight: bold; margin-bottom: 0.25rem;">Win Rate</div>
+            <div id="stat-detail-winrate" style="font-size: 1.8rem; font-weight: 800; color: #3B82F6;">0%</div>
+          </div>
+          <!-- Card: Win Streak Terpanjang -->
+          <div class="stats-detail-card" style="border: 2.5px solid var(--border-color); padding: 0.75rem; border-radius: 8px; text-align: center; background: #FDF2F8; box-shadow: var(--pixel-shadow-sm);">
+            <div style="font-size: 0.65rem; color: var(--text-secondary); text-transform: uppercase; font-weight: bold; margin-bottom: 0.25rem;">Win Streak</div>
+            <div id="stat-detail-streak" style="font-size: 1.8rem; font-weight: 800; color: #EC4899;">0</div>
+          </div>
+        </div>
+
+        <!-- Momen Spesial Section -->
+        <div style="border: 2.5px solid var(--border-color); padding: 1rem; border-radius: 10px; background: #FFF; box-shadow: var(--pixel-shadow-sm); margin-bottom: 0.5rem;">
+          <h4 style="font-family: var(--font-title); font-size: 0.6rem; text-transform: uppercase; margin-bottom: 0.75rem; border-bottom: 1.5px solid var(--border-color); padding-bottom: 0.4rem; color: var(--text-primary);">Momen Spesial</h4>
+          <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem;">
+              <span>🀱 Gaple (-20)</span>
+              <span id="stat-detail-gaple" style="font-weight: 800;">0</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem;">
+              <span>⚡ Gacor (-25)</span>
+              <span id="stat-detail-gacor" style="font-weight: 800; color: var(--accent-orange);">0</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem;">
+              <span>🥁 Dung Tak (-30)</span>
+              <span id="stat-detail-dungtak" style="font-weight: 800; color: var(--primary);">0</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-actions" style="margin-top: 1.5rem; width: 100%;">
+        <button class="btn btn-outline btn-full" onclick="closeModal('modal-player-stats-detail')">Tutup</button>
       </div>
     </div>
   </div>

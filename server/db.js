@@ -35,6 +35,12 @@ function saveStats(stats) {
  * Retrieves the lifetime stats for a player by name.
  * If the player does not exist, a new profile is initialized.
  */
+const HISTORY_FILE = path.join(__dirname, 'history.json');
+
+/**
+ * Retrieves the lifetime stats for a player by name.
+ * If the player does not exist, a new profile is initialized.
+ */
 function getPlayerStats(name) {
   const stats = loadStats();
   if (!name) return null;
@@ -43,6 +49,7 @@ function getPlayerStats(name) {
     stats[name] = {
       name: name,
       totalMatchesPlayed: 0,
+      totalMatchesWon: 0,
       totalRoundsWon: 0,
       totalGaple: 0,
       totalGacor: 0,
@@ -64,6 +71,7 @@ function updatePlayerStats(name, updates) {
     stats[name] = {
       name: name,
       totalMatchesPlayed: 0,
+      totalMatchesWon: 0,
       totalRoundsWon: 0,
       totalGaple: 0,
       totalGacor: 0,
@@ -74,6 +82,7 @@ function updatePlayerStats(name, updates) {
 
   const p = stats[name];
   if (updates.matchPlayed) p.totalMatchesPlayed++;
+  if (updates.matchWon) p.totalMatchesWon++;
   if (updates.roundWon) p.totalRoundsWon++;
   if (updates.gaple) p.totalGaple++;
   if (updates.gacor) p.totalGacor++;
@@ -86,8 +95,45 @@ function updatePlayerStats(name, updates) {
   return p;
 }
 
+/**
+ * Loads all history from history.json
+ */
+function loadHistory() {
+  try {
+    if (fs.existsSync(HISTORY_FILE)) {
+      const data = fs.readFileSync(HISTORY_FILE, 'utf8');
+      return JSON.parse(data);
+    }
+  } catch (e) {
+    console.error('Gagal memuat riwayat game:', e);
+  }
+  return [];
+}
+
+/**
+ * Saves all history to history.json
+ */
+function saveHistory(history) {
+  try {
+    fs.writeFileSync(HISTORY_FILE, JSON.stringify(history, null, 2), 'utf8');
+  } catch (e) {
+    console.error('Gagal menyimpan riwayat game:', e);
+  }
+}
+
+/**
+ * Appends a game to history.json
+ */
+function saveGameToHistory(game) {
+  const history = loadHistory();
+  history.unshift(game);
+  saveHistory(history);
+}
+
 module.exports = {
   getPlayerStats,
   updatePlayerStats,
-  loadAllStats: loadStats
+  loadAllStats: loadStats,
+  saveGameToHistory,
+  loadAllHistory: loadHistory
 };
