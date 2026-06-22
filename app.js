@@ -468,24 +468,15 @@ function renderPlayerBadgeHTML(player, size = 'md') {
   const color = player.color || '#FF5252';
   const textColor = getTextColorForBg(color);
 
-  let padding = '0.2rem 0.5rem';
-  let fontSize = '1.5rem';
-  let shadow = '2px 2px 0px #1A1C1E';
-  let border = '3px solid #1A1C1E';
-  let svgSize = 20;
+  let badgeClass = 'player-badge-md';
+  let svgSize = 32;
 
   if (size === 'sm') {
-    padding = '0.1rem 0.4rem';
-    fontSize = '1.3rem';
-    border = '2px solid #1A1C1E';
-    shadow = '1.5px 1.5px 0px #1A1C1E';
-    svgSize = 16;
-  } else if (size === 'lg') {
-    padding = '0.3rem 0.75rem';
-    fontSize = '1.8rem';
-    border = '3px solid #1A1C1E';
-    shadow = '3px 3px 0px #1A1C1E';
+    badgeClass = 'player-badge-sm';
     svgSize = 24;
+  } else if (size === 'lg') {
+    badgeClass = 'player-badge-lg';
+    svgSize = 42;
   }
 
   const avatarSVG = getPixelArtSVG(avatar, svgSize);
@@ -504,8 +495,8 @@ function renderPlayerBadgeHTML(player, size = 'md') {
     : '';
 
   return `
-    <span class="player-badge" style="background-color: ${color}; color: ${textColor}; display: inline-flex; align-items: center; gap: 0.4rem; padding: ${padding}; border: ${border}; box-shadow: ${shadow}; font-weight: bold; text-transform: uppercase; font-size: ${fontSize}; line-height: 1.2; vertical-align: middle;">
-      <span class="player-avatar" style="line-height: 1; flex-shrink: 0; display: flex; align-items: center;">${avatarSVG}</span>
+    <span class="player-badge ${badgeClass}" style="background-color: ${color}; color: ${textColor};">
+      <span class="player-avatar">${avatarSVG}</span>
       <span class="player-name-text">${escapeHtml(name)}</span>
       ${flameHTML}
     </span>
