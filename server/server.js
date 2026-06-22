@@ -12,8 +12,8 @@ const db = require('./db');
 const app = express();
 app.use(cors());
 
-// Serve static files from the root of the workspace
-app.use(express.static(path.join(__dirname, '..')));
+// Serve static files from the client folder
+app.use(express.static(path.join(__dirname, '../client')));
 
 const server = http.createServer(app);
 const io = new Server(server, {

@@ -6,9 +6,9 @@ const ASSETS = [
   './style.css',
   './app.js?v=3.0',
   './manifest.json',
-  './icon.svg',
-  './icon-192.png',
-  './icon-512.png'
+  './assets/icon.svg',
+  './assets/icon-192.png',
+  './assets/icon-512.png'
 ];
 
 // Install Event - cache core assets
