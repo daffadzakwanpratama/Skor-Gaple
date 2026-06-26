@@ -79,10 +79,23 @@ body {
   display: none;
   min-height: 100vh;
   padding-bottom: 3rem;
+  opacity: 0;
 }
 
 .page.active {
   display: block;
+  animation: pixelPageEnter 0.38s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+@keyframes pixelPageEnter {
+  0% {
+    opacity: 0;
+    transform: translateY(15px) scale(0.985);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 /* ---------- HOME PAGE ---------- */
@@ -515,7 +528,7 @@ body {
 
 .status-badge {
   font-family: var(--font-title);
-  font-size: 0.55rem;
+  font-size: 0.7rem;
   padding: 0.35rem 0.6rem;
   border: var(--border-width) solid var(--border-color);
   flex-shrink: 0;
@@ -567,7 +580,7 @@ body {
 
 .round-badge {
   font-family: var(--font-title);
-  font-size: 0.6rem;
+  font-size: 0.72rem;
   color: var(--text-primary);
   background: var(--accent-gold);
   padding: 0.3rem 0.6rem;
@@ -593,6 +606,8 @@ body {
   position: relative;
   border-radius: 12px;
   transition: all var(--transition);
+  opacity: 0;
+  animation: pixelCardReveal 0.45s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
 }
 
 .lb-item:hover {
@@ -798,12 +813,13 @@ body {
 
 .score-input-field {
   width: 125px;
-  padding: 0.6rem 0.8rem;
+  height: 48px;
+  padding: 0;
   border: var(--border-width) solid var(--border-color);
   border-radius: 6px;
   font-family: var(--font-pixel);
   font-weight: 800;
-  font-size: 1.9rem; /* Extra large font for input */
+  font-size: 1.6rem; /* Extra large font for input */
   text-align: center;
   color: var(--text-primary);
   background: var(--bg);
@@ -839,6 +855,8 @@ body {
   background: var(--card);
   box-shadow: var(--pixel-shadow-sm);
   overflow: hidden;
+  opacity: 0;
+  animation: pixelCardReveal 0.45s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
 }
 
 .round-card-header {
@@ -1713,10 +1731,10 @@ body {
   cursor: pointer;
   color: var(--text-primary);
   font-family: var(--font-title);
-  font-size: 0.95rem;
+  font-size: 1.15rem;
   font-weight: bold;
-  width: 40px;
-  height: 40px;
+  width: 48px;
+  height: 48px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1724,6 +1742,7 @@ body {
   transition: transform var(--transition), box-shadow var(--transition), background-color var(--transition);
   user-select: none;
   flex-shrink: 0;
+  border-radius: 6px;
 }
 
 .btn-minus-toggle:hover {
@@ -1774,16 +1793,17 @@ body {
 .minus-opt-btn {
   background: #ECEFF1;
   border: 2px solid var(--border-color);
-  font-family: var(--font-title);
-  font-size: 0.55rem;
-  font-weight: bold;
-  padding: 6px 8px;
+  font-family: var(--font-pixel);
+  font-size: 0.92rem;
+  font-weight: 800;
+  padding: 8px 12px;
   cursor: pointer;
-  box-shadow: 1px 1px 0px var(--border-color);
+  box-shadow: 1.5px 1.5px 0px var(--border-color);
   transition: transform var(--transition), box-shadow var(--transition), background-color var(--transition);
   color: var(--text-primary);
   user-select: none;
   white-space: nowrap;
+  border-radius: 4px;
 }
 
 .minus-opt-btn:hover {
@@ -2513,9 +2533,9 @@ body {
 }
 
 .stats-row-val {
-  font-family: var(--font-title);
-  font-size: 0.55rem;
-  font-weight: bold;
+  font-family: var(--font-pixel);
+  font-size: 1.2rem;
+  font-weight: 800;
   width: 50px;
   text-align: center;
   color: var(--text-primary);
@@ -2553,4 +2573,15 @@ body {
 @keyframes pixelFlash {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.45; }
+}
+
+@keyframes pixelCardReveal {
+  0% {
+    opacity: 0;
+    transform: translateY(12px) scale(0.975);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }

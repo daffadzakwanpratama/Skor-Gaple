@@ -617,7 +617,27 @@ document.addEventListener('DOMContentLoaded', () => {
   renderHomePage();
   renderSetupPlayerInputs();
   updateMuteIcon();
-  showPage('home');
+
+  // Restore active page on refresh
+  try {
+    const savedPage = localStorage.getItem('gaple_activePage') || 'home';
+    if (savedPage === 'dashboard' && state.currentGame && state.currentGame.status === 'active') {
+      resumeGame();
+    } else if (savedPage === 'gameover' && state.currentGame) {
+      renderGameOver();
+      showPage('gameover');
+    } else if (savedPage === 'history') {
+      showHistory();
+    } else if (savedPage === 'stats') {
+      showStatsPage();
+    } else if (savedPage === 'setup') {
+      showPage('setup');
+    } else {
+      showPage('home');
+    }
+  } catch (e) {
+    showPage('home');
+  }
 });
 
 // Close minus options popovers when clicking outside
@@ -666,6 +686,13 @@ function showPage(pageId) {
   if (target) target.classList.add('active');
   if (pageId === 'home') {
     renderHomePage();
+  }
+  
+  // Track page to persist on refresh
+  try {
+    localStorage.setItem('gaple_activePage', pageId);
+  } catch (e) {
+    console.warn('LocalStorage write failed:', e);
   }
 }
 
@@ -949,6 +976,7 @@ function renderLeaderboard() {
     const item = document.createElement('div');
     const onFire = isPlayerOnFire(p.idx);
     item.className = `lb-item${onFire ? ' fire-border' : ''}`;
+    item.style.animationDelay = `${rank * 0.05}s`;
     const barPct = maxScore > 0 ? Math.round((p.total / 100) * 100) : 0;
 
     // Tentukan warna progress bar berdasarkan tingkat bahaya (skor mendekati 100)
@@ -1109,6 +1137,7 @@ function renderRoundHistory() {
     const realIdx = g.rounds.length - 1 - revIdx;
     const card = document.createElement('div');
     card.className = 'round-card';
+    card.style.animationDelay = `${Math.min(revIdx, 5) * 0.05}s`;
 
     const isDone = g.status === 'done';
     const actionsHtml = isDone ? '' : `
@@ -1122,7 +1151,7 @@ function renderRoundHistory() {
       return `
         <div class="round-score-row" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.25rem;">
           <span class="round-score-name">${renderPlayerBadgeHTML(p, 'sm')}</span>
-          <span class="round-score-val ${cls}" style="font-family: var(--font-title); font-size: 0.75rem;">${score >= 0 ? '+' : ''}${score}</span>
+          <span class="round-score-val ${cls}">${score >= 0 ? '+' : ''}${score}</span>
         </div>
       `;
     }).join('');
@@ -2882,7 +2911,7 @@ function renderOnlineRoundHistory(rounds) {
       return `
         <div class="round-score-row" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.25rem;">
           <span class="round-score-name">${renderPlayerBadgeHTML(mockPlayer, 'sm')}</span>
-          <span class="round-score-val ${cls}" style="font-family: var(--font-title); font-size: 0.75rem;">${item.score >= 0 ? '+' : ''}${item.score}</span>
+          <span class="round-score-val ${cls}">${item.score >= 0 ? '+' : ''}${item.score}</span>
         </div>
       `;
     }).join('');
@@ -3341,7 +3370,7 @@ function renderStatsList(statsArray) {
       </div>
       <div class="stats-row-right">
         <span class="stats-row-val" title="Total Main">${p.matchesPlayed}</span>
-        <span class="stats-row-val" title="Total Menang" style="color: var(--accent-orange); font-size: 0.8rem;">${p.matchesWon}</span>
+        <span class="stats-row-val" title="Total Menang" style="color: var(--accent-orange);">${p.matchesWon}</span>
       </div>
     `;
     list.appendChild(row);
