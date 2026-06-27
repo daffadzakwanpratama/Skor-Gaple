@@ -12,7 +12,7 @@
   <link
     href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&family=Inter:wght@400;600;800&display=swap"
     rel="stylesheet" />
-  <link rel="stylesheet" href="style.css?v=2.8" />
+  <link rel="stylesheet" href="style.css?v=3.0" />
   <link rel="manifest" href="manifest.json" />
   <link rel="icon" type="image/svg+xml" href="assets/icon.svg" />
   <meta name="theme-color" content="#1A1C1E" />
@@ -23,49 +23,53 @@
 
 <body>
 
+  <!-- Background Glass Blobs -->
+  <div class="glass-blob glass-blob-1"></div>
+  <div class="glass-blob glass-blob-2"></div>
+  <div class="glass-blob glass-blob-3"></div>
+
   <!-- ===== PAGE: HOME ===== -->
   <div id="page-home" class="page active">
     <div class="home-container">
       <div class="home-logo">
         <svg width="180" height="180" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"
-          style="image-rendering: pixelated; filter: drop-shadow(4px 4px 0px #1A1C1E);">
+          style="filter: drop-shadow(0 8px 24px rgba(0, 229, 255, 0.25)) drop-shadow(0 8px 24px rgba(224, 64, 251, 0.25));">
+          <defs>
+            <linearGradient id="glassGrad1" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="rgba(255, 255, 255, 0.25)" />
+              <stop offset="100%" stop-color="rgba(255, 255, 255, 0.05)" />
+            </linearGradient>
+            <linearGradient id="glassGrad2" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="rgba(255, 255, 255, 0.3)" />
+              <stop offset="100%" stop-color="rgba(255, 255, 255, 0.08)" />
+            </linearGradient>
+            <linearGradient id="neonRed" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#FF5252" />
+              <stop offset="100%" stop-color="#FF1744" />
+            </linearGradient>
+            <filter id="neonGlow" x="-20%" y="-20%" width="140%" height="140%">
+              <feGaussianBlur stdDeviation="1.5" result="blur" />
+              <feComposite in="SourceGraphic" in2="blur" operator="over" />
+            </filter>
+          </defs>
           <!-- Left Domino Card (tilted slightly left) -->
           <g transform="translate(18, 10) rotate(-8 25 40)">
-            <!-- Card Base -->
-            <rect x="2" y="2" width="36" height="64" rx="4" fill="#1A1C1E" />
-            <rect x="5" y="5" width="30" height="58" rx="2" fill="#FFFFFF" />
-            <!-- Divider -->
-            <rect x="5" y="33" width="30" height="3" fill="#FF5252" />
-            <!-- Dots Top (1 dot in center) -->
-            <rect x="17.5" y="16.5" width="5" height="5" fill="#FF5252" />
-
-            <!-- Dots Bottom (5 dots in X shape) -->
-            <!-- Top-left -->
-            <rect x="10" y="41" width="5" height="5" fill="#FF5252" />
-            <!-- Top-right -->
-            <rect x="25" y="41" width="5" height="5" fill="#FF5252" />
-            <!-- Center -->
-            <rect x="17.5" y="49" width="5" height="5" fill="#FF5252" />
-            <!-- Bottom-left -->
-            <rect x="10" y="57" width="5" height="5" fill="#FF5252" />
-            <!-- Bottom-right -->
-            <rect x="25" y="57" width="5" height="5" fill="#FF5252" />
+            <rect x="2" y="2" width="36" height="64" rx="8" fill="url(#glassGrad1)" stroke="rgba(255, 255, 255, 0.3)" stroke-width="1.5" />
+            <rect x="5" y="33" width="30" height="2" rx="1" fill="url(#neonRed)" filter="url(#neonGlow)" />
+            <circle cx="20" cy="19" r="3.5" fill="url(#neonRed)" filter="url(#neonGlow)" />
+            <circle cx="11" cy="42" r="3" fill="url(#neonRed)" filter="url(#neonGlow)" />
+            <circle cx="29" cy="42" r="3" fill="url(#neonRed)" filter="url(#neonGlow)" />
+            <circle cx="20" cy="50" r="3.5" fill="url(#neonRed)" filter="url(#neonGlow)" />
+            <circle cx="11" cy="58" r="3" fill="url(#neonRed)" filter="url(#neonGlow)" />
+            <circle cx="29" cy="58" r="3" fill="url(#neonRed)" filter="url(#neonGlow)" />
           </g>
-
           <!-- Right Domino Card (tilted slightly right) -->
           <g transform="translate(46, 12) rotate(12 25 40)">
-            <!-- Card Base -->
-            <rect x="2" y="2" width="36" height="64" rx="4" fill="#1A1C1E" />
-            <rect x="5" y="5" width="30" height="58" rx="2" fill="#FFFFFF" />
-            <!-- Divider -->
-            <rect x="5" y="33" width="30" height="3" fill="#FF5252" />
-
-            <!-- Dots Top (3 dots diagonal) -->
-            <rect x="10" y="9" width="5" height="5" fill="#FF5252" />
-            <rect x="17.5" y="18" width="5" height="5" fill="#FF5252" />
-            <rect x="25" y="27" width="5" height="5" fill="#FF5252" />
-
-            <!-- Dots Bottom (blank) -->
+            <rect x="2" y="2" width="36" height="64" rx="8" fill="url(#glassGrad2)" stroke="rgba(255, 255, 255, 0.4)" stroke-width="1.5" />
+            <rect x="5" y="33" width="30" height="2" rx="1" fill="url(#neonRed)" filter="url(#neonGlow)" />
+            <circle cx="11" cy="11" r="3" fill="url(#neonRed)" filter="url(#neonGlow)" />
+            <circle cx="20" cy="19" r="3" fill="url(#neonRed)" filter="url(#neonGlow)" />
+            <circle cx="29" cy="27" r="3" fill="url(#neonRed)" filter="url(#neonGlow)" />
           </g>
         </svg>
       </div>
@@ -93,7 +97,7 @@
 
   <!-- ===== PAGE: ONLINE SETUP ===== -->
   <div id="page-online-setup" class="page">
-    <div class="page-header" style="background: #E8EAF6;">
+    <div class="page-header">
       <button class="btn-back" onclick="showPage('home')" title="Kembali">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
           stroke-linecap="round" stroke-linejoin="round">
@@ -104,7 +108,7 @@
       <h2 class="page-title">Main Online</h2>
     </div>
     <div class="setup-container">
-      <div style="text-align: center; margin-bottom: 2rem; padding: 1.25rem; border: var(--border-width) solid var(--border-color); background: #FFFDE7; box-shadow: var(--pixel-shadow); display: flex; flex-direction: column; align-items: center; justify-content: center;">
+      <div class="section-card" style="text-align: center; margin-bottom: 2rem; padding: 1.25rem; display: flex; flex-direction: column; align-items: center; justify-content: center;">
         <p class="form-label" style="font-size: 0.65rem; margin-bottom: 0.5rem;">Profil Anda</p>
         <div id="online-profile-preview" style="margin-bottom: 1rem;">
           <!-- Badge preview rendered dynamically -->
@@ -113,14 +117,14 @@
       </div>
 
       <!-- Create Room Card -->
-      <div class="section-card" style="border: var(--border-width) solid var(--border-color); box-shadow: var(--pixel-shadow); background: #FFF; padding: 1.5rem; margin-bottom: 2rem;">
+      <div class="section-card" style="padding: 1.5rem; margin-bottom: 2rem;">
         <h3 class="section-title" style="margin-bottom: 1rem;">Buat Ruangan</h3>
         <p class="form-hint" style="margin-bottom: 1.25rem;">Buat room baru dan undang teman bermain menggunakan kode.</p>
         <button class="btn btn-primary btn-full" onclick="createRoomOnline()">Buat Room</button>
       </div>
 
       <!-- Join Room Card -->
-      <div class="section-card" style="border: var(--border-width) solid var(--border-color); box-shadow: var(--pixel-shadow); background: #FFF; padding: 1.5rem;">
+      <div class="section-card" style="padding: 1.5rem;">
         <h3 class="section-title" style="margin-bottom: 1rem;">Gabung Ruangan</h3>
         <div class="form-group" style="margin-bottom: 1.25rem;">
           <input id="online-join-code" class="form-input" type="text" placeholder="KODE ROOM (Contoh: X8JK29)" maxlength="10" style="text-align: center; text-transform: uppercase;" />
@@ -132,7 +136,7 @@
 
   <!-- ===== PAGE: ONLINE LOBBY ===== -->
   <div id="page-online-lobby" class="page">
-    <div class="page-header" style="background: #E8EAF6;">
+    <div class="page-header">
       <button class="btn-back" onclick="exitRoomOnline()" title="Keluar Room">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
           stroke-linecap="round" stroke-linejoin="round">
@@ -143,9 +147,9 @@
       <h2 class="page-title">Ruang Tunggu</h2>
     </div>
     <div class="setup-container">
-      <div style="text-align: center; margin-bottom: 2rem; padding: 1.25rem; border: var(--border-width) solid var(--border-color); background: var(--rank-2-bg); box-shadow: var(--pixel-shadow);">
+      <div class="section-card" style="text-align: center; margin-bottom: 2rem; padding: 1.25rem;">
         <p class="form-label" style="font-size: 0.65rem; margin-bottom: 0.4rem;">Kode Ruangan</p>
-        <h1 id="lobby-code-display" style="font-family: var(--font-title); font-size: 1.8rem; letter-spacing: 2px; color: var(--text-primary); text-shadow: 2px 2px 0px #FFF; margin-bottom: 0.75rem;">------</h1>
+        <h1 id="lobby-code-display" style="font-family: var(--font-title); font-size: 1.8rem; letter-spacing: 2px; color: var(--text-primary); margin-bottom: 0.75rem;">------</h1>
         <button class="btn btn-sm btn-outline" onclick="copyLobbyCode()">Salin Kode 📋</button>
       </div>
 
@@ -189,7 +193,7 @@
         <button id="btn-start-online-match" class="btn btn-primary btn-lg btn-full" onclick="startOnlineMatch()">Mulai Main 🚀</button>
       </div>
 
-      <div id="lobby-guest-message" class="hidden" style="text-align: center; padding: 1.5rem; border: var(--border-width) solid var(--border-color); background: var(--rank-1-bg); box-shadow: var(--pixel-shadow-sm);">
+      <div id="lobby-guest-message" class="section-card hidden" style="text-align: center; padding: 1.5rem;">
         <p class="form-hint" style="animation: retroFloat 1.5s ease-in-out infinite;">Menunggu Host memulai permainan...</p>
       </div>
     </div>
@@ -807,32 +811,32 @@
       </div>
 
       <div style="flex: 1; overflow-y: auto; padding-right: 0.25rem;">
-        <div class="stats-detail-grid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.75rem; margin-bottom: 1.5rem;">
+        <div class="stats-detail-grid">
           <!-- Card: Total Main -->
-          <div class="stats-detail-card" style="border: 2.5px solid var(--border-color); padding: 0.75rem; border-radius: 8px; text-align: center; background: #F8FAFC; box-shadow: var(--pixel-shadow-sm);">
+          <div class="stats-detail-card">
             <div style="font-size: 0.65rem; color: var(--text-secondary); text-transform: uppercase; font-weight: bold; margin-bottom: 0.25rem;">Main</div>
             <div id="stat-detail-matches" style="font-size: 1.8rem; font-weight: 800; color: var(--text-primary);">0</div>
           </div>
           <!-- Card: Total Menang -->
-          <div class="stats-detail-card" style="border: 2.5px solid var(--border-color); padding: 0.75rem; border-radius: 8px; text-align: center; background: #FFFDF0; box-shadow: var(--pixel-shadow-sm);">
+          <div class="stats-detail-card">
             <div style="font-size: 0.65rem; color: var(--text-secondary); text-transform: uppercase; font-weight: bold; margin-bottom: 0.25rem;">Menang</div>
             <div id="stat-detail-wins" style="font-size: 1.8rem; font-weight: 800; color: var(--accent-orange);">0</div>
           </div>
           <!-- Card: Win Rate -->
-          <div class="stats-detail-card" style="border: 2.5px solid var(--border-color); padding: 0.75rem; border-radius: 8px; text-align: center; background: #F0F9FF; box-shadow: var(--pixel-shadow-sm);">
+          <div class="stats-detail-card">
             <div style="font-size: 0.65rem; color: var(--text-secondary); text-transform: uppercase; font-weight: bold; margin-bottom: 0.25rem;">Win Rate</div>
             <div id="stat-detail-winrate" style="font-size: 1.8rem; font-weight: 800; color: #3B82F6;">0%</div>
           </div>
           <!-- Card: Win Streak Terpanjang -->
-          <div class="stats-detail-card" style="border: 2.5px solid var(--border-color); padding: 0.75rem; border-radius: 8px; text-align: center; background: #FDF2F8; box-shadow: var(--pixel-shadow-sm);">
+          <div class="stats-detail-card">
             <div style="font-size: 0.65rem; color: var(--text-secondary); text-transform: uppercase; font-weight: bold; margin-bottom: 0.25rem;">Win Streak</div>
             <div id="stat-detail-streak" style="font-size: 1.8rem; font-weight: 800; color: #EC4899;">0</div>
           </div>
         </div>
 
         <!-- Momen Spesial Section -->
-        <div style="border: 2.5px solid var(--border-color); padding: 1rem; border-radius: 10px; background: #FFF; box-shadow: var(--pixel-shadow-sm); margin-bottom: 0.5rem;">
-          <h4 style="font-family: var(--font-title); font-size: 0.6rem; text-transform: uppercase; margin-bottom: 0.75rem; border-bottom: 1.5px solid var(--border-color); padding-bottom: 0.4rem; color: var(--text-primary);">Momen Spesial</h4>
+        <div class="section-card" style="padding: 1rem; margin-bottom: 0.5rem;">
+          <h4 style="font-family: var(--font-title); font-size: 0.6rem; text-transform: uppercase; margin-bottom: 0.75rem; border-bottom: 1px solid rgba(255, 255, 255, 0.1); padding-bottom: 0.4rem; color: var(--text-primary);">Momen Spesial</h4>
           <div style="display: flex; flex-direction: column; gap: 0.5rem;">
             <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem;">
               <span>🀱 Gaple (-20)</span>

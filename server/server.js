@@ -14,6 +14,7 @@ app.use(cors());
 
 // Serve static files from the client folder
 app.use(express.static(path.join(__dirname, '../client')));
+app.use(express.static(path.join(__dirname, '../')));
 
 const server = http.createServer(app);
 const io = new Server(server, {
