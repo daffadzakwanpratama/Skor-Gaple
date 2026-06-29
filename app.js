@@ -940,6 +940,18 @@ function getFirstPlayerIndex() {
   return latestRound.scores.indexOf(-10);
 }
 
+function hexToRgba(hex, alpha) {
+  if (!hex) return `rgba(255, 255, 255, ${alpha})`;
+  let c = hex.replace('#', '');
+  if (c.length === 3) {
+    c = c[0] + c[0] + c[1] + c[1] + c[2] + c[2];
+  }
+  const r = parseInt(c.substring(0, 2), 16);
+  const g = parseInt(c.substring(2, 4), 16);
+  const b = parseInt(c.substring(4, 6), 16);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
 function renderLeaderboard() {
   const g = state.currentGame;
   if (!g) return;
@@ -977,6 +989,17 @@ function renderLeaderboard() {
     const onFire = isPlayerOnFire(p.idx);
     item.className = `lb-item${onFire ? ' fire-border' : ''}`;
     item.style.animationDelay = `${rank * 0.05}s`;
+
+    // Dynamic background and border color based on player custom color
+    const playerColor = p.color || '#FF5252';
+    const bgVal = `linear-gradient(135deg, ${hexToRgba(playerColor, 0.22)} 0%, ${hexToRgba(playerColor, 0.08)} 100%)`;
+    const borderVal = hexToRgba(playerColor, 0.45);
+    const shadowVal = `0 8px 24px ${hexToRgba(playerColor, 0.2)}`;
+
+    item.style.setProperty('background', bgVal, 'important');
+    item.style.setProperty('border-color', borderVal, 'important');
+    item.style.setProperty('box-shadow', shadowVal, 'important');
+
     const barPct = maxScore > 0 ? Math.round((p.total / 100) * 100) : 0;
 
     // Tentukan warna progress bar berdasarkan tingkat bahaya (skor mendekati 100)
@@ -2107,6 +2130,31 @@ function updateCustomizerPreview() {
   }
 }
 
+function getUsedColorsByOthers(mode, currentIdx) {
+  const usedColors = [];
+  if (mode === 'setup') {
+    const count = typeof setupPlayerCount !== 'undefined' ? setupPlayerCount : 4;
+    for (let i = 0; i < count; i++) {
+      if (i === currentIdx) continue;
+      const data = setupPlayerData[i];
+      if (data && data.color) {
+        usedColors.push(data.color.toUpperCase());
+      }
+    }
+  } else {
+    const g = state.currentGame;
+    if (g && g.players) {
+      g.players.forEach((p, i) => {
+        if (i === currentIdx) return;
+        if (p.color) {
+          usedColors.push(p.color.toUpperCase());
+        }
+      });
+    }
+  }
+  return usedColors;
+}
+
 function openCustomizePlayerModal(mode, idx) {
   customizerContext.mode = mode;
   customizerContext.playerIndex = idx;
@@ -2133,6 +2181,24 @@ function openCustomizePlayerModal(mode, idx) {
   document.getElementById('custom-player-name').value = name;
   document.getElementById('custom-player-avatar').value = avatar;
   document.getElementById('custom-player-color').value = color;
+
+  // Update color options availability for other players
+  const usedColors = getUsedColorsByOthers(mode, idx);
+  document.querySelectorAll('.color-opt').forEach(btn => {
+    const btnId = btn.id || '';
+    const colorHex = '#' + btnId.replace('color-opt-', '');
+    if (usedColors.includes(colorHex.toUpperCase())) {
+      btn.style.opacity = '0.15';
+      btn.style.cursor = 'not-allowed';
+      btn.style.pointerEvents = 'none';
+      btn.title = 'Sudah digunakan oleh pemain lain';
+    } else {
+      btn.style.opacity = '1';
+      btn.style.cursor = 'pointer';
+      btn.style.pointerEvents = 'auto';
+      btn.title = '';
+    }
+  });
 
   selectCustomAvatar(avatar);
   selectCustomColor(color);
