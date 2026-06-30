@@ -1015,7 +1015,10 @@ function renderLeaderboard() {
       <div class="lb-item-inner">
         <div class="lb-name" style="cursor: pointer; display: inline-flex; align-items: center; gap: 0.5rem;" onclick="openRenamePlayerModal(${p.idx})" title="Klik untuk kustomisasi pemain">
           ${renderPlayerBadgeHTML(p)}
-          <span style="font-size: 0.75rem; opacity: 0.6; display: inline-block; vertical-align: middle;">✏️</span>
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="opacity: 0.6; display: inline-block; vertical-align: middle;">
+            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+            <path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+          </svg>
           ${dealerBadge}
           ${firstBadge}
         </div>
@@ -1616,7 +1619,12 @@ function renderHistoryList(gamesArray) {
   if (!gamesArray || gamesArray.length === 0) {
     container.innerHTML = `
       <div class="no-history-games">
-        <span class="empty-icon">📋</span>
+        <span class="empty-icon">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="opacity: 0.5;">
+            <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
+            <rect x="8" y="2" width="8" height="4" rx="1" ry="1" />
+          </svg>
+        </span>
         <p>Belum ada permainan selesai.</p>
       </div>
     `;
@@ -1792,6 +1800,57 @@ function shareHistoryGame() {
       fallbackCopy(text);
     }
   }
+}
+
+function showPreviousGameStats(mode) {
+  if (mode === 'online') {
+    if (socket) {
+      socket.emit('getOnlineHistory', (history) => {
+        const completed = (history || []).filter(g => g.status === 'done');
+        if (completed && completed.length > 0) {
+          state.viewingHistoryList = history;
+          showHistoryDetail(completed[0].id);
+        } else {
+          showToast('Belum ada permainan online sebelumnya 🎮');
+        }
+      });
+    } else {
+      showToast('Koneksi terputus.');
+    }
+  } else {
+    // local mode
+    const completed = (state.allGames || []).filter(g => g.status === 'done');
+    if (completed && completed.length > 0) {
+      state.viewingHistoryList = state.allGames;
+      showHistoryDetail(completed[0].id);
+    } else {
+      showToast('Belum ada permainan lokal sebelumnya 🎮');
+    }
+  }
+}
+
+function executeResetAllData() {
+  const keysToRemove = [
+    'gaple_currentGame',
+    'gaple_allGames',
+    'gaple_setupPlayerData',
+    'gaple_lastPlayerNames',
+    'gaple_lastPlayerCount',
+    'gaple_activePage',
+    'gaple_muted'
+  ];
+  keysToRemove.forEach(k => localStorage.removeItem(k));
+
+  state.currentGame = null;
+  state.allGames = [];
+
+  closeModal('modal-confirm-reset');
+  showToast('Semua data berhasil direset! 🧹');
+
+  showPage('home');
+  setTimeout(() => {
+    window.location.reload();
+  }, 1000);
 }
 
 
@@ -2858,8 +2917,8 @@ function renderOnlineDashboard() {
           `;
         }).join('');
         return `
-          <div style="border: 2px solid #1A1C1E; background: #FFF; padding: 0.5rem; box-shadow: 1.5px 1.5px 0px #000; margin-bottom: 0.5rem;">
-            <div style="font-family: var(--font-title); font-size: 0.55rem; border-bottom: 1.5px solid #1A1C1E; padding-bottom: 2px; margin-bottom: 4px; display: flex; justify-content: space-between;">
+          <div style="border: 2px solid var(--border-color); background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); padding: 0.6rem 0.8rem; border-radius: 8px; margin-bottom: 0.5rem; color: var(--text-primary);">
+            <div style="font-family: var(--font-title); font-size: 0.55rem; border-bottom: 1.5px solid var(--border-color); padding-bottom: 2px; margin-bottom: 4px; display: flex; justify-content: space-between;">
               <span>RONDE ${round.roundNum}</span>
               ${gapleText}
             </div>
@@ -3230,7 +3289,18 @@ function toggleMuteSound() {
 function updateMuteIcon() {
   const btn = document.querySelector('button[onclick="toggleMuteSound()"]');
   if (btn) {
-    btn.textContent = isMuted ? '🔈' : '🔊';
+    btn.innerHTML = isMuted ? `
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+        <line x1="23" y1="9" x2="17" y2="15" />
+        <line x1="17" y1="9" x2="23" y2="15" />
+      </svg>
+    ` : `
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+        <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07" />
+      </svg>
+    `;
   }
 }
 
