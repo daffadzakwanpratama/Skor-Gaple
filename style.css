@@ -81,21 +81,27 @@ body {
   min-height: 100vh;
   padding-bottom: 3rem;
   opacity: 0;
+  width: 100%;
+  max-width: var(--max-w);
+  margin: 0 auto;
+  position: relative;
+  box-sizing: border-box;
+  will-change: opacity, transform;
 }
 
 .page.active {
   display: block;
-  animation: pixelPageEnter 0.38s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  animation: pixelPageEnter 0.24s cubic-bezier(0.25, 1, 0.5, 1) forwards;
 }
 
 @keyframes pixelPageEnter {
   0% {
     opacity: 0;
-    transform: translateY(15px) scale(0.985);
+    transform: translateY(8px);
   }
   100% {
     opacity: 1;
-    transform: translateY(0) scale(1);
+    transform: translateY(0);
   }
 }
 
@@ -205,13 +211,15 @@ body {
   padding: 1.25rem 1.5rem;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
   background: rgba(15, 12, 28, 0.6) !important;
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   position: sticky;
   top: 0;
   z-index: 10;
   box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
   color: #ffffff !important;
+  will-change: transform;
+  transform: translate3d(0, 0, 0);
 }
 
 .page-title {
@@ -633,7 +641,8 @@ body {
   border-radius: 16px !important;
   transition: all var(--transition);
   opacity: 0;
-  animation: pixelCardReveal 0.45s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+  animation: pixelCardReveal 0.3s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+  will-change: opacity, transform;
 }
 
 .lb-item:hover {
@@ -903,7 +912,8 @@ body {
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
   overflow: hidden;
   opacity: 0;
-  animation: pixelCardReveal 0.45s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+  animation: pixelCardReveal 0.3s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+  will-change: opacity, transform;
 }
 
 .round-card-header {
@@ -1388,6 +1398,10 @@ body {
     gap: 0.5rem;
   }
 
+  .history-list-container {
+    padding: 1.5rem 1rem;
+  }
+
   .game-meta {
     gap: 0.4rem;
     flex-wrap: wrap;
@@ -1505,6 +1519,21 @@ body {
   }
 }
 
+@media (min-width: 480px) {
+  .page {
+    border-left: 1px solid rgba(255, 255, 255, 0.08);
+    border-right: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(15, 12, 28, 0.25);
+    box-shadow: 0 0 40px rgba(0, 0, 0, 0.4);
+  }
+}
+
+@media (min-width: 520px) {
+  #page-stats {
+    max-width: 520px;
+  }
+}
+
 @media (min-width: 640px) {
   .home-container {
     max-width: 440px;
@@ -1515,6 +1544,10 @@ body {
 
 /* 2-Column Responsive Dashboard for Desktop Screens */
 @media (min-width: 800px) {
+  #page-dashboard {
+    max-width: 960px;
+  }
+
   .dashboard-body {
     display: grid;
     grid-template-columns: 1.15fr 0.85fr;
@@ -2636,10 +2669,10 @@ body {
 @keyframes pixelCardReveal {
   0% {
     opacity: 0;
-    transform: translateY(12px) scale(0.975);
+    transform: translateY(6px);
   }
   100% {
     opacity: 1;
-    transform: translateY(0) scale(1);
+    transform: translateY(0);
   }
 }
