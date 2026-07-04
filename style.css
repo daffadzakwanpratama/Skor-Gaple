@@ -2677,3 +2677,17 @@ body {
     transform: translateY(0);
   }
 }
+
+/* WhatsApp Share Button Hover Effect */
+.btn-wa-share {
+  transition: all var(--transition);
+}
+.btn-wa-share:hover {
+  transform: translateY(-2px) scale(1.02) !important;
+  box-shadow: 0 8px 24px rgba(37, 211, 102, 0.4) !important;
+  background-color: #128C7E !important; /* Darker WhatsApp green */
+  border-color: #128C7E !important;
+}
+.btn-wa-share:active {
+  transform: translateY(1px) scale(0.98) !important;
+}

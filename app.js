@@ -3154,6 +3154,9 @@ function renderOnlineGameOver(players, rounds, leaderboard) {
   closeModal('modal-round-end');
   stopConfetti();
 
+  // Simpan data game over online agar bisa diakses untuk berbagi ke WhatsApp
+  state.onlineGameOverData = { players, rounds, leaderboard };
+
   const winner = leaderboard[0];
   document.getElementById('gameover-subtitle').textContent = `🏆 ${winner.name} menang dengan ${winner.total} poin terkecil!`;
 
@@ -3585,6 +3588,101 @@ function openPlayerStatsDetail(playerName) {
       detailBadgeAvatar.style.animation = 'pixelAvatarJump 0.5s steps(4) infinite alternate';
     }
   }, 100);
+}
+
+// ─────────────────────────────────────────────
+// WHATSAPP SHARE FUNCTION (KIRIM KESOMBONGAN)
+// ─────────────────────────────────────────────
+function shareGameToWhatsApp() {
+  const leaderboardItems = document.querySelectorAll('#gameover-leaderboard .go-lb-item');
+  if (leaderboardItems.length === 0) {
+    showToast('Data permainan tidak ditemukan!');
+    return;
+  }
+
+  let leaderboardText = '';
+  let highestScore = -Infinity;
+  let biggestLoser = '';
+  let firstPlacePlayer = '';
+
+  leaderboardItems.forEach((item, index) => {
+    const rank = index + 1;
+    const nameElement = item.querySelector('.player-name-text');
+    const name = nameElement ? nameElement.textContent.trim() : `Pemain ${rank}`;
+    const scoreElement = item.querySelector('.go-lb-score');
+    const score = scoreElement ? parseInt(scoreElement.textContent.trim(), 10) : 0;
+
+    let medal = '';
+    if (rank === 1) {
+      medal = '🥇';
+      firstPlacePlayer = name;
+    } else if (rank === 2) {
+      medal = '🥈';
+    } else if (rank === 3) {
+      medal = '🥉';
+    } else {
+      medal = '☠️';
+    }
+
+    leaderboardText += `${medal} *Rank ${rank}: ${name}* — ${score} poin\n`;
+
+    if (score > highestScore) {
+      highestScore = score;
+      biggestLoser = name;
+    }
+  });
+
+  // Cari momen spesial (-30 Dung Tak, -25 Gacor, -20 Gaple)
+  let specialMoments = [];
+  const g = state.currentGame;
+  let roundsData = [];
+  let playersData = [];
+
+  if (g && g.rounds) {
+    roundsData = g.rounds;
+    playersData = g.players;
+  } else if (state.onlineGameOverData && state.onlineGameOverData.rounds) {
+    roundsData = state.onlineGameOverData.rounds;
+    playersData = state.onlineGameOverData.players;
+  }
+
+  if (roundsData.length > 0) {
+    roundsData.forEach((r, roundIdx) => {
+      r.scores.forEach((score, playerIdx) => {
+        if (playersData[playerIdx]) {
+          const playerName = playersData[playerIdx].name;
+          if (score === -30) {
+            specialMoments.push(`🔥 *Ronde ${roundIdx + 1}: ${playerName}* menang telak *Dung Tak (-30 poin)!* ⚔️`);
+          } else if (score === -25) {
+            specialMoments.push(`⚡ *Ronde ${roundIdx + 1}: ${playerName}* menang *Gacor (-25 poin)!* 💥`);
+          } else if (score === -20) {
+            specialMoments.push(`🎴 *Ronde ${roundIdx + 1}: ${playerName}* menang *Gaple (-20 poin)!* 🃏`);
+          }
+        }
+      });
+    });
+  }
+
+  // Susun pesan WhatsApp
+  let message = `🎴 *GAPLE SCORE TRACKER* 🎴\n`;
+  message += `_Permainan selesai! Berikut adalah hasil akhirnya:_\n\n`;
+  message += leaderboardText + `\n`;
+
+  if (biggestLoser) {
+    message += `👑 *Beban Game:* *${biggestLoser}* dengan skor *${highestScore} poin*! 🤡🤣\n\n`;
+  }
+
+  if (specialMoments.length > 0) {
+    message += `✨ *Momen Spektakuler:* \n` + specialMoments.join('\n') + `\n\n`;
+  } else {
+    message += `🏆 Selamat untuk *${firstPlacePlayer}* atas kemenangannya!\n\n`;
+  }
+
+  message += `_Dicatat otomatis menggunakan Gaple Score Tracker._ 🎴`;
+
+  const encodedText = encodeURIComponent(message);
+  const waUrl = `https://api.whatsapp.com/send?text=${encodedText}`;
+  window.open(waUrl, '_blank');
 }
 
 

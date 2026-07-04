@@ -573,8 +573,14 @@
         <div id="gameover-gaple-list" style="display: flex; flex-direction: column; gap: 0.75rem;"></div>
       </div>
 
-      <div class="gameover-actions">
-        <button class="btn btn-primary btn-lg" onclick="startNewGame()">Main Lagi</button>
+      <div class="gameover-actions" style="display: flex; flex-direction: column; gap: 0.75rem; width: 100%; max-width: 320px; margin: 0 auto;">
+        <button class="btn btn-primary btn-lg btn-full" onclick="startNewGame()">Main Lagi</button>
+        <button class="btn btn-outline btn-lg btn-full btn-wa-share" onclick="shareGameToWhatsApp()" style="background: #25D366 !important; border-color: #25D366 !important; color: #FFFFFF !important; display: inline-flex; align-items: center; justify-content: center; gap: 8px;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" style="display: inline-block;">
+            <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946C.06 5.348 5.397.01 12.008.01c3.202.001 6.212 1.246 8.477 3.514 2.266 2.268 3.507 5.28 3.505 8.484-.004 6.657-5.34 11.997-11.953 11.997-2.005-.001-3.973-.502-5.724-1.458L0 24zm6.59-4.846c1.6.95 3.188 1.449 4.625 1.45 5.489.002 9.961-4.47 9.964-9.96.002-2.66-1.033-5.16-2.907-7.036-1.874-1.877-4.374-2.91-7.038-2.91-5.493 0-9.966 4.473-9.969 9.963-.001 1.554.417 3.078 1.212 4.45L1.57 22.448l4.476-1.636zM17.15 13.9c-.3-.15-1.785-.88-2.067-.98-.28-.1-.49-.15-.69.15t-.79.98c-.19.22-.39.25-.69.1-3.05-1.54-4.2-2.73-4.8-3.77-.16-.27-.02-.42.13-.57.13-.13.3-.35.45-.53.15-.17.2-.3.3-.5.1-.2.05-.38-.02-.53-.08-.15-.69-1.67-.95-2.29-.26-.62-.51-.54-.69-.55-.18-.01-.39-.01-.6-.01-.21 0-.55.08-.84.4-.3.32-1.14 1.12-1.14 2.73s1.17 3.16 1.33 3.38c.16.22 2.3 3.52 5.58 4.94.78.34 1.39.54 1.86.69.78.25 1.5.21 2.06.13.62-.09 1.785-.73 2.037-1.44.25-.7.25-1.31.18-1.44-.08-.13-.3-.21-.6-.36z"/>
+          </svg>
+          Kirim Kesombongan
+        </button>
       </div>
     </div>
   </div>
