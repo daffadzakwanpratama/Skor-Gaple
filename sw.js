@@ -70,7 +70,8 @@ self.addEventListener('fetch', event => {
         return networkResponse;
       }).catch(err => {
         // Fallback for document navigation if offline
-        if (event.request.headers.get('accept').includes('text/html')) {
+        const acceptHeader = event.request.headers.get('accept');
+        if (acceptHeader && acceptHeader.includes('text/html')) {
           return caches.match('./index.html');
         }
         throw err;

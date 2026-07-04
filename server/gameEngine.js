@@ -159,7 +159,7 @@ function getLowestSingleCardValue(hand) {
  * Calculates scores for all players when a round ends.
  * Returns the round result object containing winnerId, scores, and win type.
  */
-function calculateScores(hands, board, lastPlayerId, isNormalWin) {
+function calculateScores(hands, board, lastPlayerId, isNormalWin, lastTilePlayed = null) {
   const playerIds = Object.keys(hands);
   const scores = {};
   playerIds.forEach(id => {
@@ -169,12 +169,15 @@ function calculateScores(hands, board, lastPlayerId, isNormalWin) {
   if (isNormalWin) {
     // Normal Win: Someone has 0 cards left
     const winnerId = playerIds.find(id => hands[id].length === 0);
-    const lastTilePlayed = board[board.length - 1]; // Wait, let's find orientation or just look at last played.
-    // To know which card was the closing card, we will need it passed in, or we assume it's the last tile of the board
-    // Let's analyze the last tile:
-    const parts = lastTilePlayed.split('/');
-    const isBalak = parts[0] === parts[1];
-    const balakVal = lastTilePlayed; // e.g. "6/6"
+    const lastTile = lastTilePlayed || (board.length > 0 ? board[board.length - 1] : null);
+    
+    let isBalak = false;
+    let balakVal = null;
+    if (lastTile) {
+      const parts = lastTile.split('/');
+      isBalak = parts[0] === parts[1];
+      balakVal = lastTile; // e.g. "6/6"
+    }
 
     let winType = 'normal';
     let winnerScore = -10;
@@ -213,7 +216,7 @@ function calculateScores(hands, board, lastPlayerId, isNormalWin) {
       winnerId,
       scores,
       type: winType,
-      gapleCard: isGapleBlock ? lastTilePlayed : (isBalak ? lastTilePlayed : null)
+      gapleCard: isGapleBlock ? lastTile : (isBalak ? lastTile : null)
     };
   } else {
     // Blocked (Buntu)
@@ -254,7 +257,7 @@ function calculateScores(hands, board, lastPlayerId, isNormalWin) {
     // - If they caused the block (last player who played the blocking card): they get -20 (Gaple).
     // - If they did not cause the block (passive win): they get 0.
     const isWinnerBlocker = String(winnerId) === String(lastPlayerId);
-    const lastTilePlayed = board[board.length - 1];
+    const lastTile = lastTilePlayed || (board.length > 0 ? board[board.length - 1] : null);
 
     playerIds.forEach(id => {
       if (id === winnerId) {
@@ -268,7 +271,7 @@ function calculateScores(hands, board, lastPlayerId, isNormalWin) {
       winnerId,
       scores,
       type: isWinnerBlocker ? 'gaple' : 'buntu',
-      gapleCard: lastTilePlayed // the blocking card is recorded
+      gapleCard: lastTile // the blocking card is recorded
     };
   }
 }

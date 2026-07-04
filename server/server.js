@@ -131,7 +131,7 @@ function startRound(room) {
   game.status = 'playing';
 
   // Broadcast round start to all players
-  io.to(room.id).emit('gameStateUpdate', getClientGameState(room));
+  broadcastGameState(room);
 
   // Trigger bot if the starting player is a bot
   triggerBotTurnIfNeeded(room);
@@ -153,7 +153,7 @@ function endRound(room, winnerId, isNormalWin) {
   const game = room.game;
   
   // Calculate scores
-  const roundResult = gameEngine.calculateScores(game.hands, game.board, game.lastPlayerId, isNormalWin);
+  const roundResult = gameEngine.calculateScores(game.hands, game.board, game.lastPlayerId, isNormalWin, game.lastTilePlayed);
 
   // Update scores and streaks
   room.players.forEach(p => {
@@ -284,9 +284,9 @@ function triggerBotTurnIfNeeded(room) {
       // Play card
       const { tile, side } = decision;
       
-      // First round first turn rule: if it's the first move of round 1, bot MUST play starting balak
-      if (game.board.length === 0 && game.rounds.length === 0) {
-        const startBalak = game.startingBalakSequence[0];
+      // Starting Balak rule: if it's the first move of the round, bot MUST play starting balak of this round
+      if (game.board.length === 0 && !game.firstPlayerId) {
+        const startBalak = game.startingBalakSequence[game.currentStartingBalakIdx];
         if (hand.includes(startBalak)) {
           // Play the start balak
           makeMove(room, currentPlayer.id, startBalak, 'right');
@@ -319,6 +319,7 @@ function makeMove(room, playerId, tile, side) {
   game.leftValue = result.left;
   game.rightValue = result.right;
   game.lastPlayerId = playerId;
+  game.lastTilePlayed = tile; // save the last played tile
   game.passCount = 0; // reset passes
 
   // Check round win (hand empty)
@@ -335,7 +336,7 @@ function makeMove(room, playerId, tile, side) {
 
   // Advance turn
   game.currentTurnIdx = (game.currentTurnIdx + 1) % room.players.length;
-  io.to(room.id).emit('gameStateUpdate', getClientGameState(room));
+  broadcastGameState(room);
 
   // Trigger next bot if applicable
   triggerBotTurnIfNeeded(room);
@@ -354,14 +355,14 @@ function makePass(room, playerId) {
 
   // Advance turn
   game.currentTurnIdx = (game.currentTurnIdx + 1) % room.players.length;
-  io.to(room.id).emit('gameStateUpdate', getClientGameState(room));
+  broadcastGameState(room);
 
   // Trigger next bot if applicable
   triggerBotTurnIfNeeded(room);
 }
 
 // Helper: Filter state information sent to the clients (hides card hands of other players)
-function getClientGameState(room) {
+function getClientGameState(room, recipientPlayerId = null) {
   const game = room.game;
   if (!game) return null;
 
@@ -370,7 +371,7 @@ function getClientGameState(room) {
     // For each player, we send their own hand, and only the *count* of other players' hands
     clientHands[p.id] = {
       count: game.hands[p.id].length,
-      tiles: game.hands[p.id] // We send the full array, but the client socket listener will filter it!
+      tiles: (p.id === recipientPlayerId) ? game.hands[p.id] : [] // Only send full hand to its owner!
     };
   });
 
@@ -388,6 +389,16 @@ function getClientGameState(room) {
     status: game.status,
     hands: clientHands
   };
+}
+
+// Helper: Broadcast game state updates to each player individually to hide cards
+function broadcastGameState(room) {
+  if (!room || !room.players) return;
+  room.players.forEach(p => {
+    if (!p.isBot) {
+      io.to(p.id).emit('gameStateUpdate', getClientGameState(room, p.id));
+    }
+  });
 }
 
 // WebSocket Listeners
@@ -436,6 +447,12 @@ io.on('connection', socket => {
     }
     if (room.players.length >= 4) {
       socket.emit('errorMsg', 'Ruangan sudah penuh (maks 4 pemain).');
+      return;
+    }
+
+    // Check for duplicate player name in room
+    if (room.players.some(p => p.name.toLowerCase() === name.toLowerCase())) {
+      socket.emit('errorMsg', 'Nama pemain sudah digunakan di ruangan ini.');
       return;
     }
 
@@ -514,6 +531,7 @@ io.on('connection', socket => {
       dealerId: null,
       firstPlayerId: null,
       lastPlayerId: null,
+      lastTilePlayed: null,
       passCount: 0,
       status: 'playing'
     };
@@ -546,11 +564,11 @@ io.on('connection', socket => {
       return;
     }
 
-    // First round first turn validation
-    if (game.board.length === 0 && game.rounds.length === 0) {
+    // Starting Balak validation for the first turn of the round
+    if (game.board.length === 0 && !game.firstPlayerId) {
       const startBalak = game.startingBalakSequence[game.currentStartingBalakIdx];
       if (tile !== startBalak && hand.includes(startBalak)) {
-        socket.emit('errorMsg', `Ronde pertama harus membuang kartu Balak awal (${startBalak})!`);
+        socket.emit('errorMsg', `Ronde ini harus memulai dengan membuang kartu Balak awal (${startBalak})!`);
         return;
       }
     }
@@ -622,6 +640,7 @@ io.on('connection', socket => {
       dealerId: null,
       firstPlayerId: null,
       lastPlayerId: null,
+      lastTilePlayed: null,
       passCount: 0,
       status: 'playing'
     };

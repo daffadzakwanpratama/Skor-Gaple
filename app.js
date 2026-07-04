@@ -797,6 +797,19 @@ function startGame() {
   const players = [];
   const namesToSave = [];
 
+  // Check for duplicate names
+  const uniqueNames = new Set();
+  for (let i = 0; i < setupPlayerCount; i++) {
+    const val = document.getElementById(`player-name-${i}`).value.trim();
+    const name = val || `Pemain ${i + 1}`;
+    if (uniqueNames.has(name.toLowerCase())) {
+      showToast('Nama pemain tidak boleh sama!');
+      document.getElementById(`player-name-${i}`).focus();
+      return;
+    }
+    uniqueNames.add(name.toLowerCase());
+  }
+
   for (let i = 0; i < setupPlayerCount; i++) {
     const val = document.getElementById(`player-name-${i}`).value.trim();
     const name = val || `Pemain ${i + 1}`;
@@ -1000,9 +1013,10 @@ function renderLeaderboard() {
     item.style.setProperty('border-color', borderVal, 'important');
     item.style.setProperty('box-shadow', shadowVal, 'important');
 
-    const barPct = maxScore > 0 ? Math.round((p.total / 100) * 100) : 0;
+    // Logika Bar Darah: Mulai dari 100% saat skor 0, berkurang ke 0% saat skor 100
+    const barPct = Math.max(0, Math.min(100, 100 - p.total));
 
-    // Tentukan warna progress bar berdasarkan tingkat bahaya (skor mendekati 100)
+    // Tentukan warna progress bar berdasarkan tingkat bahaya (skor mendekati 100 / darah menipis)
     let barColorClass = 'bar-success';
     if (p.total >= 80) {
       barColorClass = 'bar-danger';
@@ -1687,7 +1701,8 @@ function showHistoryDetail(gameId) {
     else if (rank === 1) item.style.background = 'var(--rank-2-bg)';
     else if (rank === 2) item.style.background = 'var(--rank-3-bg)';
 
-    const barPct = maxScore > 0 ? Math.round((p.total / 100) * 100) : 0;
+    // Logika Bar Darah: Mulai dari 100% saat skor 0, berkurang ke 0% saat skor 100
+    const barPct = Math.max(0, Math.min(100, 100 - p.total));
     let barColorClass = 'bar-success';
     if (p.total >= 80) {
       barColorClass = 'bar-danger';
@@ -1943,7 +1958,13 @@ document.addEventListener('click', e => {
 let toastTimer = null;
 
 function showToast(msg, duration = 2800) {
-  const el = document.getElementById('toast');
+  let el = document.getElementById('toast');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'toast';
+    el.className = 'toast hidden';
+    document.body.appendChild(el);
+  }
   el.textContent = msg;
   el.classList.remove('hidden');
   if (toastTimer) clearTimeout(toastTimer);
@@ -2345,6 +2366,28 @@ function confirmCustomizePlayer() {
 
   if (!newName) {
     showToast('Nama tidak boleh kosong!');
+    return;
+  }
+
+  // Check for duplicate names
+  let isDuplicate = false;
+  if (mode === 'setup') {
+    for (let i = 0; i < setupPlayerCount; i++) {
+      if (i === idx) continue;
+      const val = document.getElementById(`player-name-${i}`).value.trim() || `Pemain ${i + 1}`;
+      if (val.toLowerCase() === newName.toLowerCase()) {
+        isDuplicate = true;
+        break;
+      }
+    }
+  } else {
+    const g = state.currentGame;
+    if (g && g.players) {
+      isDuplicate = g.players.some((p, i) => i !== idx && p.name.toLowerCase() === newName.toLowerCase());
+    }
+  }
+  if (isDuplicate) {
+    showToast('Nama pemain sudah digunakan!');
     return;
   }
 

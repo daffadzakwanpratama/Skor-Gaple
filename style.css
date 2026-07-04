@@ -2233,6 +2233,7 @@ body {
   box-shadow: 0 0 20px rgba(255, 145, 0, 0.35), inset 0 0 10px rgba(255, 82, 82, 0.1) !important;
   animation: fireFlicker 0.4s infinite alternate ease-in-out !important;
   z-index: 10;
+  opacity: 1 !important; /* Mencegah item tidak terlihat (opacity: 0) akibat konflik animasi entry reveal */
 }
 
 /* Outer fiery glow animation around box */
