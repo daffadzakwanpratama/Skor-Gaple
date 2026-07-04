@@ -3591,7 +3591,7 @@ function openPlayerStatsDetail(playerName) {
 }
 
 // ─────────────────────────────────────────────
-// WHATSAPP SHARE FUNCTION (KIRIM KESOMBONGAN)
+// WHATSAPP SHARE FUNCTION (BAGIKAN KEMENANGAN)
 // ─────────────────────────────────────────────
 function shareGameToWhatsApp() {
   const leaderboardItems = document.querySelectorAll('#gameover-leaderboard .go-lb-item');
