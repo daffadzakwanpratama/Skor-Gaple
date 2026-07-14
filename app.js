@@ -583,10 +583,46 @@ function loadState() {
   }
 }
 
+// Toggle Lite Mode (Performance Mode for low-end devices)
+function toggleLiteMode(init = false) {
+  const isLite = document.body.classList.contains('lite-mode');
+  const newLite = init ? (localStorage.getItem('lite-mode') === 'true') : !isLite;
+  
+  if (newLite) {
+    document.body.classList.add('lite-mode');
+    localStorage.setItem('lite-mode', 'true');
+  } else {
+    document.body.classList.remove('lite-mode');
+    localStorage.setItem('lite-mode', 'false');
+  }
+  
+  // Update Switch UI if elements exist
+  const chk = document.getElementById('chk-lite-mode');
+  const knob = document.getElementById('lite-mode-knob');
+  const switchBg = document.getElementById('lite-mode-switch');
+  const icon = document.getElementById('perf-toggle-icon');
+  
+  if (chk) chk.checked = newLite;
+  if (knob && switchBg) {
+    if (newLite) {
+      knob.style.transform = 'translateX(14px)';
+      switchBg.style.background = 'var(--accent-green)';
+      switchBg.style.borderColor = 'var(--accent-green)';
+      if (icon) icon.textContent = '🍃';
+    } else {
+      knob.style.transform = 'translateX(0)';
+      switchBg.style.background = 'rgba(255,255,255,0.15)';
+      switchBg.style.borderColor = 'rgba(255,255,255,0.2)';
+      if (icon) icon.textContent = '⚡';
+    }
+  }
+}
+
 // ─────────────────────────────────────────────
 // INIT
 // ─────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
+  toggleLiteMode(true);
   loadState();
   loadSetupPlayerData();
   renderAvatarSelectionGrid();
@@ -2084,6 +2120,7 @@ class ConfettiParticle {
 }
 
 function startConfetti() {
+  if (document.body.classList.contains('lite-mode')) return;
   if (!confettiCanvas) initConfetti();
   resizeConfettiCanvas();
   confettiParticles = [];

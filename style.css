@@ -2755,3 +2755,46 @@ body {
     justify-content: center;
   }
 }
+
+/* LITE MODE - HIGH PERFORMANCE OVERRIDES FOR LOW-END DEVICES */
+body.lite-mode {
+  background-image: none !important; /* Disable heavy background grid layers */
+  background-color: #080710 !important;
+}
+
+body.lite-mode * {
+  animation: none !important;
+  transition: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  box-shadow: none !important;
+  text-shadow: none !important;
+  filter: none !important;
+}
+
+/* Use solid colors instead of transparent blurs */
+body.lite-mode .page-header,
+body.lite-mode .dashboard-header {
+  background: #0d0c16 !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+body.lite-mode .round-card,
+body.lite-mode .section-card,
+body.lite-mode .modal-card,
+body.lite-mode .saved-banner,
+body.lite-mode .history-game-card,
+body.lite-mode .lb-item {
+  background: #131124 !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+}
+
+body.lite-mode .player-badge {
+  background-image: none !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+}
+
+body.lite-mode .glass-blob {
+  display: none !important;
+}
