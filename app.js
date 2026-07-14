@@ -2576,7 +2576,7 @@ function showAppreciationOverlay(player, score) {
   document.body.appendChild(overlay);
 
   const sparklesContainer = overlay.querySelector('#appreciation-sparkles-container');
-  if (sparklesContainer) {
+  if (sparklesContainer && !document.body.classList.contains('lite-mode')) {
     for (let i = 0; i < 35; i++) {
       createSparkle(sparklesContainer);
     }
