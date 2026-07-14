@@ -2798,3 +2798,10 @@ body.lite-mode .player-badge {
 body.lite-mode .glass-blob {
   display: none !important;
 }
+
+/* Force visibility of pages and cards since entry animations are disabled in lite mode */
+body.lite-mode .page,
+body.lite-mode .round-card,
+body.lite-mode .lb-item {
+  opacity: 1 !important;
+}
