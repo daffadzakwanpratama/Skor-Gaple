@@ -381,6 +381,8 @@ function getRoundWinnerIndex(round) {
   if (!round || !round.scores || round.scores.length === 0) return -1;
   const minusTwenty = round.scores.indexOf(-20);
   if (minusTwenty !== -1) return minusTwenty;
+  const minusFifteen = round.scores.indexOf(-15);
+  if (minusFifteen !== -1) return minusFifteen;
   const minusTen = round.scores.indexOf(-10);
   if (minusTen !== -1) return minusTen;
 
@@ -950,7 +952,8 @@ function getFirstPlayerIndex() {
   const g = state.currentGame;
   if (!g || g.rounds.length === 0) return -1;
   const latestRound = g.rounds[g.rounds.length - 1];
-  return latestRound.scores.indexOf(-10);
+  const idx15 = latestRound.scores.indexOf(-15);
+  return idx15 !== -1 ? idx15 : latestRound.scores.indexOf(-10);
 }
 
 function hexToRgba(hex, alpha) {
@@ -1074,7 +1077,8 @@ function renderScoreInputs(containerId) {
   } else if (containerId === 'edit-inputs' && state.editingRoundIndex !== null && state.editingRoundIndex > 0) {
     const prevRound = g.rounds[state.editingRoundIndex - 1];
     if (prevRound) {
-      firstPlayerIdx = prevRound.scores.indexOf(-10);
+      const idx15 = prevRound.scores.indexOf(-15);
+      firstPlayerIdx = idx15 !== -1 ? idx15 : prevRound.scores.indexOf(-10);
       gaplePlayerIdx = prevRound.scores.indexOf(-20);
       gapleCardVal = prevRound.gapleCard;
     }
@@ -1230,13 +1234,14 @@ function saveRound() {
     scores.push(num);
   }
 
-  if (!hasAnyInput) {
+  const allZero = scores.every(s => s === 0);
+  if (!hasAnyInput && !allZero) {
     showToast('Masukkan setidaknya satu skor!');
     return;
   }
 
-  // Check if anyone scored -20 (Gaple)
-  const hasGaple = scores.includes(-20);
+  // Check if anyone scored -20 (Gaple) or all scores are 0
+  const hasGaple = scores.includes(-20) || allZero;
   if (hasGaple) {
     state.pendingRound = {
       scores,
@@ -1271,12 +1276,18 @@ function finalizeSaveRound(scores) {
   // Check win condition
   checkGameOver();
 
-  // Beritahu jika ada yang dapat -10 (jalan duluan)
+  // Beritahu jika ada yang dapat -15 atau -10 (jalan duluan)
   const lastRound = g.rounds[g.rounds.length - 1];
-  const minusTenIdx = lastRound ? lastRound.scores.indexOf(-10) : -1;
-  if (minusTenIdx !== -1) {
-    const winnerName = g.players[minusTenIdx].name;
-    showToast(`🎉 ${winnerName} dapat -10! Ronde berikutnya jalan duluan 🚀`, 4000);
+  let firstPlayerIdx = -1;
+  if (lastRound) {
+    const idx15 = lastRound.scores.indexOf(-15);
+    firstPlayerIdx = idx15 !== -1 ? idx15 : lastRound.scores.indexOf(-10);
+  }
+
+  if (firstPlayerIdx !== -1) {
+    const winnerName = g.players[firstPlayerIdx].name;
+    const scoreVal = lastRound.scores[firstPlayerIdx];
+    showToast(`🎉 ${winnerName} dapat ${scoreVal}! Ronde berikutnya jalan duluan 🚀`, 4000);
   } else {
     showToast(`Ronde ${g.rounds.length} disimpan ✓`);
   }
@@ -1373,13 +1384,11 @@ function renderGameOver() {
   g.rounds.forEach((r, roundIdx) => {
     if (r.gapleCard) {
       const playerIdx = r.scores.indexOf(-20);
-      if (playerIdx !== -1) {
-        gapleRounds.push({
-          roundNum: roundIdx + 1,
-          player: g.players[playerIdx],
-          card: r.gapleCard
-        });
-      }
+      gapleRounds.push({
+        roundNum: roundIdx + 1,
+        player: playerIdx !== -1 ? g.players[playerIdx] : null,
+        card: r.gapleCard
+      });
     }
   });
 
@@ -1391,7 +1400,7 @@ function renderGameOver() {
       row.style.borderColor = 'var(--primary)';
       row.innerHTML = `
         <div class="go-lb-name" style="font-size: 1.6rem; display: inline-flex; align-items: center; gap: 0.5rem;">
-          Ronde ${gr.roundNum}: ${renderPlayerBadgeHTML(gr.player, 'sm')}
+          Ronde ${gr.roundNum}: ${gr.player ? renderPlayerBadgeHTML(gr.player, 'sm') : 'Semua Skor 0'}
         </div>
         <div class="go-lb-score" style="color: var(--primary); font-size: 1.2rem; font-weight: bold;">BALAK ${gr.card}</div>
       `;
@@ -1489,8 +1498,9 @@ function saveEditRound() {
     scores.push(num);
   }
 
-  // Check if anyone scored -20 (Gaple)
-  const hasGaple = scores.includes(-20);
+  // Check if anyone scored -20 (Gaple) or all scores are 0
+  const allZero = scores.every(s => s === 0);
+  const hasGaple = scores.includes(-20) || allZero;
   if (hasGaple) {
     state.pendingRound = {
       scores,
@@ -1760,6 +1770,17 @@ function showHistoryDetail(gameId) {
     });
   }
 
+  const btnResume = document.getElementById('btn-resume-history');
+  if (btnResume) {
+    const maxScore = Math.max(...game.players.map(p => p.total), 0);
+    const isLocal = state.allGames.some(ag => ag.id === game.id);
+    if (isLocal && maxScore < 100) {
+      btnResume.style.display = 'inline-flex';
+    } else {
+      btnResume.style.display = 'none';
+    }
+  }
+
   openModal('modal-history-detail');
 }
 
@@ -1784,6 +1805,8 @@ function shareHistoryGame() {
       if (pIdx !== -1) {
         const p = g.players[pIdx];
         gapleEvents.push(`• Ronde ${idx + 1}: ${getAvatarEmoji(p.avatar)} ${p.name} (Balak ${r.gapleCard})`);
+      } else {
+        gapleEvents.push(`• Ronde ${idx + 1}: Semua Skor 0 (Balak ${r.gapleCard})`);
       }
     }
   });
@@ -1895,6 +1918,8 @@ function copyResult() {
       if (pIdx !== -1) {
         const p = g.players[pIdx];
         gapleEvents.push(`• Ronde ${idx + 1}: ${getAvatarEmoji(p.avatar)} ${p.name} (Balak ${r.gapleCard})`);
+      } else {
+        gapleEvents.push(`• Ronde ${idx + 1}: Semua Skor 0 (Balak ${r.gapleCard})`);
       }
     }
   });
@@ -3648,6 +3673,10 @@ function shareGameToWhatsApp() {
 
   if (roundsData.length > 0) {
     roundsData.forEach((r, roundIdx) => {
+      const hasNeg20 = r.scores.includes(-20);
+      if (r.gapleCard && !hasNeg20 && r.scores.every(s => s === 0)) {
+        specialMoments.push(`🎴 *Ronde ${roundIdx + 1}:* Momen *Gaple (Semua Skor 0)* dengan *Balak ${r.gapleCard}!* 🃏`);
+      }
       r.scores.forEach((score, playerIdx) => {
         if (playersData[playerIdx]) {
           const playerName = playersData[playerIdx].name;
@@ -3683,6 +3712,56 @@ function shareGameToWhatsApp() {
   const encodedText = encodeURIComponent(message);
   const waUrl = `https://api.whatsapp.com/send?text=${encodedText}`;
   window.open(waUrl, '_blank');
+}
+
+function resumeHistoryGame() {
+  const game = state.viewingHistoryGame;
+  if (!game) return;
+
+  const maxScore = Math.max(...game.players.map(p => p.total), 0);
+  if (maxScore >= 100) {
+    showToast('Game ini tidak bisa dilanjutkan karena skor sudah mencapai 100 atau lebih.');
+    return;
+  }
+
+  // Ask confirmation if there's already an active local game
+  if (state.currentGame && state.currentGame.status === 'active') {
+    if (!confirm('Game yang sedang berlangsung akan diarsipkan (status: Selesai). Anda yakin ingin melanjutkan game ini?')) {
+      return;
+    }
+    // Archive current game
+    const current = state.currentGame;
+    current.status = 'done';
+    const existing = state.allGames.findIndex(ag => ag.id === current.id);
+    if (existing >= 0) {
+      state.allGames[existing] = { ...current };
+    } else {
+      state.allGames.unshift({ ...current });
+    }
+  }
+
+  // Resume the selected game
+  const resumedGame = { ...game };
+  resumedGame.status = 'active';
+  state.currentGame = resumedGame;
+
+  // Remove from state.allGames because it is now active
+  state.allGames = state.allGames.filter(ag => ag.id !== resumedGame.id);
+
+  saveState();
+  closeModal('modal-history-detail');
+
+  try {
+    renderHistoryListPage();
+  } catch (e) {
+    console.warn(e);
+  }
+
+  // Check if we also need to close the main history page
+  // The user might be viewing history or home page
+  renderDashboard();
+  showPage('dashboard');
+  showToast('Melanjutkan permainan... 🎮');
 }
 
 
