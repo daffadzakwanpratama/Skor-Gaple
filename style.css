@@ -3205,10 +3205,6 @@ body.kemerdekaan-mode .score-input-field::placeholder {
 }
 
 /* ── 10. SETUP PAGE (Forms, Inputs, Domino selectors) ── */
-body.kemerdekaan-mode .setup-container,
-body.kemerdekaan-mode .home-container {
-  /* Inherit dark bg, no override needed */
-}
 
 body.kemerdekaan-mode .form-label {
   color: #CBD5E1 !important;
