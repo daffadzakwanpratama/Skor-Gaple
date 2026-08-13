@@ -25,7 +25,19 @@
     if (localStorage.getItem('lite-mode') === 'true') {
       document.body.classList.add('lite-mode');
     }
-    if (localStorage.getItem('kemerdekaan-mode') !== 'false') {
+    
+    // Auto-active kemerdekaan mode from Aug 1st to Aug 19th of any year by default
+    const now = new Date();
+    const isAugust = now.getMonth() === 7;
+    const isBeforeOrOn19 = now.getDate() <= 19;
+    const defaultKemerdekaan = isAugust && isBeforeOrOn19;
+    
+    const savedKemerdekaan = localStorage.getItem('kemerdekaan-mode');
+    const activeKemerdekaan = savedKemerdekaan !== null 
+      ? (savedKemerdekaan === 'true') 
+      : defaultKemerdekaan;
+      
+    if (activeKemerdekaan) {
       document.body.classList.add('kemerdekaan-mode');
     }
   </script>

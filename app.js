@@ -649,17 +649,31 @@ function toggleLiteMode(init = false) {
 // Toggle 17 Agustus Special Theme (Independence Day Theme)
 function toggleKemerdekaanTheme(init = false) {
   const isKemerdekaan = document.body.classList.contains('kemerdekaan-mode');
-  const newKemerdekaan = init
-    ? (localStorage.getItem('kemerdekaan-mode') !== 'false')
-    : !isKemerdekaan;
+  
+  let newKemerdekaan;
+  if (init) {
+    const savedKemerdekaan = localStorage.getItem('kemerdekaan-mode');
+    if (savedKemerdekaan !== null) {
+      newKemerdekaan = (savedKemerdekaan === 'true');
+    } else {
+      const now = new Date();
+      newKemerdekaan = (now.getMonth() === 7 && now.getDate() <= 19);
+    }
+  } else {
+    newKemerdekaan = !isKemerdekaan;
+  }
   
   if (newKemerdekaan) {
     document.body.classList.add('kemerdekaan-mode');
-    localStorage.setItem('kemerdekaan-mode', 'true');
+    if (!init) {
+      localStorage.setItem('kemerdekaan-mode', 'true');
+    }
     initKemerdekaanConfetti();
   } else {
     document.body.classList.remove('kemerdekaan-mode');
-    localStorage.setItem('kemerdekaan-mode', 'false');
+    if (!init) {
+      localStorage.setItem('kemerdekaan-mode', 'false');
+    }
   }
   
   // Update Switch UI
