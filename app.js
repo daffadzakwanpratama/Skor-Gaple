@@ -464,7 +464,25 @@ function getPixelFlameSVG(size = 18) {
   `;
 }
 
-function renderPlayerBadgeHTML(player, size = 'md') {
+// ─────────────────────────────────────────────
+// REAL-TIME PLAYER TITLES / JULUKAN
+// ─────────────────────────────────────────────
+function calculatePlayerTitles(game) {
+  // Semua badge julukan (Tukang Buntu, Raja Balak, Dewa Hoki, Korban Bedak) dihilangkan
+  return {};
+}
+
+function getPlayerTitle(playerIdx, gameOverride = null) {
+  const g = gameOverride || state.currentGame;
+  if (!g || !g.players || !g.rounds || g.rounds.length === 0) {
+    return null;
+  }
+  const titles = calculatePlayerTitles(g);
+  return titles[playerIdx] || null;
+}
+
+function renderPlayerBadgeHTML(player, size = 'md', options = {}) {
+  const showTitle = options.showTitle !== false;
   const name = player.name;
   const avatar = getSanitizedAvatar(player.avatar);
   const color = player.color || '#FF5252';
@@ -483,7 +501,7 @@ function renderPlayerBadgeHTML(player, size = 'md') {
 
   const avatarSVG = getPixelArtSVG(avatar, svgSize);
 
-  const g = state.currentGame;
+  const g = options.game || state.currentGame;
   let playerIdx = -1;
   if (g && g.players) {
     playerIdx = g.players.findIndex(p => p.name === name);
@@ -496,11 +514,21 @@ function renderPlayerBadgeHTML(player, size = 'md') {
        </span>`
     : '';
 
+  let titleHTML = '';
+  if (showTitle && playerIdx !== -1) {
+    const titleObj = getPlayerTitle(playerIdx, g);
+    if (titleObj) {
+      const titleSmClass = size === 'sm' ? 'title-sm' : '';
+      titleHTML = `<span class="player-title-tag ${titleObj.class} ${titleSmClass}" title="${titleObj.desc}">${titleObj.label}</span>`;
+    }
+  }
+
   return `
     <span class="player-badge ${badgeClass}" style="background-color: ${color}; color: ${textColor};">
       <span class="player-avatar">${avatarSVG}</span>
       <span class="player-name-text">${escapeHtml(name)}</span>
       ${flameHTML}
+      ${titleHTML}
     </span>
   `;
 }
@@ -618,11 +646,68 @@ function toggleLiteMode(init = false) {
   }
 }
 
+// Toggle 17 Agustus Special Theme (Independence Day Theme)
+function toggleKemerdekaanTheme(init = false) {
+  const isKemerdekaan = document.body.classList.contains('kemerdekaan-mode');
+  const newKemerdekaan = init
+    ? (localStorage.getItem('kemerdekaan-mode') !== 'false')
+    : !isKemerdekaan;
+  
+  if (newKemerdekaan) {
+    document.body.classList.add('kemerdekaan-mode');
+    localStorage.setItem('kemerdekaan-mode', 'true');
+    initKemerdekaanConfetti();
+  } else {
+    document.body.classList.remove('kemerdekaan-mode');
+    localStorage.setItem('kemerdekaan-mode', 'false');
+  }
+  
+  // Update Switch UI
+  const chk = document.getElementById('chk-kemerdekaan-mode');
+  const knob = document.getElementById('kemerdekaan-mode-knob');
+  const switchBg = document.getElementById('kemerdekaan-mode-switch');
+  
+  if (chk) chk.checked = newKemerdekaan;
+  if (knob && switchBg) {
+    if (newKemerdekaan) {
+      knob.style.transform = 'translateX(14px)';
+      switchBg.style.background = '#FF1744';
+      switchBg.style.borderColor = '#FF5252';
+    } else {
+      knob.style.transform = 'translateX(0)';
+      switchBg.style.background = 'rgba(255,255,255,0.15)';
+      switchBg.style.borderColor = 'rgba(255,255,255,0.2)';
+    }
+  }
+}
+
+// Generate Red & White Confetti Particles
+function initKemerdekaanConfetti() {
+  const container = document.getElementById('kemerdekaan-confetti-container');
+  if (!container || container.children.length > 0) return;
+
+  const colors = ['#FF1744', '#D32F2F', '#FFFFFF', '#FFD740'];
+  const particleCount = 28;
+
+  for (let i = 0; i < particleCount; i++) {
+    const particle = document.createElement('div');
+    particle.className = 'kemerdekaan-particle';
+    particle.style.left = Math.random() * 100 + 'vw';
+    particle.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+    particle.style.animationDuration = (Math.random() * 3 + 3) + 's';
+    particle.style.animationDelay = (Math.random() * 4) + 's';
+    particle.style.width = (Math.random() * 6 + 6) + 'px';
+    particle.style.height = (Math.random() * 10 + 6) + 'px';
+    container.appendChild(particle);
+  }
+}
+
 // ─────────────────────────────────────────────
 // INIT
 // ─────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
   toggleLiteMode(true);
+  toggleKemerdekaanTheme(true);
   loadState();
   loadSetupPlayerData();
   renderAvatarSelectionGrid();
@@ -1410,6 +1495,39 @@ function renderGameOver() {
     `;
     container.appendChild(item);
   });
+
+  // Render Gelar & Julukan Pertandingan
+  const titlesStatsEl = document.getElementById('gameover-titles-stats');
+  const titlesListEl = document.getElementById('gameover-titles-list');
+  if (titlesStatsEl && titlesListEl) {
+    titlesListEl.innerHTML = '';
+    const titlesMap = calculatePlayerTitles(g);
+    const awardedPlayerIdxs = Object.keys(titlesMap);
+
+    if (awardedPlayerIdxs.length > 0) {
+      titlesStatsEl.classList.remove('hidden');
+      awardedPlayerIdxs.forEach(playerIdxStr => {
+        const pIdx = parseInt(playerIdxStr, 10);
+        const player = g.players[pIdx];
+        const titleObj = titlesMap[pIdx];
+        if (player && titleObj) {
+          const row = document.createElement('div');
+          row.className = 'go-lb-item';
+          row.innerHTML = `
+            <div class="go-lb-name" style="display: inline-flex; align-items: center; gap: 0.5rem;">
+              ${renderPlayerBadgeHTML(player, 'sm', { showTitle: false })}
+            </div>
+            <div class="go-lb-score">
+              <span class="player-title-tag ${titleObj.class}" style="font-size: 0.8rem; padding: 0.2rem 0.55rem;">${titleObj.label}</span>
+            </div>
+          `;
+          titlesListEl.appendChild(row);
+        }
+      });
+    } else {
+      titlesStatsEl.classList.add('hidden');
+    }
+  }
 
   // Render Gaple Momen Stats
   const gapleStatsEl = document.getElementById('gameover-gaple-stats');
@@ -3235,6 +3353,40 @@ function renderOnlineGameOver(players, rounds, leaderboard) {
     `;
     container.appendChild(item);
   });
+
+  // Render Gelar & Julukan Pertandingan (Online)
+  const titlesStatsEl = document.getElementById('gameover-titles-stats');
+  const titlesListEl = document.getElementById('gameover-titles-list');
+  if (titlesStatsEl && titlesListEl) {
+    titlesListEl.innerHTML = '';
+    const mockGameObj = { players, rounds };
+    const titlesMap = calculatePlayerTitles(mockGameObj);
+    const awardedPlayerIdxs = Object.keys(titlesMap);
+
+    if (awardedPlayerIdxs.length > 0) {
+      titlesStatsEl.classList.remove('hidden');
+      awardedPlayerIdxs.forEach(playerIdxStr => {
+        const pIdx = parseInt(playerIdxStr, 10);
+        const player = players[pIdx];
+        const titleObj = titlesMap[pIdx];
+        if (player && titleObj) {
+          const row = document.createElement('div');
+          row.className = 'go-lb-item';
+          row.innerHTML = `
+            <div class="go-lb-name" style="display: inline-flex; align-items: center; gap: 0.5rem;">
+              ${renderPlayerBadgeHTML(player, 'sm', { showTitle: false, game: mockGameObj })}
+            </div>
+            <div class="go-lb-score">
+              <span class="player-title-tag ${titleObj.class}" style="font-size: 0.8rem; padding: 0.2rem 0.55rem;">${titleObj.label}</span>
+            </div>
+          `;
+          titlesListEl.appendChild(row);
+        }
+      });
+    } else {
+      titlesStatsEl.classList.add('hidden');
+    }
+  }
 
   // Render Gaple statistical list
   const gapleStatsEl = document.getElementById('gameover-gaple-stats');

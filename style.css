@@ -1713,6 +1713,66 @@ body {
   text-transform: uppercase;
 }
 
+/* ---------- REAL-TIME PLAYER TITLES / JULUKAN ---------- */
+.player-title-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  font-family: var(--font-pixel);
+  font-weight: 700;
+  font-size: 0.7rem;
+  padding: 0.15rem 0.45rem;
+  border-radius: 12px;
+  margin-left: 0.35rem;
+  vertical-align: middle;
+  line-height: 1;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+  animation: titlePulse 3s infinite ease-in-out;
+  white-space: nowrap;
+}
+
+.player-title-tag.title-sm {
+  font-size: 0.6rem;
+  padding: 0.1rem 0.35rem;
+  margin-left: 0.25rem;
+}
+
+.title-raja-balak {
+  background: linear-gradient(135deg, #FFD740 0%, #FF9100 100%) !important;
+  color: #1a0f00 !important;
+  border: 1px solid #FFE082 !important;
+  box-shadow: 0 2px 8px rgba(255, 145, 0, 0.4);
+}
+
+.title-tukang-buntu {
+  background: linear-gradient(135deg, #E040FB 0%, #AA00FF 100%) !important;
+  color: #FFFFFF !important;
+  border: 1px solid #EA80FC !important;
+  box-shadow: 0 2px 8px rgba(170, 0, 255, 0.4);
+}
+
+.title-dewa-hoki {
+  background: linear-gradient(135deg, #00E5FF 0%, #2979FF 100%) !important;
+  color: #051923 !important;
+  border: 1px solid #80D8FF !important;
+  box-shadow: 0 2px 8px rgba(0, 229, 255, 0.4);
+}
+
+.title-korban-bedak {
+  background: linear-gradient(135deg, #FF4081 0%, #D50000 100%) !important;
+  color: #FFFFFF !important;
+  border: 1px solid #FF80AB !important;
+  box-shadow: 0 2px 8px rgba(213, 0, 0, 0.4);
+}
+
+@keyframes titlePulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.04); }
+}
+
+
 /* ---------- STARTING BALAK SELECTOR ---------- */
 .balak-selector-grid {
   display: flex;
@@ -2805,3 +2865,579 @@ body.lite-mode .round-card,
 body.lite-mode .lb-item {
   opacity: 1 !important;
 }
+
+/* ==========================================================================
+   TEMA SPESIAL 17 AGUSTUS — HARI KEMERDEKAAN REPUBLIK INDONESIA
+   Design System: Dark Base + Indonesian Red Accent + Gold Highlight
+   Filosofi: Merah sebagai aksen kuat, bukan latar dominan.
+             Warna gelap mempertahankan keterbacaan & nuansa gaming premium.
+   ========================================================================== */
+
+/* ── 1. BANNER ── */
+.kemerdekaan-banner {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  width: 100%;
+  padding: 0.45rem 1rem;
+  background: #CC0001;
+  color: #FFFFFF;
+  font-family: var(--font-pixel);
+  font-size: 0.72rem;
+  font-weight: bold;
+  letter-spacing: 0.06em;
+  text-align: center;
+  box-shadow: 0 3px 12px rgba(180, 0, 0, 0.5);
+  position: sticky;
+  top: 0;
+  z-index: 9999;
+  border-bottom: 2.5px solid #C9902A;
+  overflow: hidden;
+}
+
+.kemerdekaan-banner::before {
+  content: '';
+  position: absolute;
+  top: 0; left: -100%;
+  width: 60%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.18), transparent);
+  animation: bannerSweep 4s linear infinite;
+}
+
+@keyframes bannerSweep {
+  0%   { left: -60%; }
+  100% { left: 160%; }
+}
+
+body.kemerdekaan-mode .kemerdekaan-banner {
+  display: flex;
+}
+
+.kemerdekaan-banner .flag-icon {
+  font-size: 1rem;
+  filter: drop-shadow(0 1px 3px rgba(0,0,0,0.3));
+}
+
+.kemerdekaan-banner .banner-text {
+  color: #FFFFFF;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+  font-weight: 800;
+}
+
+@keyframes bannerShimmer {
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* ── 2. BODY & GLOBAL BACKGROUND ── */
+body.kemerdekaan-mode {
+  background: #100608 !important;
+  background-image:
+    radial-gradient(rgba(204, 0, 1, 0.06) 1px, transparent 1px),
+    radial-gradient(rgba(204, 0, 1, 0.06) 1px, #100608 1px) !important;
+  background-size: 24px 24px !important;
+  background-position: 0 0, 12px 12px !important;
+  background-attachment: local !important;
+  color: #F1F5F9 !important;
+}
+
+/* ── 3. DECORATIVE BLOBS — subtle red & white tones ── */
+body.kemerdekaan-mode .glass-blob-1 {
+  background: radial-gradient(circle, rgba(204, 0, 1, 0.22) 0%, rgba(204, 0, 1, 0.04) 70%) !important;
+}
+body.kemerdekaan-mode .glass-blob-2 {
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.12) 0%, rgba(204, 0, 1, 0.06) 70%) !important;
+}
+body.kemerdekaan-mode .glass-blob-3 {
+  background: radial-gradient(circle, rgba(201, 144, 42, 0.18) 0%, rgba(204, 0, 1, 0.05) 70%) !important;
+}
+
+/* ── 4. HOME PAGE ── */
+body.kemerdekaan-mode .home-title {
+  background: linear-gradient(135deg, #FFFFFF 0%, #FFC4C4 50%, #FF8080 100%) !important;
+  -webkit-background-clip: text !important;
+  background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  filter: drop-shadow(0 3px 14px rgba(204, 0, 1, 0.5)) !important;
+}
+
+body.kemerdekaan-mode .home-subtitle {
+  color: #F1F5F9 !important;
+  background: rgba(204, 0, 1, 0.18) !important;
+  border: 1px solid rgba(204, 0, 1, 0.4) !important;
+  backdrop-filter: blur(8px) !important;
+  box-shadow: none !important;
+}
+
+body.kemerdekaan-mode .saved-banner {
+  background: rgba(255, 255, 255, 0.04) !important;
+  border: 1px solid rgba(204, 0, 1, 0.35) !important;
+  box-shadow: 0 6px 20px rgba(180, 0, 0, 0.2) !important;
+}
+
+body.kemerdekaan-mode .saved-label {
+  color: rgba(204, 0, 1, 0.8) !important;
+}
+
+body.kemerdekaan-mode .saved-name {
+  color: #F8FAFC !important;
+}
+
+/* ── 5. PAGE HEADERS (Sticky header bar) ── */
+body.kemerdekaan-mode .page-header,
+body.kemerdekaan-mode .dashboard-header {
+  background: #1A0608 !important;
+  border-bottom: 1px solid rgba(204, 0, 1, 0.35) !important;
+  border-left: 4px solid #CC0001 !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4), inset 0 -1px 0 rgba(204,0,1,0.15) !important;
+  color: #F8FAFC !important;
+}
+
+body.kemerdekaan-mode .page-title {
+  background: linear-gradient(90deg, #FFFFFF, #FFC4C4) !important;
+  -webkit-background-clip: text !important;
+  background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  text-shadow: none !important;
+}
+
+body.kemerdekaan-mode .dash-game-name {
+  background: linear-gradient(90deg, #FFFFFF, #FFC4C4) !important;
+  -webkit-background-clip: text !important;
+  background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+}
+
+body.kemerdekaan-mode .btn-back {
+  background: rgba(204, 0, 1, 0.15) !important;
+  border: 1px solid rgba(204, 0, 1, 0.4) !important;
+  color: #FFFFFF !important;
+}
+
+body.kemerdekaan-mode .btn-back:hover {
+  background: rgba(204, 0, 1, 0.3) !important;
+}
+
+body.kemerdekaan-mode .btn-back svg {
+  stroke: #FFFFFF !important;
+}
+
+/* Status badge in dashboard */
+body.kemerdekaan-mode .status-badge {
+  background: rgba(204, 0, 1, 0.2) !important;
+  border-color: rgba(204, 0, 1, 0.45) !important;
+  color: #FFA0A0 !important;
+}
+
+/* Icon buttons in dashboard header */
+body.kemerdekaan-mode .icon-btn {
+  background: rgba(255,255,255,0.07) !important;
+  border-color: rgba(204,0,1,0.35) !important;
+  color: #F1F5F9 !important;
+}
+
+body.kemerdekaan-mode .icon-btn:hover {
+  background: rgba(204, 0, 1, 0.2) !important;
+  border-color: rgba(204,0,1,0.6) !important;
+}
+
+/* ── 6. SECTION TITLES & HEADINGS ── */
+body.kemerdekaan-mode .section-title {
+  color: #FFFFFF !important;
+  text-shadow: none !important;
+}
+
+body.kemerdekaan-mode h1,
+body.kemerdekaan-mode h2,
+body.kemerdekaan-mode h3,
+body.kemerdekaan-mode h4 {
+  color: #F8FAFC !important;
+}
+
+/* Red accent underline on section titles */
+body.kemerdekaan-mode .section-header::after {
+  content: '';
+  display: none;
+}
+
+/* ── 7. LEADERBOARD ITEMS ── */
+body.kemerdekaan-mode .lb-item {
+  background: rgba(255, 255, 255, 0.04) !important;
+  border: 1px solid rgba(204, 0, 1, 0.2) !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25) !important;
+  color: #F1F5F9 !important;
+}
+
+body.kemerdekaan-mode .lb-item:hover {
+  border-color: rgba(204, 0, 1, 0.5) !important;
+  box-shadow: 0 6px 24px rgba(204, 0, 1, 0.2) !important;
+}
+
+/* Rank 1 — Red & Gold for Indonesia */
+body.kemerdekaan-mode .lb-item:nth-child(1) {
+  background: rgba(204, 0, 1, 0.1) !important;
+  border-color: rgba(201, 144, 42, 0.4) !important;
+  box-shadow: 0 6px 24px rgba(204, 0, 1, 0.25) !important;
+}
+
+/* Rank 2 — Subtle white glass */
+body.kemerdekaan-mode .lb-item:nth-child(2) {
+  background: rgba(255, 255, 255, 0.06) !important;
+  border-color: rgba(255, 255, 255, 0.2) !important;
+}
+
+/* Rank 3 — Very subtle */
+body.kemerdekaan-mode .lb-item:nth-child(3) {
+  background: rgba(255, 255, 255, 0.03) !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+}
+
+body.kemerdekaan-mode .lb-rank-1 {
+  color: #C9902A !important;
+}
+
+body.kemerdekaan-mode .lb-name,
+body.kemerdekaan-mode .lb-score {
+  color: #F8FAFC !important;
+}
+
+body.kemerdekaan-mode .lb-score-danger {
+  animation: scoreAlertFlashKemerdekaan 0.8s steps(2, start) infinite !important;
+}
+
+@keyframes scoreAlertFlashKemerdekaan {
+  0%, 100% {
+    color: #FF3333 !important;
+    text-shadow: 0 0 12px rgba(204, 0, 1, 0.7) !important;
+  }
+  50% {
+    color: #F8FAFC !important;
+    text-shadow: none !important;
+  }
+}
+
+body.kemerdekaan-mode .lb-bar-wrap {
+  background: rgba(255, 255, 255, 0.08) !important;
+}
+
+body.kemerdekaan-mode .round-badge {
+  background: rgba(201, 144, 42, 0.15) !important;
+  border-color: rgba(201, 144, 42, 0.4) !important;
+  color: #FFD580 !important;
+}
+
+/* ── 8. CARDS (Score Input, Round History, Section Cards) ── */
+body.kemerdekaan-mode .round-card,
+body.kemerdekaan-mode .section-card {
+  background: rgba(255, 255, 255, 0.04) !important;
+  border: 1px solid rgba(204, 0, 1, 0.22) !important;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3) !important;
+  color: #F1F5F9 !important;
+}
+
+body.kemerdekaan-mode .round-card-header {
+  background: rgba(204, 0, 1, 0.12) !important;
+  border-bottom: 1px solid rgba(204, 0, 1, 0.25) !important;
+}
+
+body.kemerdekaan-mode .round-card-title {
+  color: #FFC4C4 !important;
+  text-shadow: none !important;
+}
+
+body.kemerdekaan-mode .round-card-body {
+  color: #E2E8F0 !important;
+}
+
+body.kemerdekaan-mode .round-score-row {
+  border-bottom-color: rgba(255, 255, 255, 0.06) !important;
+}
+
+body.kemerdekaan-mode .round-score-row * {
+  color: #CBD5E1 !important;
+}
+
+body.kemerdekaan-mode .btn-round-action {
+  background: rgba(255,255,255,0.05) !important;
+  border-color: rgba(204,0,1,0.3) !important;
+  color: #FFC4C4 !important;
+}
+
+body.kemerdekaan-mode .btn-round-action:hover {
+  background: rgba(204,0,1,0.2) !important;
+}
+
+/* ── 9. SCORE INPUT ROWS ── */
+body.kemerdekaan-mode .score-input-row {
+  background: rgba(255, 255, 255, 0.04) !important;
+  border: 1px solid rgba(204, 0, 1, 0.22) !important;
+  box-shadow: 0 3px 12px rgba(0,0,0,0.2) !important;
+}
+
+body.kemerdekaan-mode .score-input-row:focus-within {
+  background: rgba(204, 0, 1, 0.08) !important;
+  border-color: rgba(204, 0, 1, 0.55) !important;
+  box-shadow: 0 0 0 3px rgba(204, 0, 1, 0.12), 0 6px 20px rgba(204, 0, 1, 0.15) !important;
+  transform: translateY(-2px) !important;
+}
+
+body.kemerdekaan-mode .score-player-name {
+  color: #F1F5F9 !important;
+}
+
+body.kemerdekaan-mode .score-input-field {
+  background: rgba(0, 0, 0, 0.35) !important;
+  border: 1px solid rgba(204, 0, 1, 0.3) !important;
+  color: #FFFFFF !important;
+}
+
+body.kemerdekaan-mode .score-input-field:focus {
+  background: rgba(0, 0, 0, 0.5) !important;
+  border-color: #CC0001 !important;
+  box-shadow: 0 0 10px rgba(204, 0, 1, 0.4) !important;
+}
+
+body.kemerdekaan-mode .score-input-field::placeholder {
+  color: rgba(255, 255, 255, 0.2) !important;
+}
+
+/* ── 10. SETUP PAGE (Forms, Inputs, Domino selectors) ── */
+body.kemerdekaan-mode .setup-container,
+body.kemerdekaan-mode .home-container {
+  /* Inherit dark bg, no override needed */
+}
+
+body.kemerdekaan-mode .form-label {
+  color: #CBD5E1 !important;
+  font-weight: 700 !important;
+}
+
+body.kemerdekaan-mode .form-hint {
+  color: #64748B !important;
+}
+
+body.kemerdekaan-mode .form-input {
+  background: rgba(255, 255, 255, 0.05) !important;
+  color: #F8FAFC !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+}
+
+body.kemerdekaan-mode .form-input:focus {
+  background: rgba(255, 255, 255, 0.08) !important;
+  border-color: #CC0001 !important;
+  box-shadow: 0 0 0 3px rgba(204, 0, 1, 0.15) !important;
+}
+
+body.kemerdekaan-mode .form-input::placeholder {
+  color: rgba(255, 255, 255, 0.25) !important;
+}
+
+body.kemerdekaan-mode input[type="text"],
+body.kemerdekaan-mode input[type="number"],
+body.kemerdekaan-mode select {
+  background: rgba(255, 255, 255, 0.05) !important;
+  color: #F8FAFC !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+}
+
+body.kemerdekaan-mode input[type="text"]:focus,
+body.kemerdekaan-mode input[type="number"]:focus,
+body.kemerdekaan-mode select:focus {
+  border-color: #CC0001 !important;
+  box-shadow: 0 0 0 3px rgba(204, 0, 1, 0.15) !important;
+}
+
+/* Domino Balak Selection Buttons */
+body.kemerdekaan-mode .balak-select-btn {
+  background: rgba(255, 255, 255, 0.05) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  color: #CBD5E1 !important;
+}
+
+body.kemerdekaan-mode .balak-select-btn:hover {
+  border-color: rgba(204, 0, 1, 0.45) !important;
+  background: rgba(204, 0, 1, 0.1) !important;
+}
+
+body.kemerdekaan-mode .balak-select-btn.active,
+body.kemerdekaan-mode .balak-select-btn[class*="active"] {
+  background: rgba(204, 0, 1, 0.2) !important;
+  border-color: #CC0001 !important;
+  color: #FFFFFF !important;
+  box-shadow: 0 0 12px rgba(204, 0, 1, 0.3), inset 0 0 0 1px rgba(204,0,1,0.4) !important;
+}
+
+/* Player Count Selector */
+body.kemerdekaan-mode .player-count-selector {
+  background: rgba(255, 255, 255, 0.05) !important;
+  border: 1px solid rgba(204, 0, 1, 0.3) !important;
+}
+
+body.kemerdekaan-mode .count-btn {
+  color: #FFC4C4 !important;
+  background: transparent !important;
+}
+
+body.kemerdekaan-mode .count-btn:hover {
+  background: rgba(204, 0, 1, 0.2) !important;
+}
+
+body.kemerdekaan-mode .count-display {
+  color: #FFFFFF !important;
+  font-weight: 800;
+}
+
+/* ── 11. BUTTONS ── */
+body.kemerdekaan-mode .btn-primary {
+  background: #CC0001 !important;
+  background-image: linear-gradient(135deg, #E00000 0%, #990000 100%) !important;
+  color: #FFFFFF !important;
+  border: none !important;
+  box-shadow: 0 4px 16px rgba(180, 0, 0, 0.45), 0 1px 0 rgba(255,255,255,0.1) inset !important;
+}
+
+body.kemerdekaan-mode .btn-primary:hover {
+  background-image: linear-gradient(135deg, #FF1111 0%, #AA0000 100%) !important;
+  box-shadow: 0 6px 22px rgba(204, 0, 1, 0.55) !important;
+  transform: translateY(-2px) !important;
+}
+
+body.kemerdekaan-mode .btn-outline {
+  background: transparent !important;
+  color: #FFC4C4 !important;
+  border: 1px solid rgba(204, 0, 1, 0.5) !important;
+}
+
+body.kemerdekaan-mode .btn-outline:hover {
+  background: rgba(204, 0, 1, 0.15) !important;
+  border-color: #CC0001 !important;
+  color: #FFFFFF !important;
+}
+
+/* ── 12. MODAL ── */
+body.kemerdekaan-mode .modal-overlay {
+  background: rgba(16, 6, 8, 0.85) !important;
+}
+
+body.kemerdekaan-mode .modal-card {
+  background: #1C0A0D !important;
+  border: 1px solid rgba(204, 0, 1, 0.35) !important;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.6), 0 0 0 1px rgba(204,0,1,0.15) !important;
+}
+
+body.kemerdekaan-mode .modal-title {
+  color: #FFFFFF !important;
+  text-shadow: none !important;
+}
+
+body.kemerdekaan-mode .modal-body {
+  color: #94A3B8 !important;
+}
+
+/* ── 13. HISTORY GAME CARD ── */
+body.kemerdekaan-mode .history-game-card {
+  background: rgba(255, 255, 255, 0.04) !important;
+  border: 1px solid rgba(204, 0, 1, 0.2) !important;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.3) !important;
+}
+
+body.kemerdekaan-mode .history-game-card-header {
+  background: rgba(204, 0, 1, 0.1) !important;
+  border-bottom: 1px solid rgba(204, 0, 1, 0.2) !important;
+}
+
+/* ── 14. GAMEOVER PAGE ── */
+body.kemerdekaan-mode .gameover-badge {
+  background: linear-gradient(135deg, #CC0001, #8B0000) !important;
+  color: #FFFFFF !important;
+  border-color: #C9902A !important;
+  box-shadow: 0 0 30px rgba(204, 0, 1, 0.5) !important;
+}
+
+body.kemerdekaan-mode .gameover-title {
+  color: #FFFFFF !important;
+  text-shadow: 0 2px 20px rgba(204, 0, 1, 0.6) !important;
+}
+
+body.kemerdekaan-mode .gameover-subtitle {
+  color: #94A3B8 !important;
+}
+
+body.kemerdekaan-mode .gameover-leaderboard .lb-item {
+  background: rgba(255, 255, 255, 0.04) !important;
+  border-color: rgba(204, 0, 1, 0.22) !important;
+}
+
+/* ── 15. MISC COMPONENTS ── */
+body.kemerdekaan-mode .round-badge {
+  background: rgba(201, 144, 42, 0.15) !important;
+  border-color: rgba(201, 144, 42, 0.4) !important;
+  color: #FFD580 !important;
+}
+
+body.kemerdekaan-mode .gaple-header-badge {
+  background: rgba(204, 0, 1, 0.2) !important;
+  border-color: rgba(204, 0, 1, 0.5) !important;
+  color: #FFA0A0 !important;
+}
+
+/* Dealer badge stays orange — game visual, no override needed */
+
+/* ── 16. SCROLLBAR Styling (webkit) ── */
+body.kemerdekaan-mode ::-webkit-scrollbar-track {
+  background: rgba(255,255,255,0.03) !important;
+}
+
+body.kemerdekaan-mode ::-webkit-scrollbar-thumb {
+  background: rgba(204, 0, 1, 0.4) !important;
+  border-radius: 4px !important;
+}
+
+body.kemerdekaan-mode ::-webkit-scrollbar-thumb:hover {
+  background: rgba(204, 0, 1, 0.65) !important;
+}
+
+/* ── 17. CONFETTI PARTICLES ── */
+.kemerdekaan-confetti-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 9998;
+  overflow: hidden;
+  display: none;
+}
+
+body.kemerdekaan-mode .kemerdekaan-confetti-container {
+  display: block;
+}
+
+.kemerdekaan-particle {
+  position: absolute;
+  top: -20px;
+  width: 8px;
+  height: 8px;
+  opacity: 0.7;
+  animation: confettiFall linear infinite;
+  border-radius: 2px;
+}
+
+@keyframes confettiFall {
+  0% {
+    transform: translateY(0) rotate(0deg);
+    opacity: 0.8;
+  }
+  80% {
+    opacity: 0.6;
+  }
+  100% {
+    transform: translateY(105vh) rotate(720deg);
+    opacity: 0;
+  }
+}
+

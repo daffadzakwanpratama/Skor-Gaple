@@ -25,7 +25,18 @@
     if (localStorage.getItem('lite-mode') === 'true') {
       document.body.classList.add('lite-mode');
     }
+    if (localStorage.getItem('kemerdekaan-mode') !== 'false') {
+      document.body.classList.add('kemerdekaan-mode');
+    }
   </script>
+
+  <!-- ===== BANNER 17 AGUSTUS / HARI KEMERDEKAAN ===== -->
+  <div id="kemerdekaan-banner" class="kemerdekaan-banner">
+    <span class="flag-icon">🇮🇩</span>
+    <span class="banner-text">DIRGAHAYU REPUBLIK INDONESIA 🇮🇩 17 AGUSTUS 1945</span>
+    <span class="flag-icon">🇮🇩</span>
+  </div>
+  <div id="kemerdekaan-confetti-container" class="kemerdekaan-confetti-container"></div>
 
   <!-- Background Glass Blobs -->
   <div class="glass-blob glass-blob-1"></div>
@@ -115,6 +126,16 @@
         <input type="checkbox" id="chk-lite-mode" style="display: none;" />
         <div id="lite-mode-switch" style="width: 34px; height: 20px; background: rgba(255,255,255,0.15); border-radius: 10px; position: relative; border: 1px solid rgba(255,255,255,0.2); transition: all 0.2s;">
           <div id="lite-mode-knob" style="width: 14px; height: 14px; background: #fff; border-radius: 50%; position: absolute; top: 2px; left: 2px; transition: transform 0.2s;"></div>
+        </div>
+      </div>
+
+      <!-- 17 Agustus Special Theme Toggle -->
+      <div class="kemerdekaan-toggle-container" onclick="toggleKemerdekaanTheme()" style="margin-top: 0.85rem; display: flex; align-items: center; justify-content: center; gap: 0.65rem; cursor: pointer; user-select: none; position: relative; z-index: 1000;">
+        <span id="kemerdekaan-toggle-icon" style="font-size: 1.1rem; filter: none !important;">🇮🇩</span>
+        <span style="font-family: var(--font-pixel); font-size: 0.75rem; font-weight: 700; color: #FF5252; text-transform: uppercase; letter-spacing: 0.05em;">Tema 17 Agustus 🇮🇩</span>
+        <input type="checkbox" id="chk-kemerdekaan-mode" style="display: none;" />
+        <div id="kemerdekaan-mode-switch" style="width: 34px; height: 20px; background: rgba(255,23,68,0.3); border-radius: 10px; position: relative; border: 1px solid rgba(255,23,68,0.5); transition: all 0.2s;">
+          <div id="kemerdekaan-mode-knob" style="width: 14px; height: 14px; background: #FF1744; border-radius: 50%; position: absolute; top: 2px; left: 2px; transition: transform 0.2s;"></div>
         </div>
       </div>
     </div>
@@ -568,6 +589,14 @@
       <h1 class="gameover-title">Permainan Selesai</h1>
       <p class="gameover-subtitle" id="gameover-subtitle">Seorang pemain telah mencapai batas skor.</p>
       <div id="gameover-leaderboard" class="gameover-leaderboard"></div>
+
+      <!-- Gelar & Julukan Pemain Stats -->
+      <div id="gameover-titles-stats" class="gameover-gaple-stats hidden" style="margin-bottom: 2rem; width: 100%;">
+        <h3 class="section-title" style="margin-bottom: 1.25rem; display: flex; align-items: center; gap: 0.4rem;">
+          🏅 Gelar & Julukan Pertandingan
+        </h3>
+        <div id="gameover-titles-list" style="display: flex; flex-direction: column; gap: 0.75rem;"></div>
+      </div>
 
       <!-- Gaple Momen Stats -->
       <div id="gameover-gaple-stats" class="gameover-gaple-stats hidden" style="margin-bottom: 3rem; width: 100%;">
