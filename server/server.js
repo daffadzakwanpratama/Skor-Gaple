@@ -5,6 +5,7 @@ const http = require('http');
 const { Server } = require('socket.io');
 const cors = require('cors');
 const path = require('path');
+const os = require('os');
 const gameEngine = require('./gameEngine');
 const botPlayer = require('./botPlayer');
 const db = require('./db');
@@ -841,10 +842,47 @@ io.on('connection', socket => {
   });
 });
 
+function getLocalIpAddresses() {
+  const interfaces = os.networkInterfaces();
+  const addresses = [];
+  for (const name of Object.keys(interfaces)) {
+    const lower = name.toLowerCase();
+    // Abaikan adapter virtual (VirtualBox, VMware, vEthernet)
+    if (lower.includes('virtual') || lower.includes('vethernet') || lower.includes('vmware') || lower.includes('loopback')) {
+      continue;
+    }
+    for (const iface of interfaces[name]) {
+      if (iface.family === 'IPv4' && !iface.internal) {
+        if (!iface.address.startsWith('192.168.56.')) {
+          addresses.push({ name, address: iface.address });
+        }
+      }
+    }
+  }
+  return addresses;
+}
+
 // Start listening
 server.listen(PORT, () => {
-  console.log(`===================================================`);
-  console.log(`Server online di http://localhost:${PORT}`);
-  console.log(`Mainkan Gaple Online bersama teman di browser Anda!`);
-  console.log(`===================================================`);
+  const localIps = getLocalIpAddresses();
+  console.log(`\n=============================================================`);
+  console.log(`   🀄 SERVER SKOR GAPLE & TURNAMEN MULTI-PERANGKAT AKTIF   `);
+  console.log(`=============================================================`);
+  console.log(` 💻 Akses di Laptop ini : http://localhost:${PORT}`);
+  
+  if (localIps.length > 0) {
+    console.log(`\n 📱 Link Akses untuk HP Juri (Wi-Fi Lokal):`);
+    localIps.forEach(ip => {
+      console.log(`    👉 http://${ip.address}:${PORT}  (${ip.name})`);
+    });
+  } else {
+    console.log(`\n ⚠️  Tidak terhubung ke jaringan Wi-Fi lokal.`);
+  }
+
+  console.log(`\n 📋 Petunjuk untuk Juri Meja:`);
+  console.log(` 1. Pastikan HP juri terhubung ke Wi-Fi yang sama dengan laptop ini.`);
+  console.log(` 2. Buka browser HP (Chrome/Safari) dan buka link di atas.`);
+  console.log(` 3. Masuk ke menu "Turnamen" -> "Multi-Juri / Sambung HP".`);
+  console.log(` 4. Masukkan Tournament ID dari Laptop Server.`);
+  console.log(`=============================================================\n`);
 });

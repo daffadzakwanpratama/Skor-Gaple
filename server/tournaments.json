@@ -1,0 +1,225 @@
+{
+  "GAPLE-17AGUSTUS-2NUZ": {
+    "id": "GAPLE-17AGUSTUS-2NUZ",
+    "name": "Turnamen Knockout Gaple",
+    "mode": "knockout",
+    "players": [
+      {
+        "id": 1,
+        "name": "Nama Pemain 1",
+        "avatar": "fox",
+        "color": "#FF5252"
+      },
+      {
+        "id": 2,
+        "name": "Nama Pemain 2",
+        "avatar": "frog",
+        "color": "#448AFF"
+      },
+      {
+        "id": 3,
+        "name": "Nama Pemain 3",
+        "avatar": "cat",
+        "color": "#69F0AE"
+      },
+      {
+        "id": 4,
+        "name": "Nama Pemain 4",
+        "avatar": "panda",
+        "color": "#FFD740"
+      },
+      {
+        "id": 5,
+        "name": "Nama Pemain 5",
+        "avatar": "tiger",
+        "color": "#E040FB"
+      },
+      {
+        "id": 6,
+        "name": "Nama Pemain 6",
+        "avatar": "koala",
+        "color": "#FF9100"
+      },
+      {
+        "id": 7,
+        "name": "Nama Pemain 7",
+        "avatar": "pig",
+        "color": "#00E5FF"
+      },
+      {
+        "id": 8,
+        "name": "Nama Pemain 8",
+        "avatar": "lion",
+        "color": "#FF4081"
+      },
+      {
+        "id": 9,
+        "name": "Nama Pemain 9",
+        "avatar": "chicken",
+        "color": "#FF5252"
+      },
+      {
+        "id": 10,
+        "name": "Nama Pemain 10",
+        "avatar": "monkey",
+        "color": "#448AFF"
+      },
+      {
+        "id": 11,
+        "name": "Nama Pemain 11",
+        "avatar": "fox",
+        "color": "#69F0AE"
+      },
+      {
+        "id": 12,
+        "name": "Nama Pemain 12",
+        "avatar": "frog",
+        "color": "#FFD740"
+      },
+      {
+        "id": 13,
+        "name": "Nama Pemain 13",
+        "avatar": "cat",
+        "color": "#E040FB"
+      },
+      {
+        "id": 14,
+        "name": "Nama Pemain 14",
+        "avatar": "panda",
+        "color": "#FF9100"
+      },
+      {
+        "id": 15,
+        "name": "Nama Pemain 15",
+        "avatar": "tiger",
+        "color": "#00E5FF"
+      },
+      {
+        "id": 16,
+        "name": "Nama Pemain 16",
+        "avatar": "koala",
+        "color": "#FF4081"
+      }
+    ],
+    "rounds": [
+      {
+        "key": "round_0",
+        "name": "Babak Penyisihan",
+        "isFinal": false,
+        "numTables": 4,
+        "qCount": 2,
+        "numByes": 0,
+        "tables": [
+          {
+            "id": 1,
+            "name": "Meja 1",
+            "playerIds": [
+              1,
+              2,
+              3,
+              4
+            ],
+            "scores": {},
+            "winnerIds": [],
+            "status": "pending"
+          },
+          {
+            "id": 2,
+            "name": "Meja 2",
+            "playerIds": [
+              5,
+              6,
+              7,
+              8
+            ],
+            "scores": {},
+            "winnerIds": [],
+            "status": "pending"
+          },
+          {
+            "id": 3,
+            "name": "Meja 3",
+            "playerIds": [
+              9,
+              10,
+              11,
+              12
+            ],
+            "scores": {},
+            "winnerIds": [],
+            "status": "pending"
+          },
+          {
+            "id": 4,
+            "name": "Meja 4",
+            "playerIds": [
+              13,
+              14,
+              15,
+              16
+            ],
+            "scores": {},
+            "winnerIds": [],
+            "status": "pending"
+          }
+        ],
+        "byePlayerIds": []
+      },
+      {
+        "key": "round_1",
+        "name": "Semifinal",
+        "isFinal": false,
+        "numTables": 2,
+        "qCount": 2,
+        "numByes": 0,
+        "tables": [
+          {
+            "id": 1,
+            "name": "Meja Semifinal 1",
+            "playerIds": [],
+            "scores": {},
+            "winnerIds": [],
+            "status": "pending"
+          },
+          {
+            "id": 2,
+            "name": "Meja Semifinal 2",
+            "playerIds": [],
+            "scores": {},
+            "winnerIds": [],
+            "status": "pending"
+          }
+        ],
+        "byePlayerIds": []
+      },
+      {
+        "key": "final",
+        "name": "Final",
+        "isFinal": true,
+        "numTables": 1,
+        "qCount": 4,
+        "numByes": 0,
+        "tables": [
+          {
+            "id": 1,
+            "name": "Meja Final ",
+            "playerIds": [],
+            "scores": {},
+            "winnerIds": [],
+            "status": "pending"
+          }
+        ],
+        "byePlayerIds": []
+      }
+    ],
+    "currentRoundIndex": 0,
+    "winners": {
+      "juara1": null,
+      "juara2": null,
+      "juara3": null,
+      "juara4": null
+    },
+    "updatedAt": "2026-08-14T07:12:57.506Z",
+    "revision": 1
+  }
+}
