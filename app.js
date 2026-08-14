@@ -173,13 +173,13 @@ const PIXEL_ART_DATA = {
 };
 
 const EMOJI_TO_KEY = {
-  '🦊': 'fox', '🐸': 'frog', '🐱': 'cat', '🐼': 'panda', '🐯': 'tiger',
-  '🐨': 'koala', '🐷': 'pig', '🦁': 'lion', '🐔': 'chicken', '🐵': 'monkey'
+  'fox': 'fox', 'frog': 'frog', 'cat': 'cat', 'panda': 'panda', 'tiger': 'tiger',
+  'koala': 'koala', 'pig': 'pig', 'lion': 'lion', 'chicken': 'chicken', 'monkey': 'monkey'
 };
 
 const KEY_TO_EMOJI = {
-  'fox': '🦊', 'frog': '🐸', 'cat': '🐱', 'panda': '🐼', 'tiger': '🐯',
-  'koala': '🐨', 'pig': '🐷', 'lion': '🦁', 'chicken': '🐔', 'monkey': '🐵'
+  'fox': 'fox', 'frog': 'frog', 'cat': 'cat', 'panda': 'panda', 'tiger': 'tiger',
+  'koala': 'koala', 'pig': 'pig', 'lion': 'lion', 'chicken': 'chicken', 'monkey': 'monkey'
 };
 
 function getSanitizedAvatar(avatar) {
@@ -193,7 +193,7 @@ function getSanitizedAvatar(avatar) {
 }
 
 function getAvatarEmoji(key) {
-  return KEY_TO_EMOJI[key] || '🦊';
+  return KEY_TO_EMOJI[key] || 'fox';
 }
 
 function getPixelArtSVG(avatarKey, size = 32) {
@@ -508,7 +508,7 @@ function renderPlayerBadgeHTML(player, size = 'md', options = {}) {
   }
   const streak = (playerIdx !== -1) ? getPlayerCurrentStreak(playerIdx) : 0;
   const flameHTML = (streak >= 3)
-    ? `<span class="streak-flame-wrapper" style="display: inline-flex; align-items: center; gap: 2px; margin-left: 0.2rem;" title="Menang beruntun ${streak}x! 🔥">
+    ? `<span class="streak-flame-wrapper" style="display: inline-flex; align-items: center; gap: 2px; margin-left: 0.2rem;" title="Menang beruntun ${streak}x! ">
         ${getPixelFlameSVG(svgSize)}
         <span style="font-family: var(--font-title); font-size: ${size === 'sm' ? '0.55rem' : '0.65rem'}; color: #FFD740; text-shadow: 1px 1px 0px #000; font-weight: bold; line-height: 1;">${streak}</span>
        </span>`
@@ -636,12 +636,12 @@ function toggleLiteMode(init = false) {
       knob.style.transform = 'translateX(14px)';
       switchBg.style.background = 'var(--accent-green)';
       switchBg.style.borderColor = 'var(--accent-green)';
-      if (icon) icon.textContent = '🍃';
+      if (icon) icon.textContent = '';
     } else {
       knob.style.transform = 'translateX(0)';
       switchBg.style.background = 'rgba(255,255,255,0.15)';
       switchBg.style.borderColor = 'rgba(255,255,255,0.2)';
-      if (icon) icon.textContent = '⚡';
+      if (icon) icon.textContent = '';
     }
   }
 }
@@ -653,12 +653,7 @@ function toggleKemerdekaanTheme(init = false) {
   let newKemerdekaan;
   if (init) {
     const savedKemerdekaan = localStorage.getItem('kemerdekaan-mode');
-    if (savedKemerdekaan !== null) {
-      newKemerdekaan = (savedKemerdekaan === 'true');
-    } else {
-      const now = new Date();
-      newKemerdekaan = (now.getMonth() === 7 && now.getDate() <= 19);
-    }
+    newKemerdekaan = (savedKemerdekaan === 'true');
   } else {
     newKemerdekaan = !isKemerdekaan;
   }
@@ -989,12 +984,22 @@ function startGame() {
 
   renderDashboard();
   showPage('dashboard');
-  showToast('Permainan dimulai! 🎮');
+  showToast('Permainan dimulai! ');
 }
 
 // ─────────────────────────────────────────────
 // DASHBOARD
 // ─────────────────────────────────────────────
+function handleDashboardBack() {
+  const g = state.currentGame;
+  if (g && g.isTournamentMatch) {
+    showPage('tournament');
+    showToast('Kembali ke menu Turnamen ');
+  } else {
+    showPage('home');
+  }
+}
+
 function renderDashboard() {
   const g = state.currentGame;
   if (!g) return;
@@ -1038,12 +1043,23 @@ function renderDashboard() {
   // Score input section
   const inputSection = document.getElementById('score-input-section');
   const titleEl = document.getElementById('score-input-title');
+  const tourneyFinishBtn = document.getElementById('btn-finish-tourney-match');
+
   if (g.status === 'done') {
     inputSection.classList.add('hidden');
   } else {
     inputSection.classList.remove('hidden');
     titleEl.textContent = `Tambah Skor Ronde ${g.rounds.length + 1}`;
     renderScoreInputs('score-inputs');
+
+    // Toggle finish tournament button if playing tournament match
+    if (tourneyFinishBtn) {
+      if (g.isTournamentMatch) {
+        tourneyFinishBtn.classList.remove('hidden');
+      } else {
+        tourneyFinishBtn.classList.add('hidden');
+      }
+    }
   }
 
   // History
@@ -1133,8 +1149,8 @@ function renderLeaderboard() {
     const isDealer = p.idx === dealerIdx;
     const isFirst = p.idx === firstPlayerIdx;
 
-    const dealerBadge = isDealer ? `<span class="dealer-badge-sm" title="Pengocok Kartu (Ngocok)">🎴 NGOCOK</span>` : '';
-    const firstBadge = isFirst ? `<span class="first-badge-sm" title="Jalan Duluan">🚀 Jalan Duluan</span>` : '';
+    const dealerBadge = isDealer ? `<span class="dealer-badge-sm" title="Pengocok Kartu (Ngocok)"> NGOCOK</span>` : '';
+    const firstBadge = isFirst ? `<span class="first-badge-sm" title="Jalan Duluan"> Jalan Duluan</span>` : '';
 
     const item = document.createElement('div');
     const onFire = isPlayerOnFire(p.idx);
@@ -1223,8 +1239,8 @@ function renderScoreInputs(containerId) {
     const isDealer = i === dealerIdx;
     const isFirst = i === firstPlayerIdx;
 
-    const dealerBadge = isDealer ? `<span class="dealer-badge" title="Pengocok Kartu (Ngocok)">🎴 NGOCOK</span>` : '';
-    const firstBadge = isFirst ? `<span class="first-badge" title="Jalan Duluan">🚀 Jalan Duluan</span>` : '';
+    const dealerBadge = isDealer ? `<span class="dealer-badge" title="Pengocok Kartu (Ngocok)"> NGOCOK</span>` : '';
+    const firstBadge = isFirst ? `<span class="first-badge" title="Jalan Duluan"> Jalan Duluan</span>` : '';
 
     const row = document.createElement('div');
     row.className = 'score-input-row';
@@ -1422,7 +1438,7 @@ function finalizeSaveRound(scores) {
   if (firstPlayerIdx !== -1) {
     const winnerName = g.players[firstPlayerIdx].name;
     const scoreVal = lastRound.scores[firstPlayerIdx];
-    showToast(`🎉 ${winnerName} dapat ${scoreVal}! Ronde berikutnya jalan duluan 🚀`, 4000);
+    showToast(` ${winnerName} dapat ${scoreVal}! Ronde berikutnya jalan duluan `, 4000);
   } else {
     showToast(`Ronde ${g.rounds.length} disimpan ✓`);
   }
@@ -1488,9 +1504,20 @@ function renderGameOver() {
   const g = state.currentGame;
   if (!g) return;
 
+  const btnBackTourney = document.getElementById('btn-back-tournament');
+  if (btnBackTourney) {
+    if (g.isTournamentMatch) {
+      btnBackTourney.classList.remove('hidden');
+      const isRR = g.tournamentContext && g.tournamentContext.mode === 'roundrobin';
+      btnBackTourney.textContent = isRR ? ' Simpan & Kembali ke Klasemen' : ' Simpan & Kembali ke Bagan Turnamen';
+    } else {
+      btnBackTourney.classList.add('hidden');
+    }
+  }
+
   const winner = [...g.players].sort((a, b) => a.total - b.total)[0];
   document.getElementById('gameover-subtitle').textContent =
-    `🏆 ${winner.name} menang dengan ${winner.total} poin terkecil!`;
+    ` ${winner.name} menang dengan ${winner.total} poin terkecil!`;
 
   const sorted = [...g.players]
     .map((p, i) => ({ ...p, idx: i }))
@@ -1619,7 +1646,7 @@ function undoLastDelete() {
   recalcTotals();
   saveState();
   renderDashboard();
-  showToast('Penghapusan dibatalkan ↩');
+  showToast('Penghapusan dibatalkan ');
 }
 
 // ─────────────────────────────────────────────
@@ -1960,7 +1987,7 @@ function shareHistoryGame() {
   const date = new Date(g.createdAt).toLocaleDateString('id-ID');
   let text = `GAPLE SCORE — ${g.name} (${date})\n`;
   text += `━━━━━━━━━━━━━━━━━━\n`;
-  const medals = ['🥇', '🥈', '🥉'];
+  const medals = ['1', '2', '3'];
   sorted.forEach((p, i) => {
     text += `${medals[i] || (i + 1 + '.')} ${getAvatarEmoji(p.avatar)} ${p.name}: ${p.total} poin\n`;
   });
@@ -1980,7 +2007,7 @@ function shareHistoryGame() {
   });
 
   if (gapleEvents.length > 0) {
-    text += `MOMEN GAPLE 🀱:\n`;
+    text += `MOMEN GAPLE :\n`;
     text += gapleEvents.join('\n') + `\n`;
     text += `━━━━━━━━━━━━━━━━━━\n`;
   }
@@ -2017,7 +2044,7 @@ function showPreviousGameStats(mode) {
           state.viewingHistoryList = history;
           showHistoryDetail(completed[0].id);
         } else {
-          showToast('Belum ada permainan online sebelumnya 🎮');
+          showToast('Belum ada permainan online sebelumnya ');
         }
       });
     } else {
@@ -2030,7 +2057,7 @@ function showPreviousGameStats(mode) {
       state.viewingHistoryList = state.allGames;
       showHistoryDetail(completed[0].id);
     } else {
-      showToast('Belum ada permainan lokal sebelumnya 🎮');
+      showToast('Belum ada permainan lokal sebelumnya ');
     }
   }
 }
@@ -2051,7 +2078,7 @@ function executeResetAllData() {
   state.allGames = [];
 
   closeModal('modal-confirm-reset');
-  showToast('Semua data berhasil direset! 🧹');
+  showToast('Semua data berhasil direset! ');
 
   showPage('home');
   setTimeout(() => {
@@ -2072,7 +2099,7 @@ function copyResult() {
   const date = new Date(g.createdAt).toLocaleDateString('id-ID');
   let text = `GAPLE SCORE — ${g.name} (${date})\n`;
   text += `━━━━━━━━━━━━━━━━━━\n`;
-  const medals = ['🥇', '🥈', '🥉'];
+  const medals = ['1', '2', '3'];
   sorted.forEach((p, i) => {
     text += `${medals[i] || (i + 1 + '.')} ${getAvatarEmoji(p.avatar)} ${p.name}: ${p.total} poin\n`;
   });
@@ -2093,7 +2120,7 @@ function copyResult() {
   });
 
   if (gapleEvents.length > 0) {
-    text += `MOMEN GAPLE 🀱:\n`;
+    text += `MOMEN GAPLE :\n`;
     text += gapleEvents.join('\n') + `\n`;
     text += `━━━━━━━━━━━━━━━━━━\n`;
   }
@@ -2678,11 +2705,11 @@ function showAppreciationOverlay(player, score) {
 
   const playerNameHtml = renderPlayerBadgeHTML(player, 'lg');
 
-  let message = 'TANGGUH SEKALI! 🏆';
+  let message = 'TANGGUH SEKALI! ';
   if (score === -30) {
-    message = 'DUNG TAK DUNG DUNG WAWWWW! 🥁🔥';
+    message = 'DUNG TAK DUNG DUNG WAWWWW! ';
   } else if (score === -25) {
-    message = 'GACORRRR KINGGGG GAPLE! 👑⚡';
+    message = 'GACORRRR KINGGGG GAPLE! ';
   }
 
   overlay.innerHTML = `
@@ -2700,7 +2727,7 @@ function showAppreciationOverlay(player, score) {
       </div>
       
       <button class="btn btn-primary btn-lg" style="min-width: 160px;" onclick="dismissAppreciationOverlay()">
-        LANJUT 🚀
+        LANJUT 
       </button>
     </div>
   `;
@@ -2846,7 +2873,7 @@ function setupSocketListeners() {
     if (state.onlineRoom && state.onlineRoom.players) {
       const p = state.onlineRoom.players.find(pl => pl.id === socketId);
       if (p) {
-        showToast(`Pemain ${p.name} terputus dari permainan! 🛜`);
+        showToast(`Pemain ${p.name} terputus dari permainan! `);
       }
     }
   });
@@ -2958,7 +2985,7 @@ function renderOnlineLobby() {
     if (p) {
       row.className = 'lobby-player-row';
       const isHost = p.id === room.hostId;
-      const hostTag = isHost ? `<span class="dealer-badge" style="background: var(--accent-gold); color: #1A1C1E; font-size: 0.65rem; border: 1.5px solid #1A1C1E; box-shadow: 1px 1px 0px #000; padding: 2px 4px; font-weight: bold; text-transform: uppercase;">👑 HOST</span>` : '';
+      const hostTag = isHost ? `<span class="dealer-badge" style="background: var(--accent-gold); color: #1A1C1E; font-size: 0.65rem; border: 1.5px solid #1A1C1E; box-shadow: 1px 1px 0px #000; padding: 2px 4px; font-weight: bold; text-transform: uppercase;"> HOST</span>` : '';
       row.innerHTML = `
         <span>${renderPlayerBadgeHTML(p, 'sm')}</span>
         ${hostTag}
@@ -3036,7 +3063,7 @@ function renderOnlineDashboard() {
   const bottomEl = document.getElementById('online-player-bottom');
   if (bottomEl) {
     bottomEl.innerHTML = `
-      ${isBottomActive ? '<div style="font-family: var(--font-title); font-size: 0.5rem; color: var(--accent-gold); margin-bottom: 2px; text-shadow: 1px 1px 0px #000; animation: retroFloat 1.2s ease-in-out infinite;">👉 GILIRAN KAMU</div>' : ''}
+      ${isBottomActive ? '<div style="font-family: var(--font-title); font-size: 0.5rem; color: var(--accent-gold); margin-bottom: 2px; text-shadow: 1px 1px 0px #000; animation: retroFloat 1.2s ease-in-out infinite;"> GILIRAN KAMU</div>' : ''}
       <div class="player-slot-badge-wrap" style="display: flex; align-items: center; gap: 6px;">
         <div class="${isBottomActive ? 'active-player-outline' : ''}" style="display: inline-block;">
           ${renderPlayerBadgeHTML(bottomPlayer, 'sm')}
@@ -3292,9 +3319,9 @@ function renderOnlineRoundHistory(rounds) {
 
 function showRoundEndModal(roundLog) {
   const outcome = document.getElementById('round-end-outcome');
-  const typeLabel = roundLog.type === 'gaple' ? 'GAPLE!' : (roundLog.type === 'gacor' ? 'GACOR! ⚡' : (roundLog.type === 'dung_tak' ? 'DUNG TAK! 🔥' : 'MENANG!'));
+  const typeLabel = roundLog.type === 'gaple' ? 'GAPLE!' : (roundLog.type === 'gacor' ? 'GACOR! ' : (roundLog.type === 'dung_tak' ? 'DUNG TAK! ' : 'MENANG!'));
   
-  outcome.innerHTML = `🏆 ${roundLog.winnerName} ${typeLabel}`;
+  outcome.innerHTML = ` ${roundLog.winnerName} ${typeLabel}`;
 
   // Scoreboard populating
   const board = document.getElementById('round-end-scoreboard');
@@ -3329,9 +3356,9 @@ function showRoundEndModal(roundLog) {
 
   // Trigger celebration visual effects on custom milestones
   if (roundLog.type === 'gacor') {
-    showToast('GACORRRR KINGGGG! 👑⚡');
+    showToast('GACORRRR KINGGGG! ');
   } else if (roundLog.type === 'dung_tak') {
-    showToast('DUNG TAK DUNG DUNG WAWWWW! 🥁🔥');
+    showToast('DUNG TAK DUNG DUNG WAWWWW! ');
   }
 
   openModal('modal-round-end');
@@ -3352,7 +3379,7 @@ function renderOnlineGameOver(players, rounds, leaderboard) {
   state.onlineGameOverData = { players, rounds, leaderboard };
 
   const winner = leaderboard[0];
-  document.getElementById('gameover-subtitle').textContent = `🏆 ${winner.name} menang dengan ${winner.total} poin terkecil!`;
+  document.getElementById('gameover-subtitle').textContent = ` ${winner.name} menang dengan ${winner.total} poin terkecil!`;
 
   const container = document.getElementById('gameover-leaderboard');
   container.innerHTML = '';
@@ -3557,7 +3584,7 @@ function toggleMuteSound() {
     localStorage.setItem('gaple_muted', isMuted);
   } catch (e) {}
   updateMuteIcon();
-  showToast(isMuted ? 'Suara dimatikan 🔈' : 'Suara diaktifkan 🔊');
+  showToast(isMuted ? 'Suara dimatikan ' : 'Suara diaktifkan ');
 }
 
 function updateMuteIcon() {
@@ -3842,14 +3869,14 @@ function shareGameToWhatsApp() {
 
     let medal = '';
     if (rank === 1) {
-      medal = '🥇';
+      medal = '1';
       firstPlacePlayer = name;
     } else if (rank === 2) {
-      medal = '🥈';
+      medal = '2';
     } else if (rank === 3) {
-      medal = '🥉';
+      medal = '3';
     } else {
-      medal = '☠️';
+      medal = '';
     }
 
     leaderboardText += `${medal} *Rank ${rank}: ${name}* — ${score} poin\n`;
@@ -3878,17 +3905,17 @@ function shareGameToWhatsApp() {
     roundsData.forEach((r, roundIdx) => {
       const hasNeg20 = r.scores.includes(-20);
       if (r.gapleCard && !hasNeg20 && r.scores.every(s => s === 0)) {
-        specialMoments.push(`🎴 *Ronde ${roundIdx + 1}:* Momen *Gaple (Semua Skor 0)* dengan *Balak ${r.gapleCard}!* 🃏`);
+        specialMoments.push(` *Ronde ${roundIdx + 1}:* Momen *Gaple (Semua Skor 0)* dengan *Balak ${r.gapleCard}!* `);
       }
       r.scores.forEach((score, playerIdx) => {
         if (playersData[playerIdx]) {
           const playerName = playersData[playerIdx].name;
           if (score === -30) {
-            specialMoments.push(`🔥 *Ronde ${roundIdx + 1}: ${playerName}* menang telak *Dung Tak (-30 poin)!* ⚔️`);
+            specialMoments.push(` *Ronde ${roundIdx + 1}: ${playerName}* menang telak *Dung Tak (-30 poin)!* `);
           } else if (score === -25) {
-            specialMoments.push(`⚡ *Ronde ${roundIdx + 1}: ${playerName}* menang *Gacor (-25 poin)!* 💥`);
+            specialMoments.push(` *Ronde ${roundIdx + 1}: ${playerName}* menang *Gacor (-25 poin)!* `);
           } else if (score === -20) {
-            specialMoments.push(`🎴 *Ronde ${roundIdx + 1}: ${playerName}* menang *Gaple (-20 poin)!* 🃏`);
+            specialMoments.push(` *Ronde ${roundIdx + 1}: ${playerName}* menang *Gaple (-20 poin)!* `);
           }
         }
       });
@@ -3896,21 +3923,21 @@ function shareGameToWhatsApp() {
   }
 
   // Susun pesan WhatsApp
-  let message = `🎴 *GAPLE SCORE TRACKER* 🎴\n`;
+  let message = ` *GAPLE SCORE TRACKER* \n`;
   message += `_Permainan selesai! Berikut adalah hasil akhirnya:_\n\n`;
   message += leaderboardText + `\n`;
 
   if (biggestLoser) {
-    message += `👑 *Beban Game:* *${biggestLoser}* dengan skor *${highestScore} poin*! 🤡🤣\n\n`;
+    message += ` *Beban Game:* *${biggestLoser}* dengan skor *${highestScore} poin*! \n\n`;
   }
 
   if (specialMoments.length > 0) {
-    message += `✨ *Momen Spektakuler:* \n` + specialMoments.join('\n') + `\n\n`;
+    message += ` *Momen Spektakuler:* \n` + specialMoments.join('\n') + `\n\n`;
   } else {
-    message += `🏆 Selamat untuk *${firstPlacePlayer}* atas kemenangannya!\n\n`;
+    message += ` Selamat untuk *${firstPlacePlayer}* atas kemenangannya!\n\n`;
   }
 
-  message += `_Dicatat otomatis menggunakan Gaple Score Tracker._ 🎴`;
+  message += `_Dicatat otomatis menggunakan Gaple Score Tracker._ `;
 
   const encodedText = encodeURIComponent(message);
   const waUrl = `https://api.whatsapp.com/send?text=${encodedText}`;
@@ -3964,7 +3991,2021 @@ function resumeHistoryGame() {
   // The user might be viewing history or home page
   renderDashboard();
   showPage('dashboard');
-  showToast('Melanjutkan permainan... 🎮');
+  showToast('Melanjutkan permainan... ');
+}
+
+// ─────────────────────────────────────────────
+// TURNAMEN KEMERDEKAAN (17 AGUSTUS) — 16 PESERTA ENGINE
+// ─────────────────────────────────────────────
+
+const PRESET_17_PLAYERS = [
+  { id: 1, name: 'Pak RT Tejo', avatar: 'fox', color: '#FF5252' },
+  { id: 2, name: 'Bang Jago', avatar: 'tiger', color: '#448AFF' },
+  { id: 3, name: 'Pak RW Bambang', avatar: 'lion', color: '#FFD740' },
+  { id: 4, name: 'Mas Merdeka', avatar: 'cat', color: '#69F0AE' },
+  { id: 5, name: 'Cak Lontong', avatar: 'monkey', color: '#E040FB' },
+  { id: 6, name: 'Mbah Jiwo', avatar: 'panda', color: '#00E5FF' },
+  { id: 7, name: 'Pak Lurah', avatar: 'pig', color: '#FF9100' },
+  { id: 8, name: 'Kapten Merdeka', avatar: 'chicken', color: '#FF4081' },
+  { id: 9, name: 'Pak Kadus', avatar: 'koala', color: '#FF5252' },
+  { id: 10, name: 'Mang Ujang', avatar: 'frog', color: '#448AFF' },
+  { id: 11, name: 'Bang Pitung', avatar: 'tiger', color: '#FFD740' },
+  { id: 12, name: 'Srikandi', avatar: 'fox', color: '#E040FB' },
+  { id: 13, name: 'Pejuang Gaple', avatar: 'cat', color: '#69F0AE' },
+  { id: 14, name: 'Jawara RT', avatar: 'lion', color: '#00E5FF' },
+  { id: 15, name: 'Si Pitung', avatar: 'monkey', color: '#FF9100' },
+  { id: 16, name: 'Kang Agus', avatar: 'panda', color: '#FF4081' }
+];
+
+let tournamentState = null;
+let tourneySelectedSize = 16;
+let roundRobinRoundsCount = 3;
+
+// ─────────────────────────────────────────────
+// TOURNAMENT BRACKET ENGINE — Universal Algorithm (Knockout)
+// ─────────────────────────────────────────────
+
+function canReach4(N, memo) {
+  if (!memo) memo = new Map();
+  if (N === 4) return true;
+  if (N < 4) return false;
+  if (memo.has(N)) return memo.get(N);
+
+  const numTables = Math.floor(N / 4);
+  const byes = N % 4;
+
+  if (numTables === 0) {
+    memo.set(N, false);
+    return false;
+  }
+
+  for (let q = 1; q <= 4; q++) {
+    const next = numTables * q + byes;
+    if (next === 4 || canReach4(next, memo)) {
+      memo.set(N, true);
+      return true;
+    }
+  }
+
+  memo.set(N, false);
+  return false;
+}
+
+function findSFConfig(sfInput) {
+  const numTables = Math.floor(sfInput / 4);
+  const byes = sfInput % 4;
+  if (numTables === 0) return null;
+  const q = (4 - byes) / numTables;
+  if (Number.isInteger(q) && q >= 1 && q <= 4) {
+    return { numTables, qCount: q, numByes: byes };
+  }
+  return null;
+}
+
+function computeBracketRounds(N) {
+  const memo = new Map();
+
+  const naturalConfigs = [];
+  let cur = N;
+  while (cur > 4) {
+    const numTables = Math.floor(cur / 4);
+    const byes = cur % 4;
+    let chosen = null;
+    for (let q = 1; q <= 4; q++) {
+      const next = numTables * q + byes;
+      if (next === 4 || canReach4(next, memo)) {
+        chosen = { numTables, qCount: q, numByes: byes, inputCount: cur, outputCount: numTables * q + byes };
+        break;
+      }
+    }
+    if (!chosen) break;
+    naturalConfigs.push(chosen);
+    cur = chosen.outputCount;
+  }
+
+  if (naturalConfigs.length < 2) {
+    const numTablesP = Math.floor(N / 4);
+    const byesP = N % 4;
+
+    let penyisihanCfg = null;
+    let semiFinalCfg = null;
+
+    for (let qP = 1; qP <= 4; qP++) {
+      const sfInput = numTablesP * qP + byesP;
+      const sfCfg = findSFConfig(sfInput);
+      if (sfCfg && sfCfg.qCount < 4) {
+        penyisihanCfg = { numTables: numTablesP, qCount: qP, numByes: byesP, inputCount: N, outputCount: sfInput };
+        semiFinalCfg  = { numTables: sfCfg.numTables, qCount: sfCfg.qCount, numByes: sfCfg.numByes, inputCount: sfInput, outputCount: 4 };
+        break;
+      }
+    }
+
+    if (!penyisihanCfg) {
+      for (let qP = 1; qP <= 4; qP++) {
+        const sfInput = numTablesP * qP + byesP;
+        const sfCfg = findSFConfig(sfInput);
+        if (sfCfg) {
+          penyisihanCfg = { numTables: numTablesP, qCount: qP, numByes: byesP, inputCount: N, outputCount: sfInput };
+          semiFinalCfg  = { numTables: sfCfg.numTables, qCount: sfCfg.qCount, numByes: sfCfg.numByes, inputCount: sfInput, outputCount: 4 };
+          break;
+        }
+      }
+    }
+
+    if (penyisihanCfg && semiFinalCfg) {
+      naturalConfigs.splice(0, naturalConfigs.length, penyisihanCfg, semiFinalCfg);
+    }
+  }
+
+  const playRounds = naturalConfigs.length;
+  const rounds = naturalConfigs.map((cfg, idx) => ({
+    name: idx === playRounds - 1
+          ? 'Semifinal'
+          : playRounds === 2
+            ? 'Babak Penyisihan'
+            : `Babak Penyisihan ${idx + 1}`,
+    isFinal: false,
+    numTables: cfg.numTables,
+    qCount: cfg.qCount,
+    numByes: cfg.numByes,
+    inputCount: cfg.inputCount,
+    outputCount: cfg.outputCount
+  }));
+
+  rounds.push({
+    name: 'Final',
+    isFinal: true,
+    numTables: 1,
+    qCount: 4,
+    numByes: 0,
+    inputCount: 4,
+    outputCount: null
+  });
+
+  return rounds;
+}
+
+function makeTournamentTable(id, label, playerIds) {
+  return {
+    id,
+    name: label,
+    playerIds: playerIds || [],
+    scores: {},
+    winnerIds: [],
+    status: 'pending'
+  };
+}
+
+function initTournamentData(forceReset = false, customPlayerCount = null, targetMode = null) {
+  if (!forceReset) {
+    try {
+      const saved = localStorage.getItem('gaple_tournamentState');
+      if (saved) {
+        tournamentState = JSON.parse(saved);
+        if (tournamentState && tournamentState.players) {
+          tourneySelectedSize = tournamentState.players.length;
+        }
+        if (tournamentState && tournamentState.mode === 'roundrobin' && tournamentState.rrConfig) {
+          roundRobinRoundsCount = tournamentState.rrConfig.roundsCount || 3;
+        }
+        if (tournamentState && tournamentState.stages && !tournamentState.rounds) {
+          console.warn('Old tournament format detected, resetting...');
+          tournamentState = null;
+          localStorage.removeItem('gaple_tournamentState');
+        } else {
+          return;
+        }
+      }
+    } catch (e) {
+      console.warn('Gagal membaca gaple_tournamentState:', e);
+    }
+  }
+
+  const currentMode = targetMode || (tournamentState ? tournamentState.mode : 'knockout') || 'knockout';
+  const N = customPlayerCount || tourneySelectedSize || 16;
+  tourneySelectedSize = N;
+
+
+  // Build players list
+  const players = [];
+  for (let i = 0; i < N; i++) {
+    if (PRESET_17_PLAYERS[i]) {
+      players.push({ ...PRESET_17_PLAYERS[i] });
+    } else {
+      const avatarIdx = i % DEFAULT_AVATARS.length;
+      const colorIdx = i % DEFAULT_COLORS.length;
+      players.push({
+        id: i + 1,
+        name: `Peserta ${i + 1}`,
+        avatar: DEFAULT_AVATARS[avatarIdx],
+        color: DEFAULT_COLORS[colorIdx]
+      });
+    }
+  }
+
+  if (currentMode === 'roundrobin') {
+    // Round Robin Mode
+    const rrMatches = generateRoundRobinMatches(players, roundRobinRoundsCount);
+    tournamentState = {
+      mode: 'roundrobin',
+      players,
+      rrConfig: {
+        roundsCount: roundRobinRoundsCount,
+        playerCount: N
+      },
+      rrMatches,
+      activeTab: 'standings',
+      winners: { juara1: null, juara2: null, juara3: null, juara4: null }
+    };
+  } else {
+    // Knockout Bracket Mode
+    const bracketConfigs = computeBracketRounds(N);
+    const firstCfg = bracketConfigs[0];
+    const firstByeIds = players.slice(firstCfg.numTables * 4).map(p => p.id);
+    const firstActiveIds = players.slice(0, firstCfg.numTables * 4).map(p => p.id);
+
+    const rounds = bracketConfigs.map((cfg, roundIdx) => {
+      let tables = [];
+      if (roundIdx === 0) {
+        for (let t = 0; t < cfg.numTables; t++) {
+          const label = cfg.name === 'Final' ? 'Meja Final '
+            : cfg.name === 'Semifinal' ? `Meja Semifinal ${t + 1}`
+            : `Meja ${t + 1}`;
+          tables.push(makeTournamentTable(t + 1, label, firstActiveIds.slice(t * 4, (t + 1) * 4)));
+        }
+      } else {
+        for (let t = 0; t < cfg.numTables; t++) {
+          const label = cfg.isFinal ? 'Meja Final '
+            : cfg.name === 'Semifinal' ? `Meja Semifinal ${t + 1}`
+            : `Meja ${cfg.name} ${t + 1}`;
+          tables.push(makeTournamentTable(t + 1, label, []));
+        }
+      }
+
+      return {
+        key: roundIdx === bracketConfigs.length - 1 ? 'final' : `round_${roundIdx}`,
+        name: cfg.name,
+        isFinal: cfg.isFinal,
+        numTables: cfg.numTables,
+        qCount: cfg.qCount,
+        numByes: cfg.numByes,
+        tables,
+        byePlayerIds: roundIdx === 0 ? firstByeIds : []
+      };
+    });
+
+    tournamentState = {
+      mode: 'knockout',
+      players,
+      rounds,
+      currentRoundIndex: 0,
+      winners: { juara1: null, juara2: null, juara3: null, juara4: null }
+    };
+  }
+
+  saveTournamentState();
+}
+
+/**
+ * Generate fixtures for Round Robin tournaments:
+ * - Aturan Gaple: Setiap 1 meja HARUS tepat 4 pemain (tidak boleh kurang).
+ * - Jika jumlah total peserta N bukan kelipatan 4 (misal: 5, 6, 7, 9, 10, 13, 14, 15, 17):
+ *   Jumlah meja bermain = Math.floor(N / 4).
+ *   Sisa pemain (N % 4) mendapatkan giliran istirahat (Bye) yang berotasi adil & merata setiap babak.
+ */
+function generateRoundRobinMatches(players, totalRounds = 3) {
+  const matches = [];
+  const N = players.length;
+  if (N < 4) return matches;
+
+  const numTables = Math.floor(N / 4);
+  const byesCount = N % 4;
+
+  // Langkah rotasi: jika ada bye, geser sebesar byesCount agar pemain yang istirahat bergantian adil setiap babak.
+  // Jika kelipatan 4 (tanpa bye), geser 3 agar variasi lawan di meja selalu berbeda.
+  const shiftStep = byesCount > 0 ? byesCount : 3;
+
+  for (let r = 0; r < totalRounds; r++) {
+    const rotatedPlayers = [];
+    for (let i = 0; i < N; i++) {
+      const offsetIdx = (i + (r * shiftStep)) % N;
+      rotatedPlayers.push(players[offsetIdx]);
+    }
+
+    // Pemain yang bermain di babak ini (tepat 4 pemain per meja)
+    const activePlayers = rotatedPlayers.slice(0, numTables * 4);
+    // Pemain yang mendapat giliran istirahat pada babak ini
+    const byePlayers = rotatedPlayers.slice(numTables * 4);
+
+    for (let t = 0; t < numTables; t++) {
+      const tablePlayers = activePlayers.slice(t * 4, (t + 1) * 4);
+      matches.push({
+        id: `rr_r${r}_t${t}`,
+        roundIdx: r,
+        tableIdx: t,
+        name: `Babak ${r + 1} • Meja ${t + 1}`,
+        playerIds: tablePlayers.map(p => p.id),
+        byePlayerIds: byePlayers.map(p => p.id),
+        scores: {},
+        winnerIds: [],
+        status: 'pending'
+      });
+    }
+  }
+
+  return matches;
+}
+
+function saveTournamentState() {
+  try {
+    if (tournamentState) {
+      localStorage.setItem('gaple_tournamentState', JSON.stringify(tournamentState));
+    }
+  } catch (e) {
+    console.warn('Gagal menyimpan gaple_tournamentState:', e);
+  }
+}
+
+function openTournamentMode() {
+  if (!tournamentState) {
+    openTournamentModeSelectionModal();
+  } else {
+    renderTournamentView();
+    showPage('tournament');
+  }
+}
+
+function openTournamentModeSelectionModal() {
+  openModal('modal-tournament-mode-select');
+}
+
+function selectTournamentMode(mode) {
+  closeModal('modal-tournament-mode-select');
+  const size = tourneySelectedSize || 16;
+  initTournamentData(true, size, mode);
+  renderTournamentView();
+  showPage('tournament');
+  const modeName = mode === 'roundrobin' ? 'Round Robin (Pengumpulan Poin)' : 'Knockout System (Eliminasi)';
+  showToast(`Mode Turnamen: ${modeName} diaktifkan! `);
+}
+
+function autofillTournamentPlayers() {
+  const currentMode = tournamentState ? tournamentState.mode : 'knockout';
+  initTournamentData(true, tourneySelectedSize, currentMode);
+  renderTournamentView();
+  showToast(`${tourneySelectedSize} Peserta telah diisi otomatis! `);
+}
+
+function selectTournamentSizePreset(size) {
+  tourneySelectedSize = size;
+  const countEl = document.getElementById('tourney-player-count-display');
+  if (countEl) countEl.textContent = size;
+  
+  document.querySelectorAll('.tourney-preset-btn').forEach(btn => {
+    if (btn.textContent.trim().startsWith(size + ' ')) {
+      btn.classList.add('active');
+    } else {
+      btn.classList.remove('active');
+    }
+  });
+
+  renderTournamentSetupInputs(size);
+}
+
+function changeTournamentPlayerCount(delta) {
+  const minCount = 4; // 1 meja gaple harus minimal 4 pemain
+  tourneySelectedSize = Math.max(minCount, Math.min(64, tourneySelectedSize + delta));
+  const countEl = document.getElementById('tourney-player-count-display');
+  if (countEl) countEl.textContent = tourneySelectedSize;
+
+  document.querySelectorAll('.tourney-preset-btn').forEach(btn => {
+    if (btn.textContent.trim().startsWith(tourneySelectedSize + ' ')) {
+      btn.classList.add('active');
+    } else {
+      btn.classList.remove('active');
+    }
+  });
+
+  renderTournamentSetupInputs(tourneySelectedSize);
+}
+
+function selectRoundRobinRoundsCount(rounds) {
+  roundRobinRoundsCount = Number(rounds) || 3;
+  document.querySelectorAll('.rr-round-count-btn').forEach(btn => btn.classList.remove('active'));
+  const activeBtn = document.getElementById(`rr-rounds-btn-${rounds}`);
+  if (activeBtn) activeBtn.classList.add('active');
+
+  const infoEl = document.getElementById('rr-selected-rounds-info');
+  if (infoEl) {
+    infoEl.innerHTML = `✓ Terpilih: <b>${rounds} Babak</b>`;
+  }
+}
+
+function randomizeTournamentSeeding() {
+  if (!tournamentState) initTournamentData();
+  
+  const shuffledPlayers = [...tournamentState.players];
+  for (let i = shuffledPlayers.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffledPlayers[i], shuffledPlayers[j]] = [shuffledPlayers[j], shuffledPlayers[i]];
+  }
+
+  const count = shuffledPlayers.length;
+  const currentMode = tournamentState.mode || 'knockout';
+  initTournamentData(true, count, currentMode);
+
+  shuffledPlayers.forEach((p, i) => {
+    if (tournamentState.players[i]) {
+      tournamentState.players[i].name = p.name;
+      tournamentState.players[i].avatar = p.avatar;
+      tournamentState.players[i].color = p.color;
+    }
+  });
+
+  saveTournamentState();
+  renderTournamentView();
+  showToast(`${count} Pemain berhasil diacak! `);
+}
+
+function resetTournamentData() {
+  const modeText = (tournamentState && tournamentState.mode === 'roundrobin') ? 'Round Robin' : 'Knockout';
+  if (confirm(`Anda yakin ingin mereset seluruh data turnamen ${modeText} dari awal?`)) {
+    const currentMode = tournamentState ? tournamentState.mode : 'knockout';
+    initTournamentData(true, tourneySelectedSize, currentMode);
+    renderTournamentView();
+    showToast(`Data turnamen ${modeText} telah direset! `);
+  }
+}
+
+function openTournamentSetupModal() {
+  if (!tournamentState) initTournamentData();
+  const count = tournamentState.players.length;
+  tourneySelectedSize = count;
+  const countEl = document.getElementById('tourney-player-count-display');
+  if (countEl) countEl.textContent = count;
+
+  // Highlight active preset button if matches count
+  document.querySelectorAll('.tourney-preset-btn').forEach(btn => {
+    if (btn.textContent.trim().startsWith(count + ' ')) {
+      btn.classList.add('active');
+    } else {
+      btn.classList.remove('active');
+    }
+  });
+
+  const isRR = tournamentState.mode === 'roundrobin';
+  const rrOptions = document.getElementById('rr-setup-options-container');
+  const subtitle = document.getElementById('tourney-setup-subtitle');
+
+  if (rrOptions) {
+    if (isRR) {
+      rrOptions.classList.remove('hidden');
+      const curRounds = (tournamentState.rrConfig && tournamentState.rrConfig.roundsCount) ? tournamentState.rrConfig.roundsCount : roundRobinRoundsCount;
+      selectRoundRobinRoundsCount(curRounds);
+      if (subtitle) subtitle.textContent = 'Atur peserta & jumlah babak untuk Turnamen Round Robin.';
+    } else {
+      rrOptions.classList.add('hidden');
+      if (subtitle) subtitle.textContent = 'Pilih format jumlah peserta & atur nama pemain turnamen.';
+    }
+  }
+
+  renderTournamentSetupInputs(count);
+  openModal('modal-tournament-setup');
+}
+
+function renderTournamentSetupInputs(count) {
+  const grid = document.getElementById('tournament-player-inputs-grid');
+  if (!grid) return;
+  grid.innerHTML = '';
+
+  const existingPlayers = tournamentState ? tournamentState.players : [];
+
+  for (let i = 0; i < count; i++) {
+    const existing = existingPlayers[i];
+    const defaultName = existing ? existing.name : (PRESET_17_PLAYERS[i] ? PRESET_17_PLAYERS[i].name : `Peserta ${i + 1}`);
+
+    const item = document.createElement('div');
+    item.style.display = 'flex';
+    item.style.alignItems = 'center';
+    item.style.gap = '0.5rem';
+    item.style.background = 'rgba(255,255,255,0.03)';
+    item.style.padding = '0.4rem 0.6rem';
+    item.style.borderRadius = '10px';
+    item.style.border = '1px solid rgba(255,255,255,0.08)';
+
+    item.innerHTML = `
+      <span style="font-family: var(--font-pixel); font-size: 0.75rem; font-weight: bold; width: 22px; color: var(--text-secondary); text-align: center;">${i + 1}</span>
+      <input id="tourney-player-input-${i}" class="form-input" type="text" value="${escapeHtml(defaultName)}" maxlength="20" style="flex: 1; font-size: 0.85rem;" />
+    `;
+    grid.appendChild(item);
+  }
+}
+
+function saveTournamentSetupNames() {
+  const count = tourneySelectedSize;
+  const customNames = [];
+  
+  for (let i = 0; i < count; i++) {
+    const el = document.getElementById(`tourney-player-input-${i}`);
+    if (el) {
+      customNames.push(el.value.trim() || `Peserta ${i + 1}`);
+    }
+  }
+
+  const currentMode = tournamentState ? tournamentState.mode : 'knockout';
+  initTournamentData(true, count, currentMode);
+
+  customNames.forEach((name, i) => {
+    if (tournamentState.players[i]) {
+      tournamentState.players[i].name = name;
+    }
+  });
+
+  saveTournamentState();
+  closeModal('modal-tournament-setup');
+  renderTournamentView();
+  showToast(`Turnamen dengan ${count} Peserta berhasil disimpan! `);
+}
+
+function getTournamentPlayerObj(id) {
+  if (!tournamentState) return null;
+  return tournamentState.players.find(p => p.id === id) || null;
+}
+
+// Master Render Function for Tournament
+function renderTournamentView() {
+  if (!tournamentState) initTournamentData();
+  const st = tournamentState;
+
+  // Update Header Mode Indicator
+  const modeBadge = document.getElementById('tourney-mode-indicator');
+  if (modeBadge) {
+    if (st.mode === 'roundrobin') {
+      modeBadge.textContent = 'ROUND ROBIN (POIN)';
+      modeBadge.className = 'stage-badge stage-badge-gold';
+    } else {
+      modeBadge.textContent = 'KNOCKOUT SYSTEM';
+      modeBadge.className = 'stage-badge stage-badge-red';
+    }
+  }
+
+  const bracketView = document.getElementById('tournament-bracket-view');
+  const rrView = document.getElementById('tournament-roundrobin-view');
+
+  if (st.mode === 'roundrobin') {
+    if (bracketView) bracketView.classList.add('hidden');
+    if (rrView) rrView.classList.remove('hidden');
+    renderRoundRobinView();
+  } else {
+    if (rrView) rrView.classList.add('hidden');
+    if (bracketView) bracketView.classList.remove('hidden');
+    renderTournamentBracket();
+  }
+}
+
+// ─────────────────────────────────────────────
+// KNOCKOUT BRACKET RENDERER
+// ─────────────────────────────────────────────
+function renderTournamentBracket() {
+  if (!tournamentState) initTournamentData();
+  const container = document.getElementById('tournament-bracket-view');
+  if (!container) return;
+
+  const st = tournamentState;
+  const currentRoundIdx = st.currentRoundIndex;
+  let stagesHtml = '';
+
+  const stageBadgeColors = [
+    'stage-badge-red', 'stage-badge-orange', 'stage-badge-gold',
+    'stage-badge-green', 'stage-badge-blue', 'stage-badge-purple'
+  ];
+
+  st.rounds.forEach((round, roundIdx) => {
+    const isCurrentRound = (currentRoundIdx !== 'completed') && (roundIdx === currentRoundIdx);
+    const isPastRound = (currentRoundIdx === 'completed') || (typeof currentRoundIdx === 'number' && roundIdx < currentRoundIdx);
+
+    // BYE banner for this round
+    let roundByeBannerHtml = '';
+    if (round.byePlayerIds && round.byePlayerIds.length > 0) {
+      const byeNames = round.byePlayerIds.map(id => {
+        const p = getTournamentPlayerObj(id);
+        return p ? escapeHtml(p.name) : '';
+      }).filter(Boolean).join(', ');
+
+      roundByeBannerHtml = `
+        <div style="background: linear-gradient(90deg, rgba(255,215,0,0.15), rgba(255,215,0,0.05)); border: 1px solid #FFD740; border-radius: 10px; padding: 0.6rem 0.9rem; margin-bottom: 0.75rem; display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; flex-wrap: wrap;">
+          <div style="display: flex; align-items: center; gap: 6px;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#FFD740" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v2z"/><path d="M13 5v2"/><path d="M13 17v2"/></svg>
+            <span style="font-family: var(--font-pixel); font-size: 0.7rem; color: #FFD740; font-weight: bold;">BYE — Lolos Langsung ke ${round.name}:</span>
+            <span style="font-size: 0.8rem; color: #FFF; font-weight: bold;">${byeNames}</span>
+          </div>
+          <span class="stage-badge stage-badge-gold" style="font-size: 0.65rem;">Langsung Lolos ✓</span>
+        </div>
+      `;
+    }
+
+    // Connector (skip before first round)
+    if (roundIdx > 0) {
+      const connectorLabel = round.isFinal ? 'Final 4 Orang'
+        : round.name.includes('Semifinal') ? 'Babak Semifinal'
+        : round.name;
+      stagesHtml += `
+        <div class="bracket-connector">
+          <div class="connector-line"></div>
+          <div class="connector-badge">${connectorLabel}</div>
+          <div class="connector-line"></div>
+        </div>
+      `;
+    }
+
+    // Stage header
+    const badgeClass = round.isFinal ? 'stage-badge-crown'
+      : stageBadgeColors[roundIdx % stageBadgeColors.length];
+    const badgeLabel = round.isFinal ? 'GRAND FINAL'
+      : `BABAK ${roundIdx + 1}`;
+    const tableSub = round.isFinal
+      ? 'Perebutan Juara 1, 2, 3'
+      : `${round.numTables} Meja • Ambil ${round.qCount} Terbaik tiap meja${round.numByes > 0 ? ` • ${round.numByes} Peserta BYE` : ''}`;
+
+    const gridClass = round.isFinal ? 'stage-1-table'
+      : round.numTables <= 2 ? 'stage-2-tables'
+      : round.numTables <= 4 ? 'stage-4-tables'
+      : 'stage-many-tables';
+
+    const wrapClass = round.isFinal ? 'stage-final-wrap' : '';
+
+    stagesHtml += `
+      <div class="bracket-stage ${wrapClass}">
+        <div class="bracket-stage-header">
+          <span class="stage-badge ${badgeClass}">${badgeLabel}</span>
+          <h3 class="stage-title">${round.isFinal ? 'Meja Final (4 Finalis)' : round.name}</h3>
+          <p class="stage-sub">${tableSub}</p>
+        </div>
+        ${roundByeBannerHtml}
+        <div class="stage-tables-grid ${gridClass}">
+          ${round.tables.map((tbl, tIdx) => renderTableCardHTML(roundIdx, tIdx, tbl, round)).join('')}
+        </div>
+      </div>
+    `;
+  });
+
+  container.innerHTML = `<div class="tournament-bracket">${stagesHtml}</div>`;
+
+  if (currentRoundIdx === 'completed' && st.winners && st.winners.juara1) {
+    renderPodiumCards();
+  }
+}
+
+function renderTableCardHTML(roundIdx, tableIdx, tableObj, roundObj) {
+  if (!roundObj) {
+    roundObj = tournamentState && tournamentState.rounds ? tournamentState.rounds[roundIdx] : null;
+  }
+  const currentIdx = tournamentState ? tournamentState.currentRoundIndex : 0;
+  const isCurrentStage = (currentIdx !== 'completed') && (roundIdx === currentIdx);
+  const isDone = tableObj.status === 'completed';
+  
+  let statusBadgeHtml = '<span class="table-status-pill table-status-pending">Belum Main</span>';
+  if (isDone) {
+    statusBadgeHtml = '<span class="table-status-pill table-status-done" style="display: inline-flex; align-items: center; gap: 4px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Selesai</span>';
+  } else if (isCurrentStage && tableObj.playerIds.length === 4) {
+    statusBadgeHtml = '<span class="table-status-pill table-status-active" style="display: inline-flex; align-items: center; gap: 4px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg> Siap Main</span>';
+  }
+
+  let slotsHtml = '';
+  for (let i = 0; i < 4; i++) {
+    const pId = tableObj.playerIds[i];
+    const player = getTournamentPlayerObj(pId);
+    
+    if (!player) {
+      slotsHtml += `
+        <div class="bracket-player-slot" style="opacity: 0.4;">
+          <div class="bracket-player-info">
+            <span style="font-size: 0.75rem; color: #888;">— Slot Pembuka —</span>
+          </div>
+          <span class="bracket-player-score">—</span>
+        </div>
+      `;
+    } else {
+      const isWinner = isDone && tableObj.winnerIds.includes(player.id);
+      let slotClass = '';
+      let badgeTag = '';
+
+      const isFinalRound = roundObj && roundObj.isFinal;
+      if (isFinalRound && isDone) {
+        if (tableObj.winnerIds[0] === player.id) {
+          slotClass = 'champion-1';
+          badgeTag = '<span style="color:#FFD740;">Juara 1</span>';
+        } else if (tableObj.winnerIds[1] === player.id) {
+          slotClass = 'champion-2';
+          badgeTag = '<span style="color:#C0C0C0;">Juara 2</span>';
+        } else if (tableObj.winnerIds[2] === player.id) {
+          slotClass = 'champion-3';
+          badgeTag = '<span style="color:#CD7F32;">Juara 3</span>';
+        }
+      } else if (isWinner) {
+        slotClass = 'qualified';
+        badgeTag = '<span style="color:#4CAF50;">Lolos</span>';
+      }
+
+      const scoreVal = isDone && tableObj.scores[player.id] !== undefined ? tableObj.scores[player.id] : '';
+
+      slotsHtml += `
+        <div class="bracket-player-slot ${slotClass}">
+          <div class="bracket-player-info">
+            ${renderPlayerBadgeHTML(player, 'sm', { showTitle: false })}
+          </div>
+          <div style="display: flex; align-items: center; gap: 6px;">
+            ${badgeTag ? `<span style="font-size: 0.65rem; font-weight: bold;">${badgeTag}</span>` : ''}
+            <span class="bracket-player-score">${scoreVal !== '' ? scoreVal : ''}</span>
+          </div>
+        </div>
+      `;
+    }
+  }
+
+  let actionBtnsHtml = '';
+  if (!isDone && isCurrentStage && tableObj.playerIds.length > 0) {
+    actionBtnsHtml = `
+      <div class="bracket-action-btns">
+        <button class="btn btn-sm btn-primary" style="flex: 1; font-family: var(--font-pixel); background: #FF1744; display: inline-flex; align-items: center; justify-content: center; gap: 6px;" onclick="startTournamentTableMatch(${roundIdx}, ${tableIdx})">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          Catat Skor Meja
+        </button>
+      </div>
+    `;
+  }
+
+  return `
+    <div class="bracket-table-card ${isCurrentStage ? 'active-stage' : ''} ${isDone ? 'completed' : ''}">
+      <div class="table-card-header">
+        <span class="table-card-title">${escapeHtml(tableObj.name)}</span>
+        ${statusBadgeHtml}
+      </div>
+      <div class="bracket-players-list">
+        ${slotsHtml}
+      </div>
+      ${actionBtnsHtml}
+    </div>
+  `;
+}
+
+// ─────────────────────────────────────────────
+// ROUND ROBIN (PENGUMPULAN POIN) RENDERER
+// ─────────────────────────────────────────────
+function switchRoundRobinTab(tabName) {
+  const standingsBtn = document.getElementById('rr-tab-btn-standings');
+  const fixturesBtn = document.getElementById('rr-tab-btn-fixtures');
+  const standingsPanel = document.getElementById('rr-panel-standings');
+  const fixturesPanel = document.getElementById('rr-panel-fixtures');
+
+  if (tabName === 'fixtures') {
+    if (standingsBtn) standingsBtn.classList.remove('active');
+    if (fixturesBtn) fixturesBtn.classList.add('active');
+    if (standingsPanel) standingsPanel.classList.add('hidden');
+    if (fixturesPanel) fixturesPanel.classList.remove('hidden');
+  } else {
+    if (fixturesBtn) fixturesBtn.classList.remove('active');
+    if (standingsBtn) standingsBtn.classList.add('active');
+    if (fixturesPanel) fixturesPanel.classList.add('hidden');
+    if (standingsPanel) standingsPanel.classList.remove('hidden');
+  }
+
+  if (tournamentState) {
+    tournamentState.activeTab = tabName;
+  }
+}
+
+function calculateRoundRobinStandings() {
+  if (!tournamentState || !tournamentState.players) return [];
+
+  const playersMap = {};
+  tournamentState.players.forEach(p => {
+    playersMap[p.id] = {
+      id: p.id,
+      name: p.name,
+      avatar: p.avatar,
+      color: p.color,
+      matchesPlayed: 0,
+      matchesWon: 0,
+      totalPoints: 0,
+      avgPoints: '0.0',
+      avgPointsNum: 0
+    };
+  });
+
+  const matches = tournamentState.rrMatches || [];
+  matches.forEach(m => {
+    if (m.status === 'completed' && m.scores) {
+      m.playerIds.forEach(pId => {
+        if (playersMap[pId]) {
+          playersMap[pId].matchesPlayed++;
+          const pScore = m.scores[pId] !== undefined ? m.scores[pId] : 0;
+          playersMap[pId].totalPoints += pScore;
+        }
+      });
+
+      if (m.winnerIds && m.winnerIds.length > 0) {
+        const winId = m.winnerIds[0];
+        if (playersMap[winId]) {
+          playersMap[winId].matchesWon++;
+        }
+      }
+    }
+  });
+
+  const standingsList = Object.values(playersMap).map(p => {
+    const avg = p.matchesPlayed > 0 ? (p.totalPoints / p.matchesPlayed) : 0;
+    p.avgPointsNum = avg;
+    p.avgPoints = avg.toFixed(1);
+    return p;
+  });
+
+  // Urutan Klasemen Paling Adil:
+  // 1. Peserta yang sudah bermain di atas yang belum main
+  // 2. Rata-Rata Poin terkecil (poin sisa/hukuman terendah per game = Top 1)
+  // 3. Kemenangan Pertandingan terbanyak (matchesWon)
+  // 4. Total poin terkecil
+  standingsList.sort((a, b) => {
+    if (a.matchesPlayed === 0 && b.matchesPlayed === 0) return a.id - b.id;
+    if (a.matchesPlayed === 0) return 1;
+    if (b.matchesPlayed === 0) return -1;
+
+    if (a.avgPointsNum !== b.avgPointsNum) {
+      return a.avgPointsNum - b.avgPointsNum;
+    }
+    if (b.matchesWon !== a.matchesWon) {
+      return b.matchesWon - a.matchesWon;
+    }
+    return a.totalPoints - b.totalPoints;
+  });
+
+  return standingsList;
+}
+
+function renderRoundRobinView() {
+  renderRoundRobinStandingsTable();
+  renderRoundRobinFixtures();
+
+  // Update top winners in tournamentState
+  const standings = calculateRoundRobinStandings();
+  if (tournamentState && standings.length > 0) {
+    tournamentState.winners = {
+      juara1: standings[0] ? getTournamentPlayerObj(standings[0].id) : null,
+      juara2: standings[1] ? getTournamentPlayerObj(standings[1].id) : null,
+      juara3: standings[2] ? getTournamentPlayerObj(standings[2].id) : null,
+      juara4: standings[3] ? getTournamentPlayerObj(standings[3].id) : null
+    };
+  }
+}
+
+function renderRoundRobinStandingsTable() {
+  const tbody = document.getElementById('rr-standings-tbody');
+  if (!tbody) return;
+
+  const standings = calculateRoundRobinStandings();
+  if (standings.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding: 2rem; color: #888;">Belum ada data peserta turnamen.</td></tr>`;
+    return;
+  }
+
+  let html = '';
+  standings.forEach((p, idx) => {
+    const rank = idx + 1;
+    let rankBadgeClass = 'rr-rank-badge-normal';
+    let rowClass = '';
+
+    if (rank === 1) {
+      rankBadgeClass = 'rr-rank-badge-1';
+      rowClass = 'rank-gold';
+    } else if (rank === 2) {
+      rankBadgeClass = 'rr-rank-badge-2';
+      rowClass = 'rank-silver';
+    } else if (rank === 3) {
+      rankBadgeClass = 'rr-rank-badge-3';
+      rowClass = 'rank-bronze';
+    }
+
+    const playerObj = getTournamentPlayerObj(p.id) || p;
+
+    html += `
+      <tr class="${rowClass}">
+        <td style="text-align: center;">
+          <span class="rr-rank-badge ${rankBadgeClass}">${rank === 1 ? '' : rank}</span>
+        </td>
+        <td>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            ${renderPlayerBadgeHTML(playerObj, 'sm', { showTitle: false })}
+          </div>
+        </td>
+        <td style="text-align: center; font-family: var(--font-pixel); font-weight: bold; color: #E2E8F0;">
+          ${p.matchesPlayed}
+        </td>
+        <td style="text-align: center; font-family: var(--font-pixel); font-weight: bold; color: #69F0AE;">
+          ${p.matchesWon}
+        </td>
+        <td style="text-align: right;">
+          <span class="rr-points-val">${p.totalPoints}</span>
+        </td>
+        <td style="text-align: right; font-family: var(--font-pixel); color: var(--text-secondary);">
+          ${p.avgPoints}
+        </td>
+      </tr>
+    `;
+  });
+
+  tbody.innerHTML = html;
+}
+
+function renderRoundRobinFixtures() {
+  const container = document.getElementById('rr-fixtures-container');
+  if (!container || !tournamentState) return;
+
+  const matches = tournamentState.rrMatches || [];
+  const roundsCount = (tournamentState.rrConfig && tournamentState.rrConfig.roundsCount) || 3;
+
+  let fixturesHtml = '';
+
+  for (let r = 0; r < roundsCount; r++) {
+    const roundMatches = matches.filter(m => m.roundIdx === r);
+    if (roundMatches.length === 0) continue;
+
+    const completedCount = roundMatches.filter(m => m.status === 'completed').length;
+    const isRoundDone = completedCount === roundMatches.length;
+
+    const firstMatch = roundMatches[0];
+    const byeIds = (firstMatch && firstMatch.byePlayerIds) ? firstMatch.byePlayerIds : [];
+    let byesBannerHtml = '';
+    if (byeIds.length > 0) {
+      let byeBadges = '';
+      byeIds.forEach(bId => {
+        const p = getTournamentPlayerObj(bId);
+        if (p) {
+          byeBadges += `
+            <div style="display: inline-flex; align-items: center; gap: 6px; background: rgba(255,255,255,0.06); padding: 0.3rem 0.6rem; border-radius: 10px; border: 1px dashed rgba(255,215,0,0.35);">
+              ${renderPlayerBadgeHTML(p, 'sm', { showTitle: false })}
+              <span style="font-size: 0.7rem; color: #FFD740; font-family: var(--font-pixel);">(Istirahat)</span>
+            </div>
+          `;
+        }
+      });
+      byesBannerHtml = `
+        <div style="margin-bottom: 1rem; padding: 0.6rem 0.9rem; background: linear-gradient(90deg, rgba(255,215,0,0.08), rgba(255,145,0,0.03)); border-radius: 12px; border: 1px solid rgba(255,215,0,0.25); display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+          <span style="font-size: 0.75rem; color: #FFD740; font-weight: bold; display: flex; align-items: center; gap: 6px;">
+             Giliran Istirahat (Bye):
+          </span>
+          <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+            ${byeBadges}
+          </div>
+        </div>
+      `;
+    }
+
+    let tablesHtml = '';
+    roundMatches.forEach((m, mIdx) => {
+      tablesHtml += renderRoundRobinMatchCardHTML(m, r, mIdx);
+    });
+
+    fixturesHtml += `
+      <div class="rr-round-section">
+        <div class="rr-round-header">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span class="stage-badge stage-badge-gold">PUTARAN ${r + 1}</span>
+            <h3 style="font-family: var(--font-title); font-size: 1.1rem; color: #FFF; margin: 0;">Babak ${r + 1}</h3>
+          </div>
+          <span class="table-status-pill ${isRoundDone ? 'table-status-done' : 'table-status-active'}">
+            ${completedCount} / ${roundMatches.length} Meja Selesai
+          </span>
+        </div>
+        ${byesBannerHtml}
+        <div class="stage-tables-grid stage-4-tables">
+          ${tablesHtml}
+        </div>
+      </div>
+    `;
+  }
+
+  container.innerHTML = fixturesHtml || '<p style="text-align:center; color:#888;">Tidak ada jadwal pertandingan.</p>';
+}
+
+function renderRoundRobinMatchCardHTML(matchObj, roundIdx, tableIdx) {
+  const isDone = matchObj.status === 'completed';
+  
+  let statusBadgeHtml = '<span class="table-status-pill table-status-pending">Belum Main</span>';
+  if (isDone) {
+    statusBadgeHtml = '<span class="table-status-pill table-status-done" style="display: inline-flex; align-items: center; gap: 4px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Selesai</span>';
+  } else {
+    statusBadgeHtml = '<span class="table-status-pill table-status-active" style="display: inline-flex; align-items: center; gap: 4px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg> Siap Main</span>';
+  }
+
+  let slotsHtml = '';
+  matchObj.playerIds.forEach(pId => {
+    const player = getTournamentPlayerObj(pId);
+    if (!player) return;
+
+    const isWinner = isDone && matchObj.winnerIds && matchObj.winnerIds.includes(player.id);
+    const scoreVal = isDone && matchObj.scores[player.id] !== undefined ? matchObj.scores[player.id] : '';
+
+    slotsHtml += `
+      <div class="bracket-player-slot ${isWinner ? 'champion-1' : ''}">
+        <div class="bracket-player-info">
+          ${renderPlayerBadgeHTML(player, 'sm', { showTitle: false })}
+        </div>
+        <div style="display: flex; align-items: center; gap: 6px;">
+          ${isWinner ? '<span style="font-size: 0.65rem; font-weight: bold; color: #FFD740;">Menang ✓</span>' : ''}
+          <span class="bracket-player-score">${scoreVal !== '' ? scoreVal + ' Pts' : ''}</span>
+        </div>
+      </div>
+    `;
+  });
+
+  let actionBtnsHtml = '';
+  if (!isDone) {
+    actionBtnsHtml = `
+      <div class="bracket-action-btns">
+        <button class="btn btn-sm btn-primary" style="flex: 1; font-family: var(--font-pixel); background: #FF1744; display: inline-flex; align-items: center; justify-content: center; gap: 6px;" onclick="startRoundRobinTableMatch(${roundIdx}, ${tableIdx})">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          Catat Skor Meja
+        </button>
+      </div>
+    `;
+  }
+
+  return `
+    <div class="bracket-table-card ${!isDone ? 'active-stage' : 'completed'}">
+      <div class="table-card-header">
+        <span class="table-card-title">${escapeHtml(matchObj.name)}</span>
+        ${statusBadgeHtml}
+      </div>
+      <div class="bracket-players-list">
+        ${slotsHtml}
+      </div>
+      ${actionBtnsHtml}
+    </div>
+  `;
+}
+
+// ─────────────────────────────────────────────
+// MATCH LAUNCH & RESULT PROCESSING
+// ─────────────────────────────────────────────
+function startRoundRobinTableMatch(roundIdx, tableIdx) {
+  if (!tournamentState || !tournamentState.rrMatches) return;
+  const match = tournamentState.rrMatches.find(m => m.roundIdx === roundIdx && m.tableIdx === tableIdx);
+  if (!match || match.playerIds.length === 0) {
+    showToast('Meja pertandingan tidak ditemukan!');
+    return;
+  }
+
+  const matchPlayers = match.playerIds.map(pId => {
+    const p = getTournamentPlayerObj(pId);
+    return {
+      name: p.name,
+      total: 0,
+      avatar: p.avatar,
+      color: p.color
+    };
+  });
+
+  const game = {
+    id: `tourney_rr_r${roundIdx}_t${tableIdx}_${Date.now()}`,
+    name: `Tournament - ${match.name}`,
+    players: matchPlayers,
+    rounds: [],
+    status: 'active',
+    startBalak: '0/0',
+    createdAt: new Date().toISOString(),
+    isTournamentMatch: true,
+    tournamentContext: { mode: 'roundrobin', roundIdx, tableIdx }
+  };
+
+  state.currentGame = game;
+  saveState();
+  renderDashboard();
+  showPage('dashboard');
+  showToast(`Membuka Papan Skor untuk ${match.name}! Kumpulkan Poinmu! `);
+}
+
+function startTournamentTableMatch(roundIdx, tableIdx) {
+  if (!tournamentState) return;
+  if (tournamentState.mode === 'roundrobin') {
+    startRoundRobinTableMatch(roundIdx, tableIdx);
+    return;
+  }
+
+  const round = tournamentState.rounds[roundIdx];
+  if (!round) return;
+  const tbl = round.tables[tableIdx];
+  if (!tbl || tbl.playerIds.length === 0) {
+    showToast('Meja ini belum memiliki pemain!');
+    return;
+  }
+
+  const matchPlayers = tbl.playerIds.map(pId => {
+    const p = getTournamentPlayerObj(pId);
+    return {
+      name: p.name,
+      total: 0,
+      avatar: p.avatar,
+      color: p.color
+    };
+  });
+
+  const game = {
+    id: `tourney_r${roundIdx}_t${tableIdx}_${Date.now()}`,
+    name: `Tournament - ${tbl.name}`,
+    players: matchPlayers,
+    rounds: [],
+    status: 'active',
+    startBalak: '0/0',
+    createdAt: new Date().toISOString(),
+    isTournamentMatch: true,
+    tournamentContext: { mode: 'knockout', roundIdx, tableIdx }
+  };
+
+  state.currentGame = game;
+  saveState();
+  renderDashboard();
+  showPage('dashboard');
+  showToast(`Membuka Papan Pencatatan Skor untuk ${tbl.name}! Selamat bertanding! `);
+}
+
+function completeActiveTournamentMatch() {
+  const g = state.currentGame;
+  if (!g || !g.isTournamentMatch || !g.tournamentContext) {
+    showPage('tournament');
+    return;
+  }
+
+  g.status = 'done';
+  const existing = state.allGames.findIndex(ag => ag.id === g.id);
+  if (existing >= 0) {
+    state.allGames[existing] = { ...g };
+  } else {
+    state.allGames.unshift({ ...g });
+  }
+  saveState();
+
+  const { mode, roundIdx, tableIdx } = g.tournamentContext;
+
+  if (mode === 'roundrobin') {
+    const match = tournamentState.rrMatches.find(m => m.roundIdx === roundIdx && m.tableIdx === tableIdx);
+    if (!match) { showPage('tournament'); return; }
+
+    const scoresObj = {};
+    match.playerIds.forEach((pId, idx) => {
+      const playerInGame = g.players[idx];
+      scoresObj[pId] = playerInGame ? playerInGame.total : 0;
+    });
+
+    processRoundRobinMatchResult(roundIdx, tableIdx, scoresObj);
+  } else {
+    const round = tournamentState.rounds[roundIdx];
+    if (!round) { showPage('tournament'); return; }
+    const tbl = round.tables[tableIdx];
+
+    const scoresObj = {};
+    tbl.playerIds.forEach((pId, idx) => {
+      const playerInGame = g.players[idx];
+      scoresObj[pId] = playerInGame ? playerInGame.total : 0;
+    });
+
+    processTableMatchResult(roundIdx, tableIdx, scoresObj);
+  }
+}
+
+function processRoundRobinMatchResult(roundIdx, tableIdx, scoresObj) {
+  const st = tournamentState;
+  if (!st || !st.rrMatches) return;
+  const match = st.rrMatches.find(m => m.roundIdx === roundIdx && m.tableIdx === tableIdx);
+  if (!match) return;
+
+  match.scores = scoresObj;
+  match.status = 'completed';
+
+  // Find winner in this match (lowest score in gaple wins the match)
+  const sortedIds = [...match.playerIds].sort((a, b) => (scoresObj[a] || 0) - (scoresObj[b] || 0));
+  match.winnerIds = sortedIds.slice(0, 1);
+
+  saveTournamentState();
+  renderTournamentView();
+  showPage('tournament');
+
+  // Check if all round robin matches are completed
+  const allCompleted = st.rrMatches.every(m => m.status === 'completed');
+  if (allCompleted) {
+    const standings = calculateRoundRobinStandings();
+    if (standings.length > 0) {
+      st.winners = {
+        juara1: getTournamentPlayerObj(standings[0].id),
+        juara2: standings[1] ? getTournamentPlayerObj(standings[1].id) : null,
+        juara3: standings[2] ? getTournamentPlayerObj(standings[2].id) : null,
+        juara4: standings[3] ? getTournamentPlayerObj(standings[3].id) : null
+      };
+      saveTournamentState();
+      setTimeout(() => showTournamentPodium(), 500);
+    }
+  } else {
+    showToast(`Hasil skor ${match.name} berhasil dicatat ke Klasemen! `);
+  }
+}
+
+function processTableMatchResult(roundIdx, tableIdx, scoresObj) {
+  const st = tournamentState;
+  const round = st.rounds[roundIdx];
+  if (!round) return;
+  const tbl = round.tables[tableIdx];
+
+  tbl.scores = scoresObj;
+  tbl.status = 'completed';
+
+  // Sort by score ascending (lowest = winner in gaple knockout)
+  const sortedIds = [...tbl.playerIds].sort((a, b) => (scoresObj[a] || 0) - (scoresObj[b] || 0));
+
+  if (round.isFinal) {
+    tbl.winnerIds = sortedIds;
+  } else {
+    tbl.winnerIds = sortedIds.slice(0, round.qCount);
+  }
+
+  checkAndAdvanceTournamentRound(roundIdx);
+
+  saveTournamentState();
+  renderTournamentView();
+  showPage('tournament');
+}
+
+function checkAndAdvanceTournamentRound(completedRoundIdx) {
+  const st = tournamentState;
+  const round = st.rounds[completedRoundIdx];
+  if (!round) return;
+
+  const allDone = round.tables.every(t => t.status === 'completed');
+  if (!allDone) return;
+
+  if (round.isFinal) {
+    st.currentRoundIndex = 'completed';
+    const finalTable = round.tables[0];
+    const winners = finalTable.winnerIds;
+    st.winners = {
+      juara1: getTournamentPlayerObj(winners[0]) || null,
+      juara2: getTournamentPlayerObj(winners[1]) || null,
+      juara3: getTournamentPlayerObj(winners[2]) || null,
+      juara4: getTournamentPlayerObj(winners[3]) || null
+    };
+    saveTournamentState();
+    setTimeout(() => showTournamentPodium(), 500);
+    return;
+  }
+
+  const roundWinners = [];
+  round.tables.forEach(tbl => {
+    roundWinners.push(...tbl.winnerIds);
+  });
+
+  const allAdvancing = [...roundWinners, ...(round.byePlayerIds || [])];
+
+  const nextRoundIdx = completedRoundIdx + 1;
+  const nextRound = st.rounds[nextRoundIdx];
+  if (!nextRound) return;
+
+  const playersInTables = nextRound.numTables * 4;
+  nextRound.tables.forEach((tbl, tIdx) => {
+    tbl.playerIds = allAdvancing.slice(tIdx * 4, (tIdx + 1) * 4);
+    tbl.status = 'pending';
+    tbl.scores = {};
+    tbl.winnerIds = [];
+  });
+
+  nextRound.byePlayerIds = allAdvancing.slice(playersInTables);
+  st.currentRoundIndex = nextRoundIdx;
+
+  const toastMsg = nextRound.isFinal
+    ? 'Final 4 Orang telah ditentukan! Selamat untuk Para Finalis '
+    : nextRound.name.includes('Semifinal')
+      ? `Pemenang lolos ke ${nextRound.name}! `
+      : `Lanjut ke ${nextRound.name}! `;
+  showToast(toastMsg);
+}
+
+function showTournamentPodium() {
+  renderPodiumCards();
+  openModal('modal-tournament-podium');
+  startConfetti();
+}
+
+function renderPodiumCards() {
+  const container = document.getElementById('tournament-podium-cards');
+  if (!container || !tournamentState || !tournamentState.winners) return;
+
+  const isRR = tournamentState.mode === 'roundrobin';
+  const modalTitle = document.getElementById('podium-modal-title');
+  const modalSubtitle = document.getElementById('podium-modal-subtitle');
+
+  if (isRR) {
+    if (modalTitle) modalTitle.textContent = 'PODIUM KLASEMEN ROUND ROBIN';
+    if (modalSubtitle) modalSubtitle.textContent = 'Selamat kepada Juara dengan Poin Terkecil!';
+  } else {
+    if (modalTitle) modalTitle.textContent = 'PODIUM JUARA KNOCKOUT';
+    if (modalSubtitle) modalSubtitle.textContent = 'Selamat kepada para Pemenang Turnamen Gaple!';
+  }
+
+  const w = tournamentState.winners;
+  if (!w.juara1) {
+    if (isRR) {
+      const standings = calculateRoundRobinStandings();
+      if (standings.length > 0) {
+        w.juara1 = getTournamentPlayerObj(standings[0].id);
+        w.juara2 = standings[1] ? getTournamentPlayerObj(standings[1].id) : null;
+        w.juara3 = standings[2] ? getTournamentPlayerObj(standings[2].id) : null;
+      }
+    }
+  }
+
+  if (!w.juara1) return;
+
+  let score1 = 0, score2 = 0, score3 = 0;
+  if (isRR) {
+    const standings = calculateRoundRobinStandings();
+    const s1 = standings.find(s => s.id === w.juara1.id);
+    const s2 = w.juara2 ? standings.find(s => s.id === w.juara2.id) : null;
+    const s3 = w.juara3 ? standings.find(s => s.id === w.juara3.id) : null;
+    score1 = s1 ? s1.totalPoints : 0;
+    score2 = s2 ? s2.totalPoints : 0;
+    score3 = s3 ? s3.totalPoints : 0;
+  } else {
+    const finalRound = tournamentState.rounds ? tournamentState.rounds.find(r => r.isFinal) : null;
+    const scores = (finalRound && finalRound.tables[0]) ? finalRound.tables[0].scores || {} : {};
+    score1 = scores[w.juara1.id] || 0;
+    score2 = w.juara2 ? (scores[w.juara2.id] || 0) : 0;
+    score3 = w.juara3 ? (scores[w.juara3.id] || 0) : 0;
+  }
+
+  container.innerHTML = `
+    <!-- Juara 2 (Silver) -->
+    <div class="podium-card podium-2">
+      <div class="podium-badge podium-badge-silver">JUARA 2</div>
+      <div class="podium-avatar-wrap" style="background-color: ${w.juara2 ? w.juara2.color || '#448AFF' : '#448AFF'};">
+        ${w.juara2 ? getPixelArtSVG(w.juara2.avatar, 38) : ''}
+      </div>
+      <div class="podium-name">${w.juara2 ? escapeHtml(w.juara2.name) : '—'}</div>
+      <div class="podium-score">${score2} Poin</div>
+    </div>
+
+    <!-- Juara 1 (Gold) -->
+    <div class="podium-card podium-1">
+      <div class="podium-badge podium-badge-gold"> JUARA 1</div>
+      <div class="podium-avatar-wrap podium-avatar-gold" style="background-color: ${w.juara1.color || '#FF5252'};">
+        ${getPixelArtSVG(w.juara1.avatar, 46)}
+      </div>
+      <div class="podium-name podium-name-gold">${escapeHtml(w.juara1.name)}</div>
+      <div class="podium-score podium-score-gold">${score1} Poin</div>
+    </div>
+
+    <!-- Juara 3 (Bronze) -->
+    <div class="podium-card podium-3">
+      <div class="podium-badge podium-badge-bronze">JUARA 3</div>
+      <div class="podium-avatar-wrap" style="background-color: ${w.juara3 ? w.juara3.color || '#FFD740' : '#FFD740'};">
+        ${w.juara3 ? getPixelArtSVG(w.juara3.avatar, 38) : ''}
+      </div>
+      <div class="podium-name">${w.juara3 ? escapeHtml(w.juara3.name) : '—'}</div>
+      <div class="podium-score">${score3} Poin</div>
+    </div>
+  `;
+}
+
+// ─────────────────────────────────────────────
+// INSTAGRAM VICTORY CARD EXPORT ENGINE (CANVAS HD)
+// ─────────────────────────────────────────────
+
+let currentExportData = null;
+let currentExportFormat = 'square'; // 'square' (1:1) or 'story' (9:16)
+let currentExportCanvas = null;
+
+function openInstagramExportModal(sourceType) {
+  let exportData = null;
+
+  if (sourceType === 'tournament') {
+    if (!tournamentState || !tournamentState.winners || !tournamentState.winners.juara1) {
+      if (tournamentState && tournamentState.mode === 'roundrobin') {
+        const standings = calculateRoundRobinStandings();
+        if (standings.length > 0) {
+          tournamentState.winners = {
+            juara1: getTournamentPlayerObj(standings[0].id),
+            juara2: standings[1] ? getTournamentPlayerObj(standings[1].id) : null,
+            juara3: standings[2] ? getTournamentPlayerObj(standings[2].id) : null,
+            juara4: standings[3] ? getTournamentPlayerObj(standings[3].id) : null
+          };
+        }
+      }
+    }
+
+    const st = tournamentState;
+    if (!st || !st.winners || !st.winners.juara1) {
+      showToast('Data pemenang turnamen belum tersedia.');
+      return;
+    }
+
+    const isRR = st.mode === 'roundrobin';
+    let pList = [];
+
+    if (isRR) {
+      const standings = calculateRoundRobinStandings();
+      pList = standings.slice(0, 4).map((s, idx) => {
+        const pObj = getTournamentPlayerObj(s.id);
+        return {
+          rank: idx + 1,
+          name: pObj ? pObj.name : s.name,
+          avatar: pObj ? pObj.avatar : s.avatar,
+          color: pObj ? pObj.color : s.color,
+          score: `${s.totalPoints} Pts`,
+          subtitle: `${s.matchesWon} Menang • Rata-rata ${s.avgPoints}`
+        };
+      });
+    } else {
+      const finalRound = st.rounds ? st.rounds.find(r => r.isFinal) : null;
+      const scores = (finalRound && finalRound.tables[0]) ? finalRound.tables[0].scores || {} : {};
+      const w = st.winners;
+      const arr = [w.juara1, w.juara2, w.juara3, w.juara4].filter(Boolean);
+      pList = arr.map((p, idx) => ({
+        rank: idx + 1,
+        name: p.name,
+        avatar: p.avatar,
+        color: p.color,
+        score: `${scores[p.id] !== undefined ? scores[p.id] : 0} Pts`,
+        subtitle: idx === 0 ? ' Juara Utama' : idx === 1 ? '2 Runner Up' : idx === 2 ? '3 Juara 3' : 'Finalis'
+      }));
+    }
+
+    const winner = pList[0];
+    exportData = {
+      badge: 'TOURNAMENT CHAMPION',
+      title: isRR ? 'JUARA ROUND ROBIN' : 'JUARA TURNAMEN GAPLE',
+      gameName: isRR ? `Turnamen Round Robin (${st.players.length} Peserta)` : `Turnamen Knockout (${st.players.length} Peserta)`,
+      dateStr: new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }),
+      winner: {
+        name: winner.name,
+        avatar: winner.avatar,
+        color: winner.color,
+        scoreText: `SKOR: ${winner.score}`,
+        title: isRR ? ' Raja Klasemen Poin' : ' Juara 1 Turnamen'
+      },
+      players: pList,
+      stats: {
+        item1: `${st.players.length} Total Peserta`,
+        item2: isRR ? `${st.rrConfig ? st.rrConfig.roundsCount : 3} Putaran Babak` : `${st.rounds ? st.rounds.length : 0} Babak Eliminasi`
+      }
+    };
+
+  } else if (sourceType === 'history') {
+    const game = state.viewingHistoryGame;
+    if (!game) {
+      showToast('Data riwayat game tidak ditemukan.');
+      return;
+    }
+    const sorted = [...game.players].sort((a, b) => a.total - b.total);
+    const winner = sorted[0];
+    const titlesMap = calculatePlayerTitles(game);
+    const winTitle = titlesMap[game.players.indexOf(winner)];
+
+    exportData = {
+      badge: 'GAPLE MATCH WINNER',
+      title: 'VICTORY ROYALE ',
+      gameName: game.name || 'Pertandingan Gaple',
+      dateStr: new Date(game.createdAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }),
+      winner: {
+        name: winner.name,
+        avatar: winner.avatar,
+        color: winner.color,
+        scoreText: `${winner.total} POIN TERENDAH`,
+        title: winTitle ? ` ${winTitle.label}` : ' Master Gaple'
+      },
+      players: sorted.map((p, idx) => ({
+        rank: idx + 1,
+        name: p.name,
+        avatar: p.avatar,
+        color: p.color,
+        score: `${p.total} Pts`,
+        subtitle: idx === 0 ? 'Pemenang Match' : `Peringkat ${idx + 1}`
+      })),
+      stats: {
+        item1: `${game.rounds ? game.rounds.length : 0} Total Ronde`,
+        item2: `${(game.gapleMoments || []).length} Momen Gaple`
+      }
+    };
+
+  } else {
+    // Regular Game Over
+    const g = state.currentGame;
+    if (!g) {
+      showToast('Data game aktif tidak ditemukan.');
+      return;
+    }
+    const sorted = [...g.players].sort((a, b) => a.total - b.total);
+    const winner = sorted[0];
+    const titlesMap = calculatePlayerTitles(g);
+    const winTitle = titlesMap[g.players.indexOf(winner)];
+
+    exportData = {
+      badge: 'GAPLE MATCH WINNER',
+      title: 'VICTORY ROYALE ',
+      gameName: g.name || 'Pertandingan Gaple',
+      dateStr: new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }),
+      winner: {
+        name: winner.name,
+        avatar: winner.avatar,
+        color: winner.color,
+        scoreText: `${winner.total} POIN TERENDAH`,
+        title: winTitle ? ` ${winTitle.label}` : ' Master Gaple'
+      },
+      players: sorted.map((p, idx) => ({
+        rank: idx + 1,
+        name: p.name,
+        avatar: p.avatar,
+        color: p.color,
+        score: `${p.total} Pts`,
+        subtitle: idx === 0 ? 'Pemenang Match' : `Peringkat ${idx + 1}`
+      })),
+      stats: {
+        item1: `${g.rounds ? g.rounds.length : 0} Total Ronde`,
+        item2: `${(g.gapleMoments || []).length} Momen Gaple`
+      }
+    };
+  }
+
+  currentExportData = exportData;
+  currentExportFormat = 'square';
+
+  updateInstagramFormatButtons();
+  renderInstagramExportCard();
+  openModal('modal-instagram-export');
+}
+
+function switchInstagramExportFormat(format) {
+  currentExportFormat = format;
+  updateInstagramFormatButtons();
+  renderInstagramExportCard();
+}
+
+function updateInstagramFormatButtons() {
+  const btnSq = document.getElementById('btn-ig-format-square');
+  const btnSt = document.getElementById('btn-ig-format-story');
+  if (btnSq && btnSt) {
+    if (currentExportFormat === 'story') {
+      btnSq.classList.remove('active');
+      btnSt.classList.add('active');
+    } else {
+      btnSt.classList.remove('active');
+      btnSq.classList.add('active');
+    }
+  }
+}
+
+function drawCanvasPixelAvatar(ctx, avatarKey, x, y, size) {
+  const cleanKey = getSanitizedAvatar(avatarKey);
+  const data = PIXEL_ART_DATA[cleanKey] || PIXEL_ART_DATA['fox'];
+  const grid = data.grid;
+  const pixelSize = size / 8;
+
+  for (let r = 0; r < 8; r++) {
+    const row = grid[r];
+    for (let c = 0; c < 8; c++) {
+      const char = row[c];
+      if (char !== '.' && data.colors[char]) {
+        ctx.fillStyle = data.colors[char];
+        ctx.fillRect(Math.round(x + c * pixelSize), Math.round(y + r * pixelSize), Math.ceil(pixelSize), Math.ceil(pixelSize));
+      }
+    }
+  }
+}
+
+function drawDominoTileOnCanvas(ctx, x, y, w, h, topDots, botDots) {
+  ctx.save();
+  // Card body
+  ctx.fillStyle = '#FFFFFF';
+  ctx.strokeStyle = '#1A1C1E';
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  if (ctx.roundRect) {
+    ctx.roundRect(x, y, w, h, 6);
+  } else {
+    ctx.rect(x, y, w, h);
+  }
+  ctx.fill();
+  ctx.stroke();
+
+  // Dividing line
+  ctx.strokeStyle = '#FF1744';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(x + 4, y + h / 2);
+  ctx.lineTo(x + w - 4, y + h / 2);
+  ctx.stroke();
+
+  // Dots helper
+  const drawDots = (val, cy) => {
+    ctx.fillStyle = '#1A1C1E';
+    const cx = x + w / 2;
+    const r = 2.5;
+    if (val === 1) {
+      ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.fill();
+    } else if (val === 2) {
+      ctx.beginPath(); ctx.arc(cx - 5, cy - 5, r, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(cx + 5, cy + 5, r, 0, Math.PI * 2); ctx.fill();
+    } else if (val === 3) {
+      ctx.beginPath(); ctx.arc(cx - 5, cy - 5, r, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(cx + 5, cy + 5, r, 0, Math.PI * 2); ctx.fill();
+    } else if (val >= 4) {
+      ctx.beginPath(); ctx.arc(cx - 6, cy - 6, r, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(cx + 6, cy - 6, r, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(cx - 6, cy + 6, r, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(cx + 6, cy + 6, r, 0, Math.PI * 2); ctx.fill();
+      if (val === 5) {
+        ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.fill();
+      } else if (val === 6) {
+        ctx.beginPath(); ctx.arc(cx, cy - 6, r, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(cx, cy + 6, r, 0, Math.PI * 2); ctx.fill();
+      }
+    }
+  };
+
+  drawDots(topDots, y + h / 4);
+  drawDots(botDots, y + (h * 3) / 4);
+  ctx.restore();
+}
+
+function renderInstagramExportCard() {
+  const data = currentExportData;
+  if (!data) return;
+
+  const isStory = currentExportFormat === 'story';
+  const W = 1080;
+  const H = isStory ? 1920 : 1080;
+
+  const canvas = document.createElement('canvas');
+  canvas.width = W;
+  canvas.height = H;
+  const ctx = canvas.getContext('2d');
+
+  // Background Gradient
+  const bgGrad = ctx.createRadialGradient(W / 2, H / 3, 50, W / 2, H / 2, W * 0.9);
+  bgGrad.addColorStop(0, '#2A0810');
+  bgGrad.addColorStop(0.5, '#190408');
+  bgGrad.addColorStop(1, '#0C0204');
+  ctx.fillStyle = bgGrad;
+  ctx.fillRect(0, 0, W, H);
+
+  // Decorative Ambient Glows
+  const glow1 = ctx.createRadialGradient(W * 0.2, H * 0.15, 0, W * 0.2, H * 0.15, 400);
+  glow1.addColorStop(0, 'rgba(255, 23, 68, 0.22)');
+  glow1.addColorStop(1, 'rgba(255, 23, 68, 0)');
+  ctx.fillStyle = glow1;
+  ctx.fillRect(0, 0, W, H);
+
+  const glow2 = ctx.createRadialGradient(W * 0.8, H * 0.85, 0, W * 0.8, H * 0.85, 450);
+  glow2.addColorStop(0, 'rgba(255, 215, 0, 0.18)');
+  glow2.addColorStop(1, 'rgba(255, 215, 0, 0)');
+  ctx.fillStyle = glow2;
+  ctx.fillRect(0, 0, W, H);
+
+  // Outer Golden Double Border
+  ctx.save();
+  ctx.lineWidth = 8;
+  const borderGrad = ctx.createLinearGradient(0, 0, W, H);
+  borderGrad.addColorStop(0, '#FFD740');
+  borderGrad.addColorStop(0.5, '#FF9100');
+  borderGrad.addColorStop(1, '#FFD740');
+  ctx.strokeStyle = borderGrad;
+  ctx.strokeRect(28, 28, W - 56, H - 56);
+
+  ctx.lineWidth = 2;
+  ctx.strokeStyle = 'rgba(255, 215, 0, 0.35)';
+  ctx.strokeRect(40, 40, W - 80, H - 80);
+
+  // Corner Pixel Accents
+  const drawCorner = (cx, cy) => {
+    ctx.fillStyle = '#FFD740';
+    ctx.fillRect(cx - 8, cy - 8, 16, 16);
+    ctx.fillStyle = '#FF1744';
+    ctx.fillRect(cx - 4, cy - 4, 8, 8);
+  };
+  drawCorner(28, 28);
+  drawCorner(W - 28, 28);
+  drawCorner(28, H - 28);
+  drawCorner(W - 28, H - 28);
+  ctx.restore();
+
+  // Decorative Domino Tiles in background corners
+  drawDominoTileOnCanvas(ctx, 60, 60, 36, 56, 6, 6);
+  drawDominoTileOnCanvas(ctx, W - 96, 60, 36, 56, 5, 5);
+  drawDominoTileOnCanvas(ctx, 60, H - 116, 36, 56, 1, 1);
+  drawDominoTileOnCanvas(ctx, W - 96, H - 116, 36, 56, 4, 4);
+
+  // ─────────────────────────────────────────────
+  // HEADER
+  // ─────────────────────────────────────────────
+  let curY = isStory ? 130 : 80;
+
+  // Top Pill Badge
+  ctx.save();
+  ctx.fillStyle = 'rgba(255, 215, 0, 0.15)';
+  ctx.strokeStyle = '#FFD740';
+  ctx.lineWidth = 2;
+  const badgeText = `  ${data.badge}  `;
+  ctx.font = 'bold 18px "Inter", sans-serif';
+  const badgeWidth = ctx.measureText(badgeText).width + 36;
+  const badgeX = (W - badgeWidth) / 2;
+  ctx.beginPath();
+  if (ctx.roundRect) ctx.roundRect(badgeX, curY, badgeWidth, 36, 18);
+  else ctx.rect(badgeX, curY, badgeWidth, 36);
+  ctx.fill();
+  ctx.stroke();
+
+  ctx.fillStyle = '#FFD740';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(badgeText, W / 2, curY + 18);
+  ctx.restore();
+
+  curY += isStory ? 75 : 55;
+
+  // Main Title
+  ctx.save();
+  ctx.textAlign = 'center';
+  ctx.shadowColor = 'rgba(255, 215, 0, 0.6)';
+  ctx.shadowBlur = 18;
+  const titleGrad = ctx.createLinearGradient(W / 2 - 200, curY, W / 2 + 200, curY + 40);
+  titleGrad.addColorStop(0, '#FFF59D');
+  titleGrad.addColorStop(0.5, '#FFD740');
+  titleGrad.addColorStop(1, '#FFAB00');
+  ctx.fillStyle = titleGrad;
+  ctx.font = `bold ${isStory ? 44 : 38}px "Press Start 2P", "Inter", sans-serif`;
+  ctx.fillText(data.title, W / 2, curY);
+  ctx.restore();
+
+  curY += isStory ? 48 : 38;
+
+  // Subtitle (Game Name & Date)
+  ctx.save();
+  ctx.textAlign = 'center';
+  ctx.fillStyle = '#E2E8F0';
+  ctx.font = '600 20px "Inter", sans-serif';
+  ctx.fillText(`${data.gameName}  •  ${data.dateStr}`, W / 2, curY);
+  ctx.restore();
+
+  // ─────────────────────────────────────────────
+  // HERO WINNER / CHAMPION SHOWCASE
+  // ─────────────────────────────────────────────
+  curY += isStory ? 80 : 40;
+  const champBoxW = W - 140;
+  const champBoxH = isStory ? 520 : 360;
+  const champBoxX = 70;
+  const champBoxY = curY;
+
+  ctx.save();
+  // Glassmorphic Hero Box
+  ctx.fillStyle = 'rgba(36, 8, 13, 0.75)';
+  ctx.strokeStyle = '#FFD740';
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  if (ctx.roundRect) ctx.roundRect(champBoxX, champBoxY, champBoxW, champBoxH, 24);
+  else ctx.rect(champBoxX, champBoxY, champBoxW, champBoxH);
+  ctx.fill();
+  ctx.stroke();
+
+  // Crown Emoji & Glowing Ring
+  const avatarCenterY = champBoxY + (isStory ? 175 : 125);
+  const avatarSize = isStory ? 130 : 100;
+  const circleRadius = avatarSize * 0.75;
+
+  // Glowing Circle
+  const ringGrad = ctx.createRadialGradient(W / 2, avatarCenterY, circleRadius * 0.7, W / 2, avatarCenterY, circleRadius * 1.3);
+  ringGrad.addColorStop(0, 'rgba(255, 215, 0, 0.4)');
+  ringGrad.addColorStop(1, 'rgba(255, 215, 0, 0)');
+  ctx.fillStyle = ringGrad;
+  ctx.beginPath();
+  ctx.arc(W / 2, avatarCenterY, circleRadius * 1.3, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.fillStyle = data.winner.color || '#FF5252';
+  ctx.beginPath();
+  ctx.arc(W / 2, avatarCenterY, circleRadius, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = '#FFD740';
+  ctx.lineWidth = 4;
+  ctx.stroke();
+
+  // Draw Crown above avatar
+  ctx.font = `${isStory ? 48 : 38}px "Segoe UI Emoji", "Apple Color Emoji", sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('', W / 2, avatarCenterY - circleRadius - 16);
+
+  // Draw Winner Avatar
+  drawCanvasPixelAvatar(ctx, data.winner.avatar, W / 2 - avatarSize / 2, avatarCenterY - avatarSize / 2, avatarSize);
+
+  // Winner Name
+  let champTextY = avatarCenterY + circleRadius + (isStory ? 55 : 38);
+  ctx.textAlign = 'center';
+  ctx.fillStyle = '#FFFFFF';
+  ctx.font = `bold ${isStory ? 38 : 30}px "Press Start 2P", "Inter", sans-serif`;
+  ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
+  ctx.shadowBlur = 8;
+  ctx.fillText(data.winner.name, W / 2, champTextY);
+
+  // Winner Score Pill
+  champTextY += isStory ? 55 : 40;
+  const scorePillText = data.winner.scoreText;
+  ctx.font = 'bold 20px "Inter", sans-serif';
+  const pillW = ctx.measureText(scorePillText).width + 40;
+  const pillH = 38;
+  const pillX = (W - pillW) / 2;
+
+  const pillGrad = ctx.createLinearGradient(pillX, champTextY - pillH / 2, pillX + pillW, champTextY + pillH / 2);
+  pillGrad.addColorStop(0, '#FFD740');
+  pillGrad.addColorStop(1, '#FF9100');
+  ctx.fillStyle = pillGrad;
+  ctx.beginPath();
+  if (ctx.roundRect) ctx.roundRect(pillX, champTextY - pillH / 2, pillW, pillH, 19);
+  else ctx.rect(pillX, champTextY - pillH / 2, pillW, pillH);
+  ctx.fill();
+
+  ctx.fillStyle = '#100608';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(scorePillText, W / 2, champTextY);
+
+  // Title / Julukan (if exists)
+  if (data.winner.title) {
+    champTextY += isStory ? 45 : 34;
+    ctx.fillStyle = '#FF8A80';
+    ctx.font = 'bold 18px "Inter", sans-serif';
+    ctx.fillText(data.winner.title, W / 2, champTextY);
+  }
+  ctx.restore();
+
+  // ─────────────────────────────────────────────
+  // LEADERBOARD / PODIUM ROWS (TOP 4)
+  // ─────────────────────────────────────────────
+  curY = champBoxY + champBoxH + (isStory ? 50 : 25);
+
+  const players = data.players || [];
+  const cardW = (W - 140);
+  const cardH = isStory ? 80 : 58;
+  const gap = isStory ? 14 : 10;
+
+  players.forEach((p, idx) => {
+    const cardY = curY + idx * (cardH + gap);
+    ctx.save();
+
+    // Row Background
+    let rowBg = 'rgba(255, 255, 255, 0.04)';
+    let borderCol = 'rgba(255, 255, 255, 0.1)';
+    let rankColor = '#AAA';
+    let medalEmoji = `${p.rank}`;
+
+    if (p.rank === 1) {
+      rowBg = 'linear-gradient(90deg, rgba(255, 215, 0, 0.2), rgba(255, 215, 0, 0.04))';
+      borderCol = '#FFD740';
+      rankColor = '#FFD740';
+      medalEmoji = '1';
+    } else if (p.rank === 2) {
+      rowBg = 'rgba(226, 232, 240, 0.08)';
+      borderCol = '#E2E8F0';
+      rankColor = '#E2E8F0';
+      medalEmoji = '2';
+    } else if (p.rank === 3) {
+      rowBg = 'rgba(205, 127, 50, 0.08)';
+      borderCol = '#CD7F32';
+      rankColor = '#CD7F32';
+      medalEmoji = '3';
+    }
+
+    ctx.fillStyle = (typeof rowBg === 'string' && !rowBg.startsWith('linear')) ? rowBg : 'rgba(255,255,255,0.05)';
+    ctx.strokeStyle = borderCol;
+    ctx.lineWidth = p.rank === 1 ? 2 : 1;
+    ctx.beginPath();
+    if (ctx.roundRect) ctx.roundRect(70, cardY, cardW, cardH, 14);
+    else ctx.rect(70, cardY, cardW, cardH);
+    ctx.fill();
+    ctx.stroke();
+
+    // Medal / Rank
+    ctx.font = 'bold 22px "Segoe UI Emoji", "Inter", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = rankColor;
+    ctx.fillText(medalEmoji, 110, cardY + cardH / 2);
+
+    // Mini Avatar
+    const miniSize = cardH - 18;
+    const miniX = 145;
+    const miniY = cardY + 9;
+    ctx.fillStyle = p.color || '#448AFF';
+    ctx.beginPath();
+    ctx.arc(miniX + miniSize / 2, miniY + miniSize / 2, miniSize / 2, 0, Math.PI * 2);
+    ctx.fill();
+    drawCanvasPixelAvatar(ctx, p.avatar, miniX, miniY, miniSize);
+
+    // Player Name
+    ctx.textAlign = 'left';
+    ctx.fillStyle = p.rank === 1 ? '#FFD740' : '#FFFFFF';
+    ctx.font = `bold ${isStory ? 22 : 18}px "Inter", sans-serif`;
+    ctx.fillText(p.name, miniX + miniSize + 16, cardY + cardH / 2 - (p.subtitle ? 8 : 0));
+
+    // Player Subtitle
+    if (p.subtitle) {
+      ctx.fillStyle = '#94A3B8';
+      ctx.font = '14px "Inter", sans-serif';
+      ctx.fillText(p.subtitle, miniX + miniSize + 16, cardY + cardH / 2 + 14);
+    }
+
+    // Score Tag
+    ctx.textAlign = 'right';
+    ctx.fillStyle = p.rank === 1 ? '#FFD740' : '#E2E8F0';
+    ctx.font = `bold ${isStory ? 24 : 19}px "Press Start 2P", "Inter", sans-serif`;
+    ctx.fillText(p.score, 70 + cardW - 20, cardY + cardH / 2);
+
+    ctx.restore();
+  });
+
+  // ─────────────────────────────────────────────
+  // FOOTER & WATERMARK
+  // ─────────────────────────────────────────────
+  const footY = H - (isStory ? 140 : 80);
+
+  ctx.save();
+  // Stats line
+  ctx.textAlign = 'center';
+  ctx.fillStyle = '#FFD740';
+  ctx.font = '600 17px "Inter", sans-serif';
+  ctx.fillText(` ${data.stats.item1}   •    ${data.stats.item2}`, W / 2, footY);
+
+  // App Watermark
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.45)';
+  ctx.font = '14px "Inter", sans-serif';
+  ctx.fillText(' Dicatat dengan Gaple Score Tracker  •  #GapleScoreTracker', W / 2, footY + 28);
+  ctx.restore();
+
+  currentExportCanvas = canvas;
+  const previewImg = document.getElementById('ig-export-preview-img');
+  if (previewImg) {
+    previewImg.src = canvas.toDataURL('image/png');
+  }
+}
+
+function downloadInstagramExport() {
+  if (!currentExportCanvas) return;
+  const link = document.createElement('a');
+  const now = new Date();
+  const dateTag = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+  link.download = `gaple-victory-${dateTag}-${Date.now()}.png`;
+  link.href = currentExportCanvas.toDataURL('image/png');
+  link.click();
+  showToast('Gambar kemenangan berhasil diunduh! ');
+}
+
+async function shareInstagramExport() {
+  if (!currentExportCanvas) return;
+  currentExportCanvas.toBlob(async (blob) => {
+    if (!blob) return;
+    const file = new File([blob], 'gaple-victory.png', { type: 'image/png' });
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      try {
+        await navigator.share({
+          files: [file],
+          title: 'Gaple Victory Royale ',
+          text: 'Lihat kemenangan seru di Gaple Score Tracker! '
+        });
+        showToast('Menu bagikan berhasil dibuka! ');
+      } catch (err) {
+        if (err.name !== 'AbortError') {
+          downloadInstagramExport();
+        }
+      }
+    } else {
+      downloadInstagramExport();
+      showToast('Gambar telah diunduh! Siap diposting ke Instagram ');
+    }
+  }, 'image/png');
+}
+
+async function copyInstagramExportToClipboard() {
+  if (!currentExportCanvas) return;
+  currentExportCanvas.toBlob(async (blob) => {
+    if (!blob) return;
+    try {
+      if (navigator.clipboard && navigator.clipboard.write) {
+        await navigator.clipboard.write([
+          new ClipboardItem({ 'image/png': blob })
+        ]);
+        showToast('Gambar berhasil disalin ke clipboard! ');
+      } else {
+        downloadInstagramExport();
+      }
+    } catch (err) {
+      downloadInstagramExport();
+    }
+  }, 'image/png');
 }
 
 

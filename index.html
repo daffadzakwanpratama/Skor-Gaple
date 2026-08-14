@@ -42,12 +42,6 @@
     }
   </script>
 
-  <!-- ===== BANNER 17 AGUSTUS / HARI KEMERDEKAAN ===== -->
-  <div id="kemerdekaan-banner" class="kemerdekaan-banner">
-    <span class="flag-icon">🇮🇩</span>
-    <span class="banner-text">DIRGAHAYU REPUBLIK INDONESIA 🇮🇩 17 AGUSTUS 1945</span>
-    <span class="flag-icon">🇮🇩</span>
-  </div>
   <div id="kemerdekaan-confetti-container" class="kemerdekaan-confetti-container"></div>
 
   <!-- Background Glass Blobs -->
@@ -104,6 +98,16 @@
       <p class="home-subtitle">Dung Tak Dung Dung Wawwwwww</p>
       <div class="home-actions" style="display: flex; flex-direction: column; gap: 0.75rem; width: 100%; max-width: 320px; margin: 0 auto;">
         <button id="btn-start-local" class="btn btn-primary btn-lg btn-full" onclick="startLocalSetup()">Papan Skor Lokal</button>
+        <button id="btn-start-tournament" class="btn btn-lg btn-full" style="background: linear-gradient(135deg, #FF1744 0%, #D50000 100%); color: #FFF; border: 1.5px solid rgba(255,255,255,0.4); box-shadow: 0 4px 15px rgba(255,23,68,0.4); font-weight: bold; font-size: 0.95rem; display: flex; align-items: center; justify-content: center; gap: 8px; border-radius: 24px;" onclick="openTournamentMode()">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6" />
+            <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18" />
+            <path d="M4 22h16" />
+            <path d="M10 14.66V17c0 .55-.45 1-1 1H4v2h16v-2h-5c-.55 0-1-.45-1-1v-2.34" />
+            <path d="M12 2a6 6 0 0 1 6 6v3a6 6 0 0 1-6 6 6 6 0 0 1-6-6V8a6 6 0 0 1 6-6z" />
+          </svg>
+          Tournament
+        </button>
         <div style="display: flex; gap: 0.75rem; width: 100%;">
           <button id="btn-history" class="btn btn-outline btn-lg" style="flex: 1; padding: 0.85rem 0.5rem; font-size: 0.85rem; background: var(--accent-gold); color: var(--text-primary); border-color: var(--border-color); display: inline-flex; align-items: center; justify-content: center; gap: 6px;" onclick="showHistory()">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -133,7 +137,7 @@
       </div>
       <!-- Performance Mode Toggle (Lite Mode) -->
       <div class="perf-toggle-container" onclick="toggleLiteMode()" style="margin-top: 2.25rem; display: flex; align-items: center; justify-content: center; gap: 0.65rem; cursor: pointer; user-select: none; position: relative; z-index: 1000;">
-        <span id="perf-toggle-icon" style="font-size: 1.1rem; filter: none !important;">⚡</span>
+        <span id="perf-toggle-icon" style="font-size: 1.1rem; filter: none !important;"></span>
         <span style="font-family: var(--font-pixel); font-size: 0.75rem; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em;">Mode Lite (HP Kentang)</span>
         <input type="checkbox" id="chk-lite-mode" style="display: none;" />
         <div id="lite-mode-switch" style="width: 34px; height: 20px; background: rgba(255,255,255,0.15); border-radius: 10px; position: relative; border: 1px solid rgba(255,255,255,0.2); transition: all 0.2s;">
@@ -143,8 +147,11 @@
 
       <!-- 17 Agustus Special Theme Toggle -->
       <div class="kemerdekaan-toggle-container" onclick="toggleKemerdekaanTheme()" style="margin-top: 0.85rem; display: flex; align-items: center; justify-content: center; gap: 0.65rem; cursor: pointer; user-select: none; position: relative; z-index: 1000;">
-        <span id="kemerdekaan-toggle-icon" style="font-size: 1.1rem; filter: none !important;">🇮🇩</span>
-        <span style="font-family: var(--font-pixel); font-size: 0.75rem; font-weight: 700; color: #FF5252; text-transform: uppercase; letter-spacing: 0.05em;">Tema 17 Agustus 🇮🇩</span>
+        <svg width="18" height="14" viewBox="0 0 24 16" fill="none" style="border-radius: 3px; overflow: hidden; flex-shrink: 0; box-shadow: 0 1px 4px rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.2);">
+          <rect width="24" height="8" fill="#FF1744" />
+          <rect y="8" width="24" height="8" fill="#FFFFFF" />
+        </svg>
+        <span style="font-family: var(--font-pixel); font-size: 0.75rem; font-weight: 700; color: #FF5252; text-transform: uppercase; letter-spacing: 0.05em;">Tema 17 Agustus</span>
         <input type="checkbox" id="chk-kemerdekaan-mode" style="display: none;" />
         <div id="kemerdekaan-mode-switch" style="width: 34px; height: 20px; background: rgba(255,23,68,0.3); border-radius: 10px; position: relative; border: 1px solid rgba(255,23,68,0.5); transition: all 0.2s;">
           <div id="kemerdekaan-mode-knob" style="width: 14px; height: 14px; background: #FF1744; border-radius: 50%; position: absolute; top: 2px; left: 2px; transition: transform 0.2s;"></div>
@@ -260,7 +267,7 @@
           </div>
           <input type="hidden" id="lobby-start-balak" value="0/0" />
         </div>
-        <button id="btn-start-online-match" class="btn btn-primary btn-lg btn-full" onclick="startOnlineMatch()">Mulai Main 🚀</button>
+        <button id="btn-start-online-match" class="btn btn-primary btn-lg btn-full" onclick="startOnlineMatch()">Mulai Main </button>
       </div>
 
       <div id="lobby-guest-message" class="section-card hidden" style="text-align: center; padding: 1.5rem;">
@@ -417,7 +424,7 @@
     
     <!-- Local Scorecard Header -->
     <div id="dashboard-header-local" class="page-header dashboard-header">
-      <button class="btn-back" onclick="showPage('home')" title="Kembali ke Menu Utama">
+      <button class="btn-back" onclick="handleDashboardBack()" title="Kembali">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
           stroke-linecap="round" stroke-linejoin="round">
           <path d="M19 12H5" />
@@ -558,8 +565,8 @@
         <div id="play-side-selector" class="hidden" style="margin-bottom: 1.25rem; border: var(--border-width) solid var(--border-color); background: var(--rank-3-bg); padding: 0.75rem; text-align: center; box-shadow: var(--pixel-shadow-sm); font-family: var(--font-title); font-size: 0.65rem;">
           <div class="form-label" style="font-size: 0.6rem; margin-bottom: 0.5rem; text-transform: uppercase;">Pilih Ujung Meja untuk kartu <span id="side-sel-card-val" style="font-weight: bold; color: var(--primary);"></span></div>
           <div style="display: flex; gap: 0.75rem; justify-content: center;">
-            <button class="btn btn-sm btn-primary" onclick="selectPlaySideOnline('left')">⬅️ KIRI</button>
-            <button class="btn btn-sm btn-primary" onclick="selectPlaySideOnline('right')">KANAN ➡️</button>
+            <button class="btn btn-sm btn-primary" onclick="selectPlaySideOnline('left')"> KIRI</button>
+            <button class="btn btn-sm btn-primary" onclick="selectPlaySideOnline('right')">KANAN </button>
             <button class="btn btn-sm btn-outline" style="background: transparent;" onclick="cancelPlaySideOnline()">BATAL</button>
           </div>
         </div>
@@ -576,8 +583,11 @@
           <h3 class="section-title" id="score-input-title">Tambah Skor Ronde</h3>
         </div>
         <div id="score-inputs" class="score-inputs"></div>
-        <div class="score-actions">
+        <div class="score-actions" style="display: flex; flex-direction: column; gap: 0.6rem;">
           <button id="btn-save-round" class="btn btn-primary btn-full" onclick="saveRound()">Simpan Ronde</button>
+          <button id="btn-finish-tourney-match" class="btn btn-full hidden" style="background: linear-gradient(135deg, #FF1744 0%, #D50000 100%); color: #FFF; font-weight: bold; border-radius: 12px; border: 1.5px solid rgba(255,255,255,0.3); font-size: 0.85rem; padding: 0.75rem 1rem; display: flex; align-items: center; justify-content: center; gap: 8px;" onclick="completeActiveTournamentMatch()">
+             Selesai &amp; Simpan Skor ke Turnamen
+          </button>
         </div>
       </div>
 
@@ -586,7 +596,7 @@
         <div class="section-header">
           <h3 class="section-title">Riwayat Ronde</h3>
           <button id="btn-undo" class="btn-undo hidden" onclick="undoLastDelete()" title="Batalkan hapus terakhir">
-            ↩ Undo
+             Undo
           </button>
         </div>
         <div id="round-history" class="round-history"></div>
@@ -605,7 +615,7 @@
       <!-- Gelar & Julukan Pemain Stats -->
       <div id="gameover-titles-stats" class="gameover-gaple-stats hidden" style="margin-bottom: 2rem; width: 100%;">
         <h3 class="section-title" style="margin-bottom: 1.25rem; display: flex; align-items: center; gap: 0.4rem;">
-          🏅 Gelar & Julukan Pertandingan
+           Gelar & Julukan Pertandingan
         </h3>
         <div id="gameover-titles-list" style="display: flex; flex-direction: column; gap: 0.75rem;"></div>
       </div>
@@ -626,13 +636,18 @@
         <div id="gameover-gaple-list" style="display: flex; flex-direction: column; gap: 0.75rem;"></div>
       </div>
 
-      <div class="gameover-actions" style="display: flex; flex-direction: column; gap: 0.75rem; width: 100%; max-width: 320px; margin: 0 auto;">
+      <div class="gameover-actions" style="display: flex; flex-direction: column; gap: 0.75rem; width: 100%; max-width: 340px; margin: 0 auto;">
+        <button id="btn-back-tournament" class="btn btn-lg btn-full hidden" style="background: linear-gradient(135deg, #FF1744 0%, #D50000 100%); color: #FFF; border: 1.5px solid rgba(255,255,255,0.4); box-shadow: 0 4px 15px rgba(255,23,68,0.4); font-weight: bold; border-radius: 24px;" onclick="completeActiveTournamentMatch()"> Kembali ke Bagan Turnamen</button>
+        <button class="btn btn-outline btn-lg btn-full" onclick="openInstagramExportModal('gameover')" style="background: linear-gradient(135deg, #E1306C 0%, #C13584 50%, #833AB4 100%) !important; border: none !important; color: #FFFFFF !important; display: inline-flex; align-items: center; justify-content: center; gap: 8px; font-weight: bold; border-radius: 24px; box-shadow: 0 4px 18px rgba(225, 48, 108, 0.35);">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
+          Export Gambar Instagram
+        </button>
         <button class="btn btn-primary btn-lg btn-full" onclick="startNewGame()">Main Lagi</button>
         <button class="btn btn-outline btn-lg btn-full btn-wa-share" onclick="shareGameToWhatsApp()" style="background: #25D366 !important; border-color: #25D366 !important; color: #FFFFFF !important; display: inline-flex; align-items: center; justify-content: center; gap: 8px;">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" style="display: inline-block;">
             <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946C.06 5.348 5.397.01 12.008.01c3.202.001 6.212 1.246 8.477 3.514 2.266 2.268 3.507 5.28 3.505 8.484-.004 6.657-5.34 11.997-11.953 11.997-2.005-.001-3.973-.502-5.724-1.458L0 24zm6.59-4.846c1.6.95 3.188 1.449 4.625 1.45 5.489.002 9.961-4.47 9.964-9.96.002-2.66-1.033-5.16-2.907-7.036-1.874-1.877-4.374-2.91-7.038-2.91-5.493 0-9.966 4.473-9.969 9.963-.001 1.554.417 3.078 1.212 4.45L1.57 22.448l4.476-1.636zM17.15 13.9c-.3-.15-1.785-.88-2.067-.98-.28-.1-.49-.15-.69.15t-.79.98c-.19.22-.39.25-.69.1-3.05-1.54-4.2-2.73-4.8-3.77-.16-.27-.02-.42.13-.57.13-.13.3-.35.45-.53.15-.17.2-.3.3-.5.1-.2.05-.38-.02-.53-.08-.15-.69-1.67-.95-2.29-.26-.62-.51-.54-.69-.55-.18-.01-.39-.01-.6-.01-.21 0-.55.08-.84.4-.3.32-1.14 1.12-1.14 2.73s1.17 3.16 1.33 3.38c.16.22 2.3 3.52 5.58 4.94.78.34 1.39.54 1.86.69.78.25 1.5.21 2.06.13.62-.09 1.785-.73 2.037-1.44.25-.7.25-1.31.18-1.44-.08-.13-.3-.21-.6-.36z"/>
           </svg>
-          Bagikan Kemenangan
+          Bagikan WhatsApp
         </button>
       </div>
     </div>
@@ -737,9 +752,122 @@
       <!-- Reset All Data Button -->
       <div style="margin-top: 1.5rem; text-align: center;">
         <button id="btn-reset-all" class="btn btn-outline" style="color: var(--primary) !important; border-color: rgba(255, 82, 82, 0.25) !important; font-size: 0.75rem; padding: 0.6rem 1.25rem; width: 100%; border-radius: 16px; font-family: var(--font-pixel);" onclick="openModal('modal-confirm-reset')">
-          ⚠️ Reset Semua Data &amp; Riwayat
+           Reset Semua Data &amp; Riwayat
         </button>
       </div>
+    </div>
+  </div>
+
+  <!-- ===== PAGE: TOURNAMENT (TURNAMEN GAPLE) ===== -->
+  <div id="page-tournament" class="page">
+    <div class="page-header" style="flex-wrap: wrap; gap: 0.5rem;">
+      <button class="btn-back" onclick="showPage('home')" title="Kembali ke Menu Utama">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+          stroke-linecap="round" stroke-linejoin="round">
+          <path d="M19 12H5" />
+          <path d="M12 19l-7-7 7-7" />
+        </svg>
+      </button>
+      <div style="display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0;">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#FF1744" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;">
+          <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6" />
+          <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18" />
+          <path d="M4 22h16" />
+          <path d="M10 14.66V17c0 .55-.45 1-1 1H4v2h16v-2h-5c-.55 0-1-.45-1-1v-2.34" />
+          <path d="M12 2a6 6 0 0 1 6 6v3a6 6 0 0 1-6 6 6 6 0 0 1-6-6V8a6 6 0 0 1 6-6z" />
+        </svg>
+        <span class="page-title" style="color: #FF1744; -webkit-text-fill-color: #FF1744; margin: 0; line-height: 1;">TOURNAMENT</span>
+        <span id="tourney-mode-indicator" class="stage-badge stage-badge-red" style="margin: 0; font-size: 0.65rem; white-space: nowrap;">KNOCKOUT</span>
+      </div>
+      <button class="btn btn-sm btn-outline" style="background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.25); color: #FFF; font-family: var(--font-pixel); display: inline-flex; align-items: center; gap: 5px; padding: 0.35rem 0.65rem;" onclick="openTournamentModeSelectionModal()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+        Ganti Mode
+      </button>
+    </div>
+
+    <div class="tournament-container" style="max-width: 1000px; margin: 0 auto; padding: 0 0.5rem 3rem;">
+
+      <!-- Action Toolbar -->
+      <div class="tournament-toolbar">
+        <button class="btn btn-sm btn-outline" style="background: rgba(255,23,68,0.15); border-color: rgba(255,23,68,0.5); color: #FFF; font-family: var(--font-pixel); display: inline-flex; align-items: center; justify-content: center; gap: 6px;" onclick="openTournamentSetupModal()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          Atur Peserta
+        </button>
+        <button class="btn btn-sm btn-outline" style="background: rgba(255,215,0,0.15); border-color: rgba(255,215,0,0.5); color: #FFF; font-family: var(--font-pixel); display: inline-flex; align-items: center; justify-content: center; gap: 6px;" onclick="autofillTournamentPlayers()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+          Isi Otomatis
+        </button>
+        <button class="btn btn-sm btn-outline" style="background: rgba(68,138,255,0.15); border-color: rgba(68,138,255,0.5); color: #FFF; font-family: var(--font-pixel); display: inline-flex; align-items: center; justify-content: center; gap: 6px;" onclick="randomizeTournamentSeeding()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/><line x1="4" y1="4" x2="9" y2="9"/></svg>
+          Acak Meja
+        </button>
+        <button class="btn btn-sm btn-outline" style="background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.2); color: #AAA; font-family: var(--font-pixel); display: inline-flex; align-items: center; justify-content: center; gap: 6px;" onclick="resetTournamentData()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+          Reset Turnamen
+        </button>
+      </div>
+
+      <!-- VIEW 1: KNOCKOUT BRACKET VIEW -->
+      <div id="tournament-bracket-view" class="tournament-bracket-wrap">
+        <!-- Rendered dynamically via app.js -->
+      </div>
+
+      <!-- VIEW 2: ROUND ROBIN VIEW -->
+      <div id="tournament-roundrobin-view" class="tournament-roundrobin-wrap hidden">
+        <!-- Sub-Navigation Tabs -->
+        <div class="rr-tabs-nav">
+          <button id="rr-tab-btn-standings" class="rr-tab-btn active" onclick="switchRoundRobinTab('standings')">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+            Klasemen Poin
+          </button>
+          <button id="rr-tab-btn-fixtures" class="rr-tab-btn" onclick="switchRoundRobinTab('fixtures')">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            Jadwal Pertandingan
+          </button>
+        </div>
+
+        <!-- Standings Tab Panel -->
+        <div id="rr-panel-standings" class="rr-tab-panel">
+          <div class="rr-standings-card">
+            <div class="rr-standings-header">
+              <div>
+                <h3 style="font-family: var(--font-title); font-size: 1.15rem; color: #FFD740; margin: 0 0 0.25rem 0; display: flex; align-items: center; gap: 8px;">
+                   KLASEMEN TURNAMEN
+                </h3>
+                <p style="font-size: 0.75rem; color: var(--text-secondary); margin: 0;">Peringkat peserta diurutkan dari perolehan poin terkecil (poin terendah = peringkat teratas).</p>
+              </div>
+              <button class="btn btn-sm btn-primary" style="background: linear-gradient(135deg, #FFD740 0%, #FF9100 100%); color: #100608; font-weight: bold; border: none;" onclick="showTournamentPodium()">
+                 Lihat Podium Juara
+              </button>
+            </div>
+            <div class="rr-table-responsive">
+              <table class="rr-standings-table">
+                <thead>
+                  <tr>
+                    <th style="width: 50px; text-align: center;">Pos</th>
+                    <th>Peserta</th>
+                    <th style="text-align: center;">Main</th>
+                    <th style="text-align: center;">Menang</th>
+                    <th style="text-align: right;">Total Poin</th>
+                    <th style="text-align: right;">Rata-Rata</th>
+                  </tr>
+                </thead>
+                <tbody id="rr-standings-tbody">
+                  <!-- Dynamically populated via app.js -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Fixtures Tab Panel -->
+        <div id="rr-panel-fixtures" class="rr-tab-panel hidden">
+          <div id="rr-fixtures-container">
+            <!-- Dynamically populated via app.js -->
+          </div>
+        </div>
+      </div>
+
     </div>
   </div>
 
@@ -788,7 +916,7 @@
   <!-- ===== MODAL: AKHIR PERMAINAN ===== -->
   <div id="modal-gameover" class="modal-overlay hidden">
     <div class="modal-card">
-      <div class="modal-icon modal-icon-success">🏁</div>
+      <div class="modal-icon modal-icon-success"></div>
       <h3 class="modal-title">Permainan Selesai</h3>
       <p id="modal-gameover-body" class="modal-body">Seorang pemain telah mencapai 100 poin.</p>
       <div class="modal-actions">
@@ -920,7 +1048,7 @@
   <!-- ===== MODAL: ROUND END DETAIL ===== -->
   <div id="modal-round-end" class="modal-overlay hidden">
     <div class="modal-card modal-card-wide">
-      <div class="modal-icon" style="font-size: 2rem; margin-bottom: 0.5rem; text-align: center;">🏁</div>
+      <div class="modal-icon" style="font-size: 2rem; margin-bottom: 0.5rem; text-align: center;"></div>
       <h3 class="modal-title" style="margin-bottom: 0.5rem; text-align: center;">Ronde Selesai!</h3>
       <p id="round-end-outcome" class="modal-body" style="font-size: 1.3rem; color: var(--primary); font-weight: bold; text-transform: uppercase; margin-bottom: 1.5rem; text-align: center;"></p>
       
@@ -932,7 +1060,7 @@
       </div>
 
       <div class="modal-actions" style="display: flex; flex-direction: column; gap: 0.75rem;">
-        <button id="btn-next-round-online" class="btn btn-primary btn-full hidden" onclick="nextRoundOnline()">Lanjut Ronde Berikutnya 🚀</button>
+        <button id="btn-next-round-online" class="btn btn-primary btn-full hidden" onclick="nextRoundOnline()">Lanjut Ronde Berikutnya </button>
         <p id="guest-wait-next-round" class="form-hint hidden" style="text-align: center; width: 100%;">Menunggu host memulai ronde berikutnya...</p>
       </div>
     </div>
@@ -973,6 +1101,10 @@
       
       <div class="modal-actions" style="margin-top: 1.5rem; width: 100%;">
         <button class="btn btn-outline" style="flex: 1;" onclick="closeModal('modal-history-detail')">Tutup</button>
+        <button id="btn-ig-history" class="btn" style="flex: 1; background: linear-gradient(135deg, #E1306C 0%, #C13584 50%, #833AB4 100%) !important; color: #FFF !important; display: inline-flex; align-items: center; justify-content: center; gap: 6px; font-weight: bold;" onclick="openInstagramExportModal('history')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
+          Instagram
+        </button>
         <button id="btn-resume-history" class="btn btn-success" style="flex: 1; display: none; align-items: center; justify-content: center; gap: 6px;" onclick="resumeHistoryGame()">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
             <polygon points="5 3 19 12 5 21 5 3" fill="currentColor" />
@@ -985,7 +1117,7 @@
             <polyline points="16 6 12 2 8 6" />
             <line x1="12" y1="2" x2="12" y2="15" />
           </svg>
-          Bagikan
+          WhatsApp
         </button>
       </div>
     </div>
@@ -1029,15 +1161,15 @@
           <h4 style="font-family: var(--font-title); font-size: 0.6rem; text-transform: uppercase; margin-bottom: 0.75rem; border-bottom: 1px solid rgba(255, 255, 255, 0.1); padding-bottom: 0.4rem; color: var(--text-primary);">Momen Spesial</h4>
           <div style="display: flex; flex-direction: column; gap: 0.5rem;">
             <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem;">
-              <span>🀱 Gaple (-20)</span>
+              <span> Gaple (-20)</span>
               <span id="stat-detail-gaple" style="font-weight: 800;">0</span>
             </div>
             <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem;">
-              <span>⚡ Gacor (-25)</span>
+              <span> Gacor (-25)</span>
               <span id="stat-detail-gacor" style="font-weight: 800; color: var(--accent-orange);">0</span>
             </div>
             <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem;">
-              <span>🥁 Dung Tak (-30)</span>
+              <span> Dung Tak (-30)</span>
               <span id="stat-detail-dungtak" style="font-weight: 800; color: var(--primary);">0</span>
             </div>
           </div>
@@ -1046,6 +1178,200 @@
 
       <div class="modal-actions" style="margin-top: 1.5rem; width: 100%;">
         <button class="btn btn-outline btn-full" onclick="closeModal('modal-player-stats-detail')">Tutup</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== MODAL: PILIH MODE TURNAMEN ===== -->
+  <div id="modal-tournament-mode-select" class="modal-overlay hidden">
+    <div class="modal-card modal-card-wide" style="max-width: 680px; padding: 1.75rem; text-align: center;">
+      
+      <h2 class="modal-title" style="font-size: 1.4rem; color: #FFD740; margin-bottom: 0.25rem; font-family: var(--font-title); letter-spacing: 0.5px;">
+        PILIH FORMAT TURNAMEN
+      </h2>
+      <p class="form-hint" style="margin-bottom: 1.5rem; font-size: 0.85rem;">
+        Pilih sistem pertandingan yang ingin digunakan untuk turnamen gaple ini.
+      </p>
+
+      <div class="tourney-mode-cards-grid">
+        <!-- OPSI 1: KNOCKOUT SYSTEM -->
+        <div class="tourney-mode-card" onclick="selectTournamentMode('knockout')">
+          <div class="mode-card-header">
+            <span class="mode-icon"></span>
+            <span class="stage-badge stage-badge-red" style="font-size: 0.6rem;">FORMAT ELIMINASI</span>
+          </div>
+          <h3 class="mode-card-title">Knockout System</h3>
+          <p class="mode-card-desc">
+            Sistem gugur bertingkat. Peserta yang kalah akan tereliminasi dan pemenang melanjutkan ke babak berikutnya hingga perebutan juara.
+          </p>
+          <div class="mode-card-features">
+            <div class="mode-feature-item">✓ Bagan Eliminasi (Penyisihan ➔ SF ➔ Final)</div>
+            <div class="mode-feature-item">✓ Meja 4 Pemain dengan Pemenang Lolos</div>
+            <div class="mode-feature-item">✓ Cocok untuk turnamen cepat &amp; menantang</div>
+          </div>
+          <button class="btn btn-sm btn-primary mode-select-btn" style="background: linear-gradient(135deg, #FF1744 0%, #D50000 100%);">
+            Pilih Knockout
+          </button>
+        </div>
+
+        <!-- OPSI 2: ROUND ROBIN -->
+        <div class="tourney-mode-card" onclick="selectTournamentMode('roundrobin')">
+          <div class="mode-card-header">
+            <span class="mode-icon"></span>
+            <span class="stage-badge stage-badge-gold" style="font-size: 0.6rem;">PENGUMPULAN POIN</span>
+          </div>
+          <h3 class="mode-card-title">Round Robin</h3>
+          <p class="mode-card-desc">
+            Setiap peserta mengikuti pertandingan dan mengumpulkan poin. Di akhir turnamen, seluruh poin dihitung &amp; diurutkan untuk menentukan peringkat akhir.
+          </p>
+          <div class="mode-card-features">
+            <div class="mode-feature-item">✓ Papan Klasemen Poin &amp; Statistik Live</div>
+            <div class="mode-feature-item">✓ Fleksibel untuk jumlah peserta berapa saja</div>
+            <div class="mode-feature-item">✓ Semua pemain bertanding di tiap babak</div>
+          </div>
+          <button class="btn btn-sm btn-primary mode-select-btn" style="background: linear-gradient(135deg, #FFD740 0%, #FF9100 100%); color: #100608; font-weight: bold;">
+            Pilih Round Robin
+          </button>
+        </div>
+      </div>
+
+      <div class="modal-actions" style="margin-top: 1.5rem; justify-content: center;">
+        <button class="btn btn-outline" style="min-width: 140px;" onclick="closeModal('modal-tournament-mode-select')">Tutup</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== MODAL: SETUP PESERTA TURNAMEN (DYNAMIC CUSTOM SIZE & MODE) ===== -->
+  <div id="modal-tournament-setup" class="modal-overlay hidden">
+    <div class="modal-card modal-card-wide" style="max-height: 90vh; display: flex; flex-direction: column; overflow: hidden; padding: 1.5rem;">
+      <h3 class="modal-title" style="text-align: center; margin-bottom: 0.25rem; color: #FF1744; display: flex; align-items: center; justify-content: center; gap: 8px;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        Setup Peserta Tournament
+      </h3>
+      <p id="tourney-setup-subtitle" class="form-hint" style="text-align: center; margin-bottom: 1rem;">Pilih format jumlah peserta &amp; atur nama pemain.</p>
+      
+      <!-- Preset Size Buttons -->
+      <div id="tourney-preset-buttons-container" style="display: flex; gap: 0.5rem; justify-content: center; margin-bottom: 1rem; flex-wrap: wrap;">
+        <button class="btn btn-sm btn-outline tourney-preset-btn" onclick="selectTournamentSizePreset(4)">4 Peserta</button>
+        <button class="btn btn-sm btn-outline tourney-preset-btn" onclick="selectTournamentSizePreset(6)">6 Peserta</button>
+        <button class="btn btn-sm btn-outline tourney-preset-btn" onclick="selectTournamentSizePreset(8)">8 Peserta</button>
+        <button class="btn btn-sm btn-outline tourney-preset-btn" onclick="selectTournamentSizePreset(12)">12 Peserta</button>
+        <button class="btn btn-sm btn-outline tourney-preset-btn active" onclick="selectTournamentSizePreset(16)">16 Peserta</button>
+      </div>
+
+      <!-- Player Count Counter (For Custom Numbers) -->
+      <div style="display: flex; align-items: center; justify-content: center; gap: 0.75rem; margin-bottom: 1rem; background: rgba(255,255,255,0.03); padding: 0.5rem 1rem; border-radius: 12px; border: 1px solid rgba(255,255,255,0.08);">
+        <span class="form-label" style="margin: 0; font-size: 0.75rem;">Total Peserta:</span>
+        <button class="count-btn" style="width: 32px; height: 32px;" onclick="changeTournamentPlayerCount(-1)">−</button>
+        <span id="tourney-player-count-display" style="font-family: var(--font-title); font-size: 1.2rem; color: #FFD740; min-width: 30px; text-align: center;">16</span>
+        <button class="count-btn" style="width: 32px; height: 32px;" onclick="changeTournamentPlayerCount(1)">+</button>
+      </div>
+
+      <!-- Extra Settings for Round Robin -->
+      <div id="rr-setup-options-container" class="hidden" style="display: flex; flex-direction: column; gap: 0.6rem; margin-bottom: 1rem; background: linear-gradient(135deg, rgba(255,215,0,0.08) 0%, rgba(255,145,0,0.04) 100%); padding: 0.75rem 1rem; border-radius: 14px; border: 1.5px solid rgba(255,215,0,0.35);">
+        <div style="display: flex; align-items: center; justify-content: space-between; width: 100%; flex-wrap: wrap; gap: 0.5rem;">
+          <span class="form-label" style="margin: 0; font-size: 0.8rem; color: #FFD740; font-weight: bold; display: flex; align-items: center; gap: 6px;">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            Jumlah Babak / Putaran:
+          </span>
+          <span id="rr-selected-rounds-info" style="font-family: var(--font-pixel); font-size: 0.75rem; color: #FFD740; background: rgba(255,215,0,0.2); padding: 0.25rem 0.65rem; border-radius: 8px; border: 1px solid rgba(255,215,0,0.45); font-weight: bold;">
+            ✓ Terpilih: 3 Babak
+          </span>
+        </div>
+        <div style="display: flex; gap: 0.5rem; width: 100%;">
+          <button id="rr-rounds-btn-1" type="button" class="btn btn-sm rr-round-count-btn" onclick="selectRoundRobinRoundsCount(1)">1 Babak</button>
+          <button id="rr-rounds-btn-2" type="button" class="btn btn-sm rr-round-count-btn" onclick="selectRoundRobinRoundsCount(2)">2 Babak</button>
+          <button id="rr-rounds-btn-3" type="button" class="btn btn-sm rr-round-count-btn active" onclick="selectRoundRobinRoundsCount(3)">3 Babak</button>
+        </div>
+      </div>
+
+      <div style="flex: 1; overflow-y: auto; padding-right: 0.25rem; margin-bottom: 1.25rem;">
+        <div id="tournament-player-inputs-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 0.75rem;">
+          <!-- Dynamically populated input fields -->
+        </div>
+      </div>
+
+      <div class="modal-actions" style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
+        <button class="btn btn-sm btn-outline" style="flex: 1; min-width: 120px;" onclick="autofillTournamentPlayers(); closeModal('modal-tournament-setup');"> Preset Otomatis</button>
+        <button class="btn btn-sm btn-outline" style="flex: 1; min-width: 120px;" onclick="closeModal('modal-tournament-setup')">Batal</button>
+        <button class="btn btn-sm btn-primary" style="flex: 1; min-width: 120px; background: #FF1744;" onclick="saveTournamentSetupNames()">Simpan Peserta</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== MODAL: PODIUM JUARA TURNAMEN ===== -->
+  <div id="modal-tournament-podium" class="modal-overlay hidden">
+    <div class="modal-card modal-card-wide" style="text-align: center; background: linear-gradient(180deg, #24080D 0%, #100608 100%); border: 2px solid #FFD740; box-shadow: 0 0 35px rgba(255, 215, 0, 0.4);">
+      <div style="font-size: 2.5rem; margin-bottom: 0.25rem; display: flex; justify-content: center; align-items: center; gap: 12px; color: #FFD740;">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6" /><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18" /><path d="M4 22h16" /><path d="M10 14.66V17c0 .55-.45 1-1 1H4v2h16v-2h-5c-.55 0-1-.45-1-1v-2.34" /><path d="M12 2a6 6 0 0 1 6 6v3a6 6 0 0 1-6 6 6 6 0 0 1-6-6V8a6 6 0 0 1 6-6z" /></svg>
+      </div>
+      <h2 id="podium-modal-title" style="font-family: var(--font-title); font-size: 1.5rem; color: #FFD740; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 0.25rem;">PODIUM JUARA TOURNAMENT</h2>
+      <p id="podium-modal-subtitle" style="color: #F1F5F9; font-size: 0.85rem; margin-bottom: 1.5rem;">Selamat kepada para Pemenang Turnamen Gaple!</p>
+
+      <div id="tournament-podium-cards" style="display: flex; justify-content: center; align-items: flex-end; gap: 0.75rem; margin-bottom: 2rem; flex-wrap: wrap;">
+        <!-- Rendered dynamically via app.js -->
+      </div>
+
+      <div class="modal-actions" style="display: flex; gap: 0.75rem; justify-content: center;">
+        <button id="btn-ig-podium" class="btn btn-lg" style="background: linear-gradient(135deg, #E1306C 0%, #C13584 50%, #833AB4 100%) !important; color: #FFF !important; width: 100%; border-radius: 24px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 0.5rem; border: none; font-weight: bold; box-shadow: 0 4px 18px rgba(225, 48, 108, 0.4);" onclick="openInstagramExportModal('tournament')">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
+          Export Podium ke Instagram
+        </button>
+        <button class="btn btn-primary btn-lg" style="background: linear-gradient(135deg, #FF1744 0%, #D50000 100%); width: 100%; border-radius: 24px; display: inline-flex; align-items: center; justify-content: center; gap: 8px;" onclick="closeModal('modal-tournament-podium')">
+          Tutup &amp; Lihat Bagan / Klasemen
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== MODAL: EXPORT GAMBAR INSTAGRAM ===== -->
+  <div id="modal-instagram-export" class="modal-overlay hidden">
+    <div class="modal-card modal-card-wide" style="max-width: 520px; max-height: 95vh; display: flex; flex-direction: column; overflow: hidden; padding: 1.5rem; background: linear-gradient(180deg, #1C060B 0%, #0F0305 100%); border: 2px solid #FFD740; box-shadow: 0 0 35px rgba(255, 215, 0, 0.35);">
+      
+      <!-- Header -->
+      <div style="text-align: center; margin-bottom: 0.75rem;">
+        <h3 class="modal-title" style="color: #FFD740; margin: 0 0 0.25rem 0; display: flex; align-items: center; justify-content: center; gap: 8px; font-family: var(--font-title); font-size: 1.15rem;">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
+          EXPORT POST INSTAGRAM
+        </h3>
+        <p class="form-hint" style="margin: 0; font-size: 0.75rem; color: #CBD5E1;">Siap diposting ke Feed / Postingan &amp; Instagram Story! </p>
+      </div>
+
+      <!-- Format Switcher (Square 1:1 vs Story 9:16) -->
+      <div style="display: flex; justify-content: center; gap: 0.5rem; margin-bottom: 0.85rem;">
+        <button id="btn-ig-format-square" class="btn btn-sm btn-outline ig-format-btn active" onclick="switchInstagramExportFormat('square')" style="flex: 1; padding: 0.45rem 0.6rem; font-size: 0.75rem;">
+           Post / Feed (1:1)
+        </button>
+        <button id="btn-ig-format-story" class="btn btn-sm btn-outline ig-format-btn" onclick="switchInstagramExportFormat('story')" style="flex: 1; padding: 0.45rem 0.6rem; font-size: 0.75rem;">
+           IG Story (9:16)
+        </button>
+      </div>
+
+      <!-- Image Preview Container -->
+      <div style="flex: 1; overflow-y: auto; display: flex; justify-content: center; align-items: center; background: rgba(0,0,0,0.55); padding: 0.75rem; border-radius: 14px; border: 1px solid rgba(255,255,255,0.08); margin-bottom: 1.1rem; min-height: 220px;">
+        <img id="ig-export-preview-img" alt="Instagram Victory Preview" style="max-width: 100%; max-height: 360px; width: auto; height: auto; border-radius: 10px; box-shadow: 0 10px 30px rgba(0,0,0,0.7); display: block;" />
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="modal-actions" style="display: flex; flex-direction: column; gap: 0.6rem; width: 100%;">
+        <div style="display: flex; gap: 0.5rem; width: 100%;">
+          <button class="btn btn-primary" style="flex: 1; background: linear-gradient(135deg, #E1306C 0%, #C13584 50%, #833AB4 100%) !important; border: none !important; color: #FFF; font-weight: bold; padding: 0.7rem;" onclick="shareInstagramExport()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+            Bagikan
+          </button>
+          <button class="btn btn-primary" style="flex: 1; background: linear-gradient(135deg, #FFD740 0%, #FF9100 100%) !important; color: #100608 !important; font-weight: bold; border: none !important; padding: 0.7rem;" onclick="downloadInstagramExport()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Download HD
+          </button>
+        </div>
+        <div style="display: flex; gap: 0.5rem; width: 100%;">
+          <button class="btn btn-outline" style="flex: 1; font-size: 0.75rem; padding: 0.5rem;" onclick="copyInstagramExportToClipboard()">
+             Salin Gambar
+          </button>
+          <button class="btn btn-outline" style="flex: 1; font-size: 0.75rem; padding: 0.5rem;" onclick="closeModal('modal-instagram-export')">
+            Tutup
+          </button>
+        </div>
       </div>
     </div>
   </div>
