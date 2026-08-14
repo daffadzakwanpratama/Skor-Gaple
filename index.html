@@ -818,6 +818,25 @@
 
     <div class="tournament-container" style="max-width: 1000px; margin: 0 auto; padding: 0 0.5rem 3rem;">
 
+      <!-- Shared Multi-Device Tournament Banner -->
+      <div id="tourney-shared-banner" class="tourney-shared-bar" style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.6rem; background: linear-gradient(90deg, rgba(28,6,11,0.9) 0%, rgba(15,3,5,0.9) 100%); border: 1.5px solid rgba(255, 215, 0, 0.4); border-radius: 14px; padding: 0.65rem 1rem; margin-bottom: 1rem; box-shadow: 0 4px 16px rgba(0,0,0,0.4);">
+        <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+          <span style="font-family: var(--font-pixel); font-size: 0.65rem; color: #CBD5E1; text-transform: uppercase;">ID Turnamen:</span>
+          <span id="tourney-shared-id-display" style="font-family: var(--font-title); font-size: 0.85rem; color: #FFD740; font-weight: bold; letter-spacing: 0.5px; background: rgba(255, 215, 0, 0.12); padding: 3px 8px; border-radius: 6px; border: 1px dashed rgba(255, 215, 0, 0.6); cursor: pointer;" onclick="copyTournamentId()" title="Klik untuk salin ID Turnamen">GAPLE-001</span>
+          <span id="tourney-connection-status" class="stage-badge" style="background: rgba(0, 230, 118, 0.15); border-color: #00E676; color: #00E676; font-size: 0.6rem; margin: 0; padding: 2px 8px; display: inline-flex; align-items: center; gap: 4px;">
+            <span style="width: 6px; height: 6px; border-radius: 50%; background: #00E676; display: inline-block;"></span>
+            <span id="tourney-conn-text">Live Server</span>
+          </span>
+          <span id="tourney-judge-badge" class="stage-badge" style="background: rgba(68, 138, 255, 0.15); border-color: #448AFF; color: #448AFF; font-size: 0.6rem; margin: 0; padding: 2px 8px;">
+            Peran: <span id="tourney-judge-name-display">Laptop Server</span>
+          </span>
+        </div>
+        <button class="btn btn-sm" style="background: linear-gradient(135deg, rgba(255, 215, 0, 0.25), rgba(255, 23, 68, 0.25)); border: 1px solid #FFD740; color: #FFD740; font-family: var(--font-pixel); display: inline-flex; align-items: center; gap: 6px; padding: 0.4rem 0.75rem; border-radius: 8px;" onclick="openTournamentConnectModal()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          Multi-Juri / Sambung HP
+        </button>
+      </div>
+
       <!-- Action Toolbar -->
       <div class="tournament-toolbar">
         <button class="btn btn-sm btn-outline" style="background: rgba(255,23,68,0.15); border-color: rgba(255,23,68,0.5); color: #FFF; font-family: var(--font-pixel); display: inline-flex; align-items: center; justify-content: center; gap: 6px;" onclick="openTournamentSetupModal()">
@@ -1467,6 +1486,75 @@
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
             Tutup
           </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== MODAL: KONEKSI TURNAMEN BERSAMA (SHARED MULTI-DEVICE) ===== -->
+  <div id="modal-tournament-connect" class="modal-overlay hidden">
+    <div class="modal-card" style="max-width: 480px; text-align: center;">
+      <div class="modal-icon" style="background: rgba(255, 215, 0, 0.15); border: 2px solid #FFD740; color: #FFD740; margin: 0 auto 0.75rem auto; width: 48px; height: 48px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"/><rect x="2" y="14" width="20" height="8" rx="2" ry="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg>
+      </div>
+      <h3 class="modal-title" style="color: #FFD740; font-family: var(--font-title); font-size: 1.2rem; margin-bottom: 0.25rem;">TURNAMEN MULTI-PERANGKAT</h3>
+      <p class="modal-body" style="font-size: 0.8rem; color: #CBD5E1; margin-bottom: 1.25rem;">Kelola turnamen bersama beberapa juri di meja berbeda secara real-time melalui jaringan lokal / Wi-Fi.</p>
+
+      <!-- Connect Tabs -->
+      <div style="display: flex; gap: 0.5rem; margin-bottom: 1.25rem;">
+        <button id="btn-tab-host-tourney" class="btn btn-sm" style="flex: 1; background: #FF1744; color: #FFF; font-family: var(--font-pixel);" onclick="switchTourneyConnectTab('host')">
+          Buat / Host Turnamen
+        </button>
+        <button id="btn-tab-join-tourney" class="btn btn-sm btn-outline" style="flex: 1; font-family: var(--font-pixel);" onclick="switchTourneyConnectTab('join')">
+          Gabung sebagai Juri
+        </button>
+      </div>
+
+      <!-- Tab Content: Host / Buat Turnamen -->
+      <div id="tab-content-host-tourney" style="text-align: left;">
+        <div class="form-group" style="margin-bottom: 0.85rem;">
+          <label class="form-label" style="font-size: 0.75rem;">Tournament ID (Kode Unik Turnamen):</label>
+          <div style="display: flex; gap: 0.5rem;">
+            <input id="input-host-tourney-id" type="text" class="form-input" style="text-transform: uppercase; font-weight: bold; color: #FFD740; letter-spacing: 1px;" placeholder="GAPLE-17AGUSTUS-001" value="">
+            <button class="btn btn-sm btn-outline" style="padding: 0 0.75rem;" onclick="generateRandomTourneyId()" title="Buat ID Acak">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+            </button>
+          </div>
+          <span class="form-hint" style="font-size: 0.7rem; color: #AAA;">Bagikan ID ini kepada juri-juri meja agar bisa menginput skor bersamaan.</span>
+        </div>
+
+        <div class="form-group" style="margin-bottom: 1.25rem;">
+          <label class="form-label" style="font-size: 0.75rem;">Nama Perangkat / Host:</label>
+          <input id="input-host-judge-name" type="text" class="form-input" placeholder="Admin / Laptop Server" value="Laptop Server">
+        </div>
+
+        <div style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 0.6rem 0.8rem; margin-bottom: 1.25rem; font-size: 0.75rem; color: #CBD5E1;">
+          <strong style="color: #FFD740;">Petunjuk untuk Juri Lain:</strong><br>
+          Buka browser di smartphone juri yang terhubung ke Wi-Fi yang sama, akses URL web ini, lalu pilih <em>"Gabung sebagai Juri"</em> dan masukkan Tournament ID di atas.
+        </div>
+
+        <div class="modal-actions" style="display: flex; gap: 0.5rem;">
+          <button class="btn btn-outline" style="flex: 1;" onclick="closeModal('modal-tournament-connect')">Tutup</button>
+          <button class="btn btn-primary" style="flex: 1; background: #FF1744;" onclick="executeHostTournament()">Simpan &amp; Aktifkan</button>
+        </div>
+      </div>
+
+      <!-- Tab Content: Gabung sebagai Juri -->
+      <div id="tab-content-join-tourney" class="hidden" style="text-align: left;">
+        <div class="form-group" style="margin-bottom: 0.85rem;">
+          <label class="form-label" style="font-size: 0.75rem;">Masukkan Tournament ID:</label>
+          <input id="input-join-tourney-id" type="text" class="form-input" style="text-transform: uppercase; font-weight: bold; color: #FFD740; letter-spacing: 1px;" placeholder="Contoh: GAPLE-17AGUSTUS-001">
+          <span class="form-hint" style="font-size: 0.7rem; color: #AAA;">Mintalah ID ini kepada Host / Laptop Utama Turnamen.</span>
+        </div>
+
+        <div class="form-group" style="margin-bottom: 1.25rem;">
+          <label class="form-label" style="font-size: 0.75rem;">Nama Juri / Meja Tugas:</label>
+          <input id="input-join-judge-name" type="text" class="form-input" placeholder="Contoh: Juri Meja 1">
+        </div>
+
+        <div class="modal-actions" style="display: flex; gap: 0.5rem;">
+          <button class="btn btn-outline" style="flex: 1;" onclick="closeModal('modal-tournament-connect')">Batal</button>
+          <button class="btn btn-primary" style="flex: 1; background: #448AFF;" onclick="executeJoinTournament()">Gabung Turnamen</button>
         </div>
       </div>
     </div>

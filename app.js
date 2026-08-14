@@ -2967,6 +2967,60 @@ function setupSocketListeners() {
   socket.on('errorMsg', (msg) => {
     showToast(msg);
   });
+
+  // ─────────────────────────────────────────────
+  // SHARED TOURNAMENT REAL-TIME LISTENERS
+  // ─────────────────────────────────────────────
+  socket.on('connect', () => {
+    updateTournamentConnectionStatus(true);
+    flushTournamentOfflineQueue();
+    if (tournamentState && tournamentState.id) {
+      socket.emit('tournament:join', {
+        tournamentId: tournamentState.id,
+        role: currentJudgeRole || 'host',
+        judgeName: currentJudgeName || 'Laptop Server'
+      });
+    }
+  });
+
+  socket.on('disconnect', () => {
+    updateTournamentConnectionStatus(false);
+  });
+
+  // Menerima pembaruan skor meja dari juri / perangkat lain
+  socket.on('tournament:tableUpdated', ({ tournamentId, tournament, payload }) => {
+    if (tournamentState && tournamentState.id === tournamentId && tournament) {
+      console.log('[Turnamen Sync] Menerima pembaruan meja dari server:', payload);
+      
+      const isMyActiveTable = state.currentGame && state.currentGame.isTournamentMatch &&
+        state.currentGame.tournamentContext &&
+        state.currentGame.tournamentContext.roundIdx === payload.roundIdx &&
+        state.currentGame.tournamentContext.tableIdx === payload.tableIdx;
+
+      tournamentState = tournament;
+      saveTournamentStateLocalOnly();
+
+      if (!isMyActiveTable) {
+        renderTournamentView();
+        const judgeInfo = payload.judgeName ? ` oleh ${payload.judgeName}` : '';
+        showToast(`Meja ${payload.tableIdx + 1} diperbarui${judgeInfo}! ⚡`, 2500);
+      }
+    }
+  });
+
+  // Menerima sinkronisasi menyeluruh dari server
+  socket.on('tournament:stateSynced', ({ tournament }) => {
+    if (tournament && tournamentState && tournamentState.id === tournament.id) {
+      tournamentState = tournament;
+      saveTournamentStateLocalOnly();
+      renderTournamentView();
+      showToast('Data turnamen disinkronkan dari server ✓', 2000);
+    }
+  });
+
+  socket.on('tournament:userJoined', ({ judgeName, role }) => {
+    showToast(`🟢 ${judgeName} (${role}) terhubung ke turnamen`, 2500);
+  });
 }
 
 function showOnlineSetup() {
@@ -4285,10 +4339,14 @@ function initTournamentData(forceReset = false, customPlayerCount = null, target
     });
   }
 
+  const tourneyId = (tournamentState && tournamentState.id) ? tournamentState.id : generateRandomTourneyIdString();
+
   if (currentMode === 'roundrobin') {
     // Round Robin Mode
     const rrMatches = generateRoundRobinMatches(players, roundRobinRoundsCount);
     tournamentState = {
+      id: tourneyId,
+      name: 'Turnamen Round Robin Gaple',
       mode: 'roundrobin',
       players,
       rrConfig: {
@@ -4337,6 +4395,8 @@ function initTournamentData(forceReset = false, customPlayerCount = null, target
     });
 
     tournamentState = {
+      id: tourneyId,
+      name: 'Turnamen Knockout Gaple',
       mode: 'knockout',
       players,
       rounds,
@@ -4398,14 +4458,294 @@ function generateRoundRobinMatches(players, totalRounds = 3) {
   return matches;
 }
 
-function saveTournamentState() {
+// ─────────────────────────────────────────────
+// SHARED MULTI-DEVICE TOURNAMENT SYNC & STORAGE
+// ─────────────────────────────────────────────
+let currentJudgeName = localStorage.getItem('gaple_judgeName') || 'Laptop Server';
+let currentJudgeRole = localStorage.getItem('gaple_judgeRole') || 'host';
+let tournamentOfflineQueue = [];
+
+function updateTournamentConnectionStatus(isConnected) {
+  const statusEl = document.getElementById('tourney-connection-status');
+  const textEl = document.getElementById('tourney-conn-text');
+  if (!statusEl || !textEl) return;
+
+  if (isConnected) {
+    statusEl.style.background = 'rgba(0, 230, 118, 0.15)';
+    statusEl.style.borderColor = '#00E676';
+    statusEl.style.color = '#00E676';
+    textEl.textContent = 'Live Server';
+    const dot = statusEl.querySelector('span');
+    if (dot) dot.style.background = '#00E676';
+  } else {
+    statusEl.style.background = 'rgba(255, 145, 0, 0.15)';
+    statusEl.style.borderColor = '#FF9100';
+    statusEl.style.color = '#FF9100';
+    textEl.textContent = 'Offline (Tersimpan)';
+    const dot = statusEl.querySelector('span');
+    if (dot) dot.style.background = '#FF9100';
+  }
+}
+
+function updateTournamentIdDisplay() {
+  const idEl = document.getElementById('tourney-shared-id-display');
+  const judgeEl = document.getElementById('tourney-judge-name-display');
+  if (idEl) {
+    idEl.textContent = (tournamentState && tournamentState.id) ? tournamentState.id : 'GAPLE-001';
+  }
+  if (judgeEl) {
+    judgeEl.textContent = currentJudgeName || 'Laptop Server';
+  }
+}
+
+function copyTournamentId() {
+  const id = (tournamentState && tournamentState.id) ? tournamentState.id : 'GAPLE-001';
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(id).then(() => {
+      showToast(`ID Turnamen "${id}" disalin ke clipboard! Bagikan ke juri lain.`);
+    }).catch(() => {
+      showToast(`ID Turnamen: ${id}`);
+    });
+  } else {
+    showToast(`ID Turnamen: ${id}`);
+  }
+}
+
+function saveTournamentStateLocalOnly() {
   try {
     if (tournamentState) {
       localStorage.setItem('gaple_tournamentState', JSON.stringify(tournamentState));
+      updateTournamentIdDisplay();
     }
   } catch (e) {
-    console.warn('Gagal menyimpan gaple_tournamentState:', e);
+    console.warn('Gagal menyimpan local tournamentState:', e);
   }
+}
+
+function saveTournamentState() {
+  saveTournamentStateLocalOnly();
+
+  if (tournamentState && tournamentState.id) {
+    if (socket && socket.connected) {
+      socket.emit('tournament:create', tournamentState, (res) => {
+        if (res && res.success) {
+          updateTournamentConnectionStatus(true);
+        }
+      });
+    } else {
+      fetch('/api/tournaments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(tournamentState)
+      }).then(r => r.json()).then(res => {
+        updateTournamentConnectionStatus(true);
+      }).catch(err => {
+        updateTournamentConnectionStatus(false);
+        queueTournamentOfflineAction({ type: 'syncTournament', data: tournamentState });
+      });
+    }
+  }
+}
+
+function syncTournamentTableScore(roundIdx, tableIdx, payload) {
+  if (!tournamentState || !tournamentState.id) return;
+  const data = {
+    tournamentId: tournamentState.id,
+    payload: {
+      mode: tournamentState.mode,
+      roundIdx,
+      tableIdx,
+      scores: payload.scores,
+      isDone: payload.isDone,
+      ongoingGame: payload.ongoingGame,
+      judgeName: currentJudgeName
+    }
+  };
+
+  if (socket && socket.connected) {
+    socket.emit('tournament:updateTable', data, (res) => {
+      if (res && res.success) {
+        updateTournamentConnectionStatus(true);
+      }
+    });
+  } else {
+    fetch(`/api/tournaments/${tournamentState.id}/table`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data.payload)
+    }).then(r => r.json()).then(res => {
+      updateTournamentConnectionStatus(true);
+    }).catch(err => {
+      updateTournamentConnectionStatus(false);
+      queueTournamentOfflineAction({ type: 'updateTable', data });
+    });
+  }
+}
+
+function queueTournamentOfflineAction(action) {
+  tournamentOfflineQueue.push({ ...action, timestamp: Date.now() });
+  try {
+    localStorage.setItem('gaple_tourneyOfflineQueue', JSON.stringify(tournamentOfflineQueue));
+  } catch (e) { }
+}
+
+function flushTournamentOfflineQueue() {
+  try {
+    const saved = localStorage.getItem('gaple_tourneyOfflineQueue');
+    if (saved) {
+      tournamentOfflineQueue = JSON.parse(saved);
+    }
+  } catch (e) { }
+
+  if (!tournamentOfflineQueue || tournamentOfflineQueue.length === 0) return;
+
+  const queue = [...tournamentOfflineQueue];
+  tournamentOfflineQueue = [];
+  localStorage.removeItem('gaple_tourneyOfflineQueue');
+
+  queue.forEach(item => {
+    if (item.type === 'updateTable') {
+      if (socket && socket.connected) {
+        socket.emit('tournament:updateTable', item.data);
+      }
+    } else if (item.type === 'syncTournament') {
+      if (socket && socket.connected) {
+        socket.emit('tournament:syncState', { tournamentId: item.data.id, tournamentData: item.data });
+      }
+    }
+  });
+}
+
+function openTournamentConnectModal() {
+  const hostIdInput = document.getElementById('input-host-tourney-id');
+  const hostJudgeInput = document.getElementById('input-host-judge-name');
+  if (hostIdInput) {
+    hostIdInput.value = (tournamentState && tournamentState.id) ? tournamentState.id : generateRandomTourneyIdString();
+  }
+  if (hostJudgeInput) {
+    hostJudgeInput.value = currentJudgeName || 'Laptop Server';
+  }
+  openModal('modal-tournament-connect');
+}
+
+function switchTourneyConnectTab(tab) {
+  const hostBtn = document.getElementById('btn-tab-host-tourney');
+  const joinBtn = document.getElementById('btn-tab-join-tourney');
+  const hostContent = document.getElementById('tab-content-host-tourney');
+  const joinContent = document.getElementById('tab-content-join-tourney');
+
+  if (tab === 'host') {
+    hostBtn.className = 'btn btn-sm btn-primary';
+    hostBtn.style.background = '#FF1744';
+    joinBtn.className = 'btn btn-sm btn-outline';
+    joinBtn.style.background = 'transparent';
+    hostContent.classList.remove('hidden');
+    joinContent.classList.add('hidden');
+  } else {
+    joinBtn.className = 'btn btn-sm btn-primary';
+    joinBtn.style.background = '#448AFF';
+    hostBtn.className = 'btn btn-sm btn-outline';
+    hostBtn.style.background = 'transparent';
+    joinContent.classList.remove('hidden');
+    hostContent.classList.add('hidden');
+  }
+}
+
+function generateRandomTourneyIdString() {
+  const rand = Math.random().toString(36).substring(2, 6).toUpperCase();
+  return `GAPLE-17AGUSTUS-${rand}`;
+}
+
+function generateRandomTourneyId() {
+  const hostIdInput = document.getElementById('input-host-tourney-id');
+  if (hostIdInput) {
+    hostIdInput.value = generateRandomTourneyIdString();
+  }
+}
+
+function executeHostTournament() {
+  const hostIdInput = document.getElementById('input-host-tourney-id');
+  const hostJudgeInput = document.getElementById('input-host-judge-name');
+
+  const tourneyId = (hostIdInput && hostIdInput.value.trim()) ? hostIdInput.value.trim().toUpperCase() : generateRandomTourneyIdString();
+  currentJudgeName = (hostJudgeInput && hostJudgeInput.value.trim()) ? hostJudgeInput.value.trim() : 'Laptop Server';
+  currentJudgeRole = 'host';
+
+  localStorage.setItem('gaple_judgeName', currentJudgeName);
+  localStorage.setItem('gaple_judgeRole', currentJudgeRole);
+
+  if (!tournamentState) {
+    initTournamentData(true);
+  }
+  tournamentState.id = tourneyId;
+
+  saveTournamentState();
+  updateTournamentIdDisplay();
+  closeModal('modal-tournament-connect');
+  renderTournamentView();
+  showToast(`Turnamen aktif dengan ID: ${tourneyId}! Bagikan ke juri lain.`);
+}
+
+function executeJoinTournament() {
+  const joinIdInput = document.getElementById('input-join-tourney-id');
+  const joinJudgeInput = document.getElementById('input-join-judge-name');
+
+  const tourneyId = joinIdInput ? joinIdInput.value.trim().toUpperCase() : '';
+  if (!tourneyId) {
+    showToast('Silakan masukkan Tournament ID');
+    return;
+  }
+
+  currentJudgeName = (joinJudgeInput && joinJudgeInput.value.trim()) ? joinJudgeInput.value.trim() : 'Juri Meja';
+  currentJudgeRole = 'judge';
+  localStorage.setItem('gaple_judgeName', currentJudgeName);
+  localStorage.setItem('gaple_judgeRole', currentJudgeRole);
+
+  showToast(`Menghubungkan ke turnamen ${tourneyId}...`);
+
+  if (socket && socket.connected) {
+    socket.emit('tournament:join', {
+      tournamentId: tourneyId,
+      role: 'judge',
+      judgeName: currentJudgeName
+    }, (res) => {
+      if (res && res.success && res.tournament) {
+        tournamentState = res.tournament;
+        saveTournamentStateLocalOnly();
+        updateTournamentIdDisplay();
+        updateTournamentConnectionStatus(true);
+        closeModal('modal-tournament-connect');
+        renderTournamentView();
+        showPage('tournament');
+        showToast(`Terhubung ke turnamen ${tourneyId}! Selamat bertugas, ${currentJudgeName}! ✓`);
+      } else {
+        fetchFallbackJoin(tourneyId);
+      }
+    });
+  } else {
+    fetchFallbackJoin(tourneyId);
+  }
+}
+
+function fetchFallbackJoin(tourneyId) {
+  fetch(`/api/tournaments/${tourneyId}`)
+    .then(r => {
+      if (!r.ok) throw new Error('Turnamen tidak ditemukan di server');
+      return r.json();
+    })
+    .then(t => {
+      tournamentState = t;
+      saveTournamentStateLocalOnly();
+      updateTournamentIdDisplay();
+      updateTournamentConnectionStatus(true);
+      closeModal('modal-tournament-connect');
+      renderTournamentView();
+      showPage('tournament');
+      showToast(`Berhasil bergabung ke turnamen ${tourneyId}!`);
+    })
+    .catch(err => {
+      showToast(err.message || 'Gagal terhubung ke turnamen di server.');
+    });
 }
 
 function openTournamentMode() {
@@ -4638,6 +4978,9 @@ function getTournamentPlayerObj(id) {
 function renderTournamentView() {
   if (!tournamentState) initTournamentData();
   const st = tournamentState;
+
+  // Update Shared Tournament Info & ID Display
+  updateTournamentIdDisplay();
 
   // Update Header Mode Indicator
   const modeBadge = document.getElementById('tourney-mode-indicator');
@@ -5285,6 +5628,7 @@ function completeActiveTournamentMatch() {
       scoresObj[pId] = playerInGame ? playerInGame.total : 0;
     });
 
+    syncTournamentTableScore(roundIdx, tableIdx, { scores: scoresObj, isDone: true, ongoingGame: null });
     processRoundRobinMatchResult(roundIdx, tableIdx, scoresObj);
   } else {
     const round = tournamentState.rounds[roundIdx];
@@ -5298,6 +5642,7 @@ function completeActiveTournamentMatch() {
       scoresObj[pId] = playerInGame ? playerInGame.total : 0;
     });
 
+    syncTournamentTableScore(roundIdx, tableIdx, { scores: scoresObj, isDone: true, ongoingGame: null });
     processTableMatchResult(roundIdx, tableIdx, scoresObj);
   }
 }
@@ -5346,6 +5691,7 @@ function processTableMatchResult(roundIdx, tableIdx, scoresObj) {
 
   tbl.scores = scoresObj;
   tbl.status = 'completed';
+  tbl.isDone = true;
 
   // Sort by score ascending (lowest = winner in gaple knockout)
   const sortedIds = [...tbl.playerIds].sort((a, b) => (scoresObj[a] || 0) - (scoresObj[b] || 0));

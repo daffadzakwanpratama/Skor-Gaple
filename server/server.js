@@ -8,13 +8,60 @@ const path = require('path');
 const gameEngine = require('./gameEngine');
 const botPlayer = require('./botPlayer');
 const db = require('./db');
+const tournamentDb = require('./tournamentDb');
 
 const app = express();
 app.use(cors());
+app.use(express.json());
 
 // Serve static files from the client folder
 app.use(express.static(path.join(__dirname, '../client')));
 app.use(express.static(path.join(__dirname, '../')));
+
+// ─────────────────────────────────────────────
+// REST API FOR SHARED TOURNAMENT (FALLBACK / ADMIN)
+// ─────────────────────────────────────────────
+app.get('/api/tournaments', (req, res) => {
+  res.json(tournamentDb.listTournaments());
+});
+
+app.get('/api/tournaments/:id', (req, res) => {
+  const t = tournamentDb.getTournament(req.params.id);
+  if (!t) return res.status(404).json({ error: 'Turnamen tidak ditemukan' });
+  res.json(t);
+});
+
+app.post('/api/tournaments', (req, res) => {
+  const saved = tournamentDb.saveTournament(req.body);
+  if (saved) {
+    io.to(`tournament_${saved.id}`).emit('tournament:stateSynced', { tournament: saved });
+    res.json(saved);
+  } else {
+    res.status(400).json({ error: 'Gagal menyimpan turnamen' });
+  }
+});
+
+app.post('/api/tournaments/:id/table', (req, res) => {
+  const result = tournamentDb.updateTable(req.params.id, req.body);
+  if (result.success) {
+    io.to(`tournament_${req.params.id}`).emit('tournament:tableUpdated', {
+      tournamentId: req.params.id,
+      tournament: result.tournament,
+      payload: req.body
+    });
+    res.json(result);
+  } else {
+    res.status(400).json(result);
+  }
+});
+
+app.delete('/api/tournaments/:id', (req, res) => {
+  const deleted = tournamentDb.deleteTournament(req.params.id);
+  if (deleted) {
+    io.to(`tournament_${req.params.id}`).emit('tournament:deleted', { tournamentId: req.params.id });
+  }
+  res.json({ success: deleted });
+});
 
 const server = http.createServer(app);
 const io = new Server(server, {
@@ -646,6 +693,116 @@ io.on('connection', socket => {
     };
 
     startRound(room);
+  });
+
+  // ─────────────────────────────────────────────
+  // SHARED TOURNAMENT SOCKET.IO HANDLERS
+  // ─────────────────────────────────────────────
+
+  // Juri/Host membuat atau menyimpan turnamen
+  socket.on('tournament:create', (tournamentData, callback) => {
+    try {
+      if (!tournamentData || !tournamentData.id) {
+        if (typeof callback === 'function') callback({ success: false, error: 'Data turnamen tidak valid' });
+        return;
+      }
+      const saved = tournamentDb.saveTournament(tournamentData);
+      socket.join(`tournament_${saved.id}`);
+      socket.tournamentId = saved.id;
+      console.log(`[Turnamen] Turnamen dibuat/diperbarui: ${saved.id} (${saved.name || 'Turnamen'})`);
+      if (typeof callback === 'function') callback({ success: true, tournament: saved });
+      socket.to(`tournament_${saved.id}`).emit('tournament:stateSynced', { tournament: saved });
+    } catch (err) {
+      console.error('[Turnamen] Error pada tournament:create:', err);
+      if (typeof callback === 'function') callback({ success: false, error: err.message });
+    }
+  });
+
+  // Juri/Admin bergabung ke turnamen berdasarkan Tournament ID
+  socket.on('tournament:join', (data, callback) => {
+    try {
+      const { tournamentId, role, judgeName } = data || {};
+      if (!tournamentId) {
+        if (typeof callback === 'function') callback({ success: false, error: 'Tournament ID harus diisi' });
+        return;
+      }
+
+      const t = tournamentDb.getTournament(tournamentId);
+      if (!t) {
+        if (typeof callback === 'function') callback({ success: false, error: `Turnamen dengan ID "${tournamentId}" tidak ditemukan di server.` });
+        return;
+      }
+
+      socket.join(`tournament_${tournamentId}`);
+      socket.tournamentId = tournamentId;
+      socket.judgeName = judgeName || 'Juri';
+      socket.role = role || 'judge';
+
+      console.log(`[Turnamen] ${socket.judgeName} (${socket.role}) bergabung ke turnamen: ${tournamentId}`);
+
+      if (typeof callback === 'function') callback({ success: true, tournament: t });
+      socket.to(`tournament_${tournamentId}`).emit('tournament:userJoined', {
+        judgeName: socket.judgeName,
+        role: socket.role,
+        socketId: socket.id
+      });
+    } catch (err) {
+      console.error('[Turnamen] Error pada tournament:join:', err);
+      if (typeof callback === 'function') callback({ success: false, error: err.message });
+    }
+  });
+
+  // Juri mengupdate skor meja tertentu secara atomik
+  socket.on('tournament:updateTable', (data, callback) => {
+    try {
+      const { tournamentId, payload } = data || {};
+      if (!tournamentId || !payload) {
+        if (typeof callback === 'function') callback({ success: false, error: 'Data update meja tidak lengkap' });
+        return;
+      }
+
+      const result = tournamentDb.updateTable(tournamentId, payload);
+      if (result.success) {
+        if (typeof callback === 'function') callback({ success: true, tournament: result.tournament });
+        // Broadcast ke semua perangkat di turnamen ini (termasuk juri lain & layar dashboard)
+        io.to(`tournament_${tournamentId}`).emit('tournament:tableUpdated', {
+          tournamentId,
+          tournament: result.tournament,
+          payload
+        });
+      } else {
+        if (typeof callback === 'function') callback(result);
+      }
+    } catch (err) {
+      console.error('[Turnamen] Error pada tournament:updateTable:', err);
+      if (typeof callback === 'function') callback({ success: false, error: err.message });
+    }
+  });
+
+  // Sinkronisasi penuh state turnamen
+  socket.on('tournament:syncState', (data, callback) => {
+    try {
+      const { tournamentId, tournamentData } = data || {};
+      if (!tournamentId || !tournamentData) return;
+      const saved = tournamentDb.saveTournament(tournamentData);
+      io.to(`tournament_${tournamentId}`).emit('tournament:stateSynced', { tournament: saved });
+      if (typeof callback === 'function') callback({ success: true, tournament: saved });
+    } catch (err) {
+      console.error('[Turnamen] Error pada tournament:syncState:', err);
+      if (typeof callback === 'function') callback({ success: false, error: err.message });
+    }
+  });
+
+  // Juri mengklaim meja untuk memberi tahu perangkat lain meja sedang diisi
+  socket.on('tournament:claimTable', (data) => {
+    const { tournamentId, roundIdx, tableIdx, judgeName } = data || {};
+    if (tournamentId) {
+      socket.to(`tournament_${tournamentId}`).emit('tournament:tableClaimed', {
+        roundIdx,
+        tableIdx,
+        judgeName
+      });
+    }
   });
 
   // Disconnect Handling
