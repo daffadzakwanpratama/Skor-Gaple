@@ -988,15 +988,92 @@ function startGame() {
 }
 
 // ─────────────────────────────────────────────
-// DASHBOARD
+// DASHBOARD & NAVIGATION SAFETY
 // ─────────────────────────────────────────────
+let pendingBackAction = null;
+
+function syncTournamentOngoingGame(g) {
+  if (!g || !g.isTournamentMatch || !g.tournamentContext || !tournamentState) return;
+  const { mode, roundIdx, tableIdx } = g.tournamentContext;
+  if (mode === 'roundrobin' && tournamentState.rrMatches) {
+    const match = tournamentState.rrMatches.find(m => m.roundIdx === roundIdx && m.tableIdx === tableIdx);
+    if (match) match.ongoingGame = JSON.parse(JSON.stringify(g));
+  } else if (tournamentState.rounds && tournamentState.rounds[roundIdx]) {
+    const tbl = tournamentState.rounds[roundIdx].tables[tableIdx];
+    if (tbl) tbl.ongoingGame = JSON.parse(JSON.stringify(g));
+  }
+  saveTournamentState();
+}
+
 function handleDashboardBack() {
   const g = state.currentGame;
-  if (g && g.isTournamentMatch) {
-    showPage('tournament');
-    showToast('Kembali ke menu Turnamen ');
-  } else {
+  if (!g) {
     showPage('home');
+    return;
+  }
+
+  // Jika game masih berlangsung (status active)
+  if (g.status === 'active') {
+    pendingBackAction = () => {
+      saveState();
+      if (g.isTournamentMatch) {
+        syncTournamentOngoingGame(g);
+        showPage('tournament');
+        renderTournamentView();
+        showToast('Progres pertandingan meja tersimpan aman ✓');
+      } else {
+        showPage('home');
+        showToast('Permainan tersimpan. Anda dapat melanjutkannya kapan saja ✓');
+      }
+    };
+
+    const titleEl = document.getElementById('confirm-back-title');
+    const msgEl = document.getElementById('confirm-back-message');
+    if (titleEl) titleEl.textContent = 'Pertandingan Sedang Berlangsung';
+    if (msgEl) msgEl.textContent = 'Pertandingan sedang berlangsung. Apakah Anda yakin ingin kembali? Data skor dan progres ronde akan tetap tersimpan aman.';
+    openModal('modal-confirm-back');
+  } else {
+    // Jika game sudah selesai
+    if (g.isTournamentMatch) {
+      showPage('tournament');
+      renderTournamentView();
+    } else {
+      showPage('home');
+    }
+  }
+}
+
+function handleTournamentBack() {
+  if (tournamentState) {
+    const hasProgress = (tournamentState.mode === 'roundrobin')
+      ? (tournamentState.rrMatches && tournamentState.rrMatches.some(m => m.status === 'completed' || m.ongoingGame))
+      : (tournamentState.rounds && tournamentState.rounds.some(r => r.tables.some(t => t.isDone || t.ongoingGame)));
+
+    if (hasProgress) {
+      pendingBackAction = () => {
+        saveTournamentState();
+        showPage('home');
+        showToast('Turnamen tersimpan aman.');
+      };
+
+      const titleEl = document.getElementById('confirm-back-title');
+      const msgEl = document.getElementById('confirm-back-message');
+      if (titleEl) titleEl.textContent = 'Turnamen Sedang Berlangsung';
+      if (msgEl) msgEl.textContent = 'Turnamen sedang berlangsung. Apakah Anda yakin ingin kembali ke menu utama? Seluruh bagan dan skor turnamen akan tetap tersimpan.';
+      openModal('modal-confirm-back');
+      return;
+    }
+  }
+
+  showPage('home');
+}
+
+function executeConfirmedBack() {
+  closeModal('modal-confirm-back');
+  if (typeof pendingBackAction === 'function') {
+    const action = pendingBackAction;
+    pendingBackAction = null;
+    action();
   }
 }
 
@@ -1628,6 +1705,9 @@ function confirmDeleteRound() {
   state.pendingDeleteIndex = null;
   recalcTotals();
   saveState();
+  if (g.isTournamentMatch) {
+    syncTournamentOngoingGame(g);
+  }
   closeModal('modal-delete');
   renderDashboard();
 
@@ -1645,8 +1725,11 @@ function undoLastDelete() {
   state.deletedRoundCache = null;
   recalcTotals();
   saveState();
+  if (g.isTournamentMatch) {
+    syncTournamentOngoingGame(g);
+  }
   renderDashboard();
-  showToast('Penghapusan dibatalkan ');
+  showToast('Penghapusan dibatalkan ✓');
 }
 
 // ─────────────────────────────────────────────
@@ -1719,6 +1802,9 @@ function saveEditRound() {
 function finalizeEditRound(scores) {
   recalcTotals();
   saveState();
+  if (state.currentGame && state.currentGame.isTournamentMatch) {
+    syncTournamentOngoingGame(state.currentGame);
+  }
   closeModal('modal-edit');
   renderDashboard();
   if (scores) {
@@ -4189,18 +4275,14 @@ function initTournamentData(forceReset = false, customPlayerCount = null, target
   // Build players list
   const players = [];
   for (let i = 0; i < N; i++) {
-    if (PRESET_17_PLAYERS[i]) {
-      players.push({ ...PRESET_17_PLAYERS[i] });
-    } else {
-      const avatarIdx = i % DEFAULT_AVATARS.length;
-      const colorIdx = i % DEFAULT_COLORS.length;
-      players.push({
-        id: i + 1,
-        name: `Peserta ${i + 1}`,
-        avatar: DEFAULT_AVATARS[avatarIdx],
-        color: DEFAULT_COLORS[colorIdx]
-      });
-    }
+    const avatarIdx = i % DEFAULT_AVATARS.length;
+    const colorIdx = i % DEFAULT_COLORS.length;
+    players.push({
+      id: i + 1,
+      name: `Nama Pemain ${i + 1}`,
+      avatar: DEFAULT_AVATARS[avatarIdx],
+      color: DEFAULT_COLORS[colorIdx]
+    });
   }
 
   if (currentMode === 'roundrobin') {
@@ -4482,20 +4564,40 @@ function renderTournamentSetupInputs(count) {
 
   for (let i = 0; i < count; i++) {
     const existing = existingPlayers[i];
-    const defaultName = existing ? existing.name : (PRESET_17_PLAYERS[i] ? PRESET_17_PLAYERS[i].name : `Peserta ${i + 1}`);
+    const avatarKey = existing ? existing.avatar : DEFAULT_AVATARS[i % DEFAULT_AVATARS.length];
+    const avatarColor = existing ? existing.color : DEFAULT_COLORS[i % DEFAULT_COLORS.length];
+
+    // Check if player has a custom typed name; if it's default/empty, leave input value blank
+    let inputValue = '';
+    if (existing && existing.name) {
+      const n = existing.name.trim();
+      if (!n.startsWith('Nama Pemain ') && !n.startsWith('Peserta ') && !n.startsWith('Pemain ')) {
+        inputValue = n;
+      }
+    }
 
     const item = document.createElement('div');
     item.style.display = 'flex';
     item.style.alignItems = 'center';
-    item.style.gap = '0.5rem';
-    item.style.background = 'rgba(255,255,255,0.03)';
-    item.style.padding = '0.4rem 0.6rem';
-    item.style.borderRadius = '10px';
-    item.style.border = '1px solid rgba(255,255,255,0.08)';
+    item.style.gap = '0.75rem';
+    item.style.width = '100%';
+    item.style.marginBottom = '0.25rem';
 
     item.innerHTML = `
-      <span style="font-family: var(--font-pixel); font-size: 0.75rem; font-weight: bold; width: 22px; color: var(--text-secondary); text-align: center;">${i + 1}</span>
-      <input id="tourney-player-input-${i}" class="form-input" type="text" value="${escapeHtml(defaultName)}" maxlength="20" style="flex: 1; font-size: 0.85rem;" />
+      <span style="font-family: var(--font-title); font-size: 0.95rem; font-weight: bold; width: 22px; color: #94A3B8; text-align: center;">${i + 1}</span>
+      <div style="width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; background-color: ${avatarColor}; flex-shrink: 0; box-shadow: 0 2px 8px rgba(0,0,0,0.35); border: 1.5px solid rgba(255,255,255,0.15);">
+        ${getPixelArtSVG(avatarKey, 26)}
+      </div>
+      <input 
+        id="tourney-player-input-${i}" 
+        class="form-input" 
+        type="text" 
+        placeholder="Nama Pemain ${i + 1}" 
+        value="${escapeHtml(inputValue)}" 
+        maxlength="20" 
+        autocomplete="off"
+        style="flex: 1; height: 44px; border-radius: 14px; background: rgba(255,255,255,0.04); border: 1.5px solid rgba(255,255,255,0.1); color: #FFFFFF; font-size: 0.95rem; padding: 0 1rem;" 
+      />
     `;
     grid.appendChild(item);
   }
@@ -4508,7 +4610,7 @@ function saveTournamentSetupNames() {
   for (let i = 0; i < count; i++) {
     const el = document.getElementById(`tourney-player-input-${i}`);
     if (el) {
-      customNames.push(el.value.trim() || `Peserta ${i + 1}`);
+      customNames.push(el.value.trim() || `Nama Pemain ${i + 1}`);
     }
   }
 
@@ -4524,7 +4626,7 @@ function saveTournamentSetupNames() {
   saveTournamentState();
   closeModal('modal-tournament-setup');
   renderTournamentView();
-  showToast(`Turnamen dengan ${count} Peserta berhasil disimpan! `);
+  showToast(`Turnamen dengan ${count} Peserta berhasil disimpan!`);
 }
 
 function getTournamentPlayerObj(id) {
@@ -5055,6 +5157,16 @@ function startRoundRobinTableMatch(roundIdx, tableIdx) {
     return;
   }
 
+  // Jika meja ini sudah memiliki pertandingan yang sedang berlangsung (ongoing)
+  if (match.ongoingGame && match.ongoingGame.status === 'active') {
+    state.currentGame = match.ongoingGame;
+    saveState();
+    renderDashboard();
+    showPage('dashboard');
+    showToast(`Melanjutkan skor ${match.name}! Data skor dipulihkan ✓`);
+    return;
+  }
+
   const matchPlayers = match.playerIds.map(pId => {
     const p = getTournamentPlayerObj(pId);
     return {
@@ -5077,6 +5189,9 @@ function startRoundRobinTableMatch(roundIdx, tableIdx) {
     tournamentContext: { mode: 'roundrobin', roundIdx, tableIdx }
   };
 
+  match.ongoingGame = game;
+  saveTournamentState();
+
   state.currentGame = game;
   saveState();
   renderDashboard();
@@ -5096,6 +5211,16 @@ function startTournamentTableMatch(roundIdx, tableIdx) {
   const tbl = round.tables[tableIdx];
   if (!tbl || tbl.playerIds.length === 0) {
     showToast('Meja ini belum memiliki pemain!');
+    return;
+  }
+
+  // Jika meja ini sudah memiliki pertandingan yang sedang berlangsung (ongoing)
+  if (tbl.ongoingGame && tbl.ongoingGame.status === 'active') {
+    state.currentGame = tbl.ongoingGame;
+    saveState();
+    renderDashboard();
+    showPage('dashboard');
+    showToast(`Melanjutkan skor ${tbl.name}! Data skor dipulihkan ✓`);
     return;
   }
 
@@ -5120,6 +5245,9 @@ function startTournamentTableMatch(roundIdx, tableIdx) {
     isTournamentMatch: true,
     tournamentContext: { mode: 'knockout', roundIdx, tableIdx }
   };
+
+  tbl.ongoingGame = game;
+  saveTournamentState();
 
   state.currentGame = game;
   saveState();
@@ -5149,6 +5277,7 @@ function completeActiveTournamentMatch() {
   if (mode === 'roundrobin') {
     const match = tournamentState.rrMatches.find(m => m.roundIdx === roundIdx && m.tableIdx === tableIdx);
     if (!match) { showPage('tournament'); return; }
+    match.ongoingGame = null;
 
     const scoresObj = {};
     match.playerIds.forEach((pId, idx) => {
@@ -5161,6 +5290,7 @@ function completeActiveTournamentMatch() {
     const round = tournamentState.rounds[roundIdx];
     if (!round) { showPage('tournament'); return; }
     const tbl = round.tables[tableIdx];
+    if (tbl) tbl.ongoingGame = null;
 
     const scoresObj = {};
     tbl.playerIds.forEach((pId, idx) => {
@@ -5300,13 +5430,8 @@ function renderPodiumCards() {
   const modalTitle = document.getElementById('podium-modal-title');
   const modalSubtitle = document.getElementById('podium-modal-subtitle');
 
-  if (isRR) {
-    if (modalTitle) modalTitle.textContent = 'PODIUM KLASEMEN ROUND ROBIN';
-    if (modalSubtitle) modalSubtitle.textContent = 'Selamat kepada Juara dengan Poin Terkecil!';
-  } else {
-    if (modalTitle) modalTitle.textContent = 'PODIUM JUARA KNOCKOUT';
-    if (modalSubtitle) modalSubtitle.textContent = 'Selamat kepada para Pemenang Turnamen Gaple!';
-  }
+  if (modalTitle) modalTitle.textContent = 'PODIUM JUARA TURNAMEN GAPLE';
+  if (modalSubtitle) modalSubtitle.textContent = 'Selamat kepada para Pemenang Turnamen Gaple!';
 
   const w = tournamentState.winners;
   if (!w.juara1) {
@@ -5316,6 +5441,7 @@ function renderPodiumCards() {
         w.juara1 = getTournamentPlayerObj(standings[0].id);
         w.juara2 = standings[1] ? getTournamentPlayerObj(standings[1].id) : null;
         w.juara3 = standings[2] ? getTournamentPlayerObj(standings[2].id) : null;
+        w.juara4 = standings[3] ? getTournamentPlayerObj(standings[3].id) : null;
       }
     }
   }
@@ -5352,7 +5478,7 @@ function renderPodiumCards() {
 
     <!-- Juara 1 (Gold) -->
     <div class="podium-card podium-1">
-      <div class="podium-badge podium-badge-gold"> JUARA 1</div>
+      <div class="podium-badge podium-badge-gold">JUARA 1</div>
       <div class="podium-avatar-wrap podium-avatar-gold" style="background-color: ${w.juara1.color || '#FF5252'};">
         ${getPixelArtSVG(w.juara1.avatar, 46)}
       </div>
@@ -5431,22 +5557,22 @@ function openInstagramExportModal(sourceType) {
         avatar: p.avatar,
         color: p.color,
         score: `${scores[p.id] !== undefined ? scores[p.id] : 0} Pts`,
-        subtitle: idx === 0 ? ' Juara Utama' : idx === 1 ? '2 Runner Up' : idx === 2 ? '3 Juara 3' : 'Finalis'
+        subtitle: idx === 0 ? 'Juara Utama' : idx === 1 ? 'Runner Up' : idx === 2 ? 'Juara 3' : 'Finalis'
       }));
     }
 
     const winner = pList[0];
     exportData = {
-      badge: 'TOURNAMENT CHAMPION',
-      title: isRR ? 'JUARA ROUND ROBIN' : 'JUARA TURNAMEN GAPLE',
-      gameName: isRR ? `Turnamen Round Robin (${st.players.length} Peserta)` : `Turnamen Knockout (${st.players.length} Peserta)`,
+      badge: 'EDISI SPESIAL KEMERDEKAAN RI',
+      title: 'JUARA TURNAMEN GAPLE',
+      gameName: `Turnamen Gaple (${st.players.length} Peserta)`,
       dateStr: new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }),
       winner: {
         name: winner.name,
         avatar: winner.avatar,
         color: winner.color,
         scoreText: `SKOR: ${winner.score}`,
-        title: isRR ? ' Raja Klasemen Poin' : ' Juara 1 Turnamen'
+        title: 'Juara 1 Turnamen'
       },
       players: pList,
       stats: {
@@ -5467,8 +5593,8 @@ function openInstagramExportModal(sourceType) {
     const winTitle = titlesMap[game.players.indexOf(winner)];
 
     exportData = {
-      badge: 'GAPLE MATCH WINNER',
-      title: 'VICTORY ROYALE ',
+      badge: 'EDISI SPESIAL KEMERDEKAAN RI',
+      title: 'JUARA TURNAMEN GAPLE',
       gameName: game.name || 'Pertandingan Gaple',
       dateStr: new Date(game.createdAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }),
       winner: {
@@ -5476,7 +5602,7 @@ function openInstagramExportModal(sourceType) {
         avatar: winner.avatar,
         color: winner.color,
         scoreText: `${winner.total} POIN TERENDAH`,
-        title: winTitle ? ` ${winTitle.label}` : ' Master Gaple'
+        title: winTitle ? winTitle.label : 'Juara 1 Pertandingan'
       },
       players: sorted.map((p, idx) => ({
         rank: idx + 1,
@@ -5505,8 +5631,8 @@ function openInstagramExportModal(sourceType) {
     const winTitle = titlesMap[g.players.indexOf(winner)];
 
     exportData = {
-      badge: 'GAPLE MATCH WINNER',
-      title: 'VICTORY ROYALE ',
+      badge: 'EDISI SPESIAL KEMERDEKAAN RI',
+      title: 'JUARA TURNAMEN GAPLE',
       gameName: g.name || 'Pertandingan Gaple',
       dateStr: new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }),
       winner: {
@@ -5514,7 +5640,7 @@ function openInstagramExportModal(sourceType) {
         avatar: winner.avatar,
         color: winner.color,
         scoreText: `${winner.total} POIN TERENDAH`,
-        title: winTitle ? ` ${winTitle.label}` : ' Master Gaple'
+        title: winTitle ? winTitle.label : 'Juara 1 Pertandingan'
       },
       players: sorted.map((p, idx) => ({
         rank: idx + 1,
@@ -5647,304 +5773,557 @@ function renderInstagramExportCard() {
   const ctx = canvas.getContext('2d');
 
   // Background Gradient
-  const bgGrad = ctx.createRadialGradient(W / 2, H / 3, 50, W / 2, H / 2, W * 0.9);
-  bgGrad.addColorStop(0, '#2A0810');
-  bgGrad.addColorStop(0.5, '#190408');
-  bgGrad.addColorStop(1, '#0C0204');
+  const bgGrad = ctx.createRadialGradient(W / 2, H * 0.35, 80, W / 2, H / 2, W * 0.95);
+  bgGrad.addColorStop(0, '#2C0912');
+  bgGrad.addColorStop(0.45, '#180408');
+  bgGrad.addColorStop(1, '#0B0204');
   ctx.fillStyle = bgGrad;
   ctx.fillRect(0, 0, W, H);
 
   // Decorative Ambient Glows
-  const glow1 = ctx.createRadialGradient(W * 0.2, H * 0.15, 0, W * 0.2, H * 0.15, 400);
-  glow1.addColorStop(0, 'rgba(255, 23, 68, 0.22)');
+  const glow1 = ctx.createRadialGradient(W * 0.15, H * 0.12, 0, W * 0.15, H * 0.12, 450);
+  glow1.addColorStop(0, 'rgba(255, 23, 68, 0.2)');
   glow1.addColorStop(1, 'rgba(255, 23, 68, 0)');
   ctx.fillStyle = glow1;
   ctx.fillRect(0, 0, W, H);
 
-  const glow2 = ctx.createRadialGradient(W * 0.8, H * 0.85, 0, W * 0.8, H * 0.85, 450);
-  glow2.addColorStop(0, 'rgba(255, 215, 0, 0.18)');
+  const glow2 = ctx.createRadialGradient(W * 0.85, H * 0.88, 0, W * 0.85, H * 0.88, 500);
+  glow2.addColorStop(0, 'rgba(255, 215, 0, 0.15)');
   glow2.addColorStop(1, 'rgba(255, 215, 0, 0)');
   ctx.fillStyle = glow2;
   ctx.fillRect(0, 0, W, H);
 
-  // Outer Golden Double Border
+  // Outer Merah-Putih & Gold Double Border
   ctx.save();
-  ctx.lineWidth = 8;
+  ctx.lineWidth = 6;
   const borderGrad = ctx.createLinearGradient(0, 0, W, H);
-  borderGrad.addColorStop(0, '#FFD740');
-  borderGrad.addColorStop(0.5, '#FF9100');
-  borderGrad.addColorStop(1, '#FFD740');
+  borderGrad.addColorStop(0, '#FF1744');
+  borderGrad.addColorStop(0.25, '#FFFFFF');
+  borderGrad.addColorStop(0.5, '#FFD740');
+  borderGrad.addColorStop(0.75, '#FFFFFF');
+  borderGrad.addColorStop(1, '#FF1744');
   ctx.strokeStyle = borderGrad;
-  ctx.strokeRect(28, 28, W - 56, H - 56);
+  ctx.strokeRect(24, 24, W - 48, H - 48);
 
-  ctx.lineWidth = 2;
-  ctx.strokeStyle = 'rgba(255, 215, 0, 0.35)';
-  ctx.strokeRect(40, 40, W - 80, H - 80);
+  ctx.lineWidth = 1.5;
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.35)';
+  ctx.strokeRect(34, 34, W - 68, H - 68);
 
-  // Corner Pixel Accents
+  // Corner Pixel Accents (Merah Putih)
   const drawCorner = (cx, cy) => {
-    ctx.fillStyle = '#FFD740';
-    ctx.fillRect(cx - 8, cy - 8, 16, 16);
     ctx.fillStyle = '#FF1744';
-    ctx.fillRect(cx - 4, cy - 4, 8, 8);
+    ctx.fillRect(cx - 7, cy - 7, 14, 14);
+    ctx.fillStyle = '#FFFFFF';
+    ctx.fillRect(cx - 3, cy - 3, 6, 6);
   };
-  drawCorner(28, 28);
-  drawCorner(W - 28, 28);
-  drawCorner(28, H - 28);
-  drawCorner(W - 28, H - 28);
+  drawCorner(24, 24);
+  drawCorner(W - 24, 24);
+  drawCorner(24, H - 24);
+  drawCorner(W - 24, H - 24);
   ctx.restore();
 
   // Decorative Domino Tiles in background corners
-  drawDominoTileOnCanvas(ctx, 60, 60, 36, 56, 6, 6);
-  drawDominoTileOnCanvas(ctx, W - 96, 60, 36, 56, 5, 5);
-  drawDominoTileOnCanvas(ctx, 60, H - 116, 36, 56, 1, 1);
-  drawDominoTileOnCanvas(ctx, W - 96, H - 116, 36, 56, 4, 4);
+  const dominoTopY = isStory ? 55 : 48;
+  const dominoBotY = isStory ? H - 105 : H - 98;
+  drawDominoTileOnCanvas(ctx, 52, dominoTopY, 32, 50, 6, 6);
+  drawDominoTileOnCanvas(ctx, W - 84, dominoTopY, 32, 50, 5, 5);
+  drawDominoTileOnCanvas(ctx, 52, dominoBotY, 32, 50, 1, 1);
+  drawDominoTileOnCanvas(ctx, W - 84, dominoBotY, 32, 50, 4, 4);
 
   // ─────────────────────────────────────────────
-  // HEADER
+  // HEADER (NO OVERLAPPING — STRICT SEQUENTIAL BOXES)
   // ─────────────────────────────────────────────
-  let curY = isStory ? 130 : 80;
+  if (isStory) {
+    // Top Pill Badge (Merah Putih)
+    const badgeY = 125;
+    ctx.save();
+    ctx.fillStyle = 'rgba(255, 23, 68, 0.25)';
+    ctx.strokeStyle = '#FFFFFF';
+    ctx.lineWidth = 1.5;
+    const badgeText = data.badge.toUpperCase();
+    ctx.font = 'bold 16px "Inter", sans-serif';
+    const badgeW = ctx.measureText(badgeText).width + 36;
+    const badgeX = (W - badgeW) / 2;
+    ctx.beginPath();
+    if (ctx.roundRect) ctx.roundRect(badgeX, badgeY, badgeW, 34, 17);
+    else ctx.rect(badgeX, badgeY, badgeW, 34);
+    ctx.fill();
+    ctx.stroke();
 
-  // Top Pill Badge
-  ctx.save();
-  ctx.fillStyle = 'rgba(255, 215, 0, 0.15)';
-  ctx.strokeStyle = '#FFD740';
-  ctx.lineWidth = 2;
-  const badgeText = `  ${data.badge}  `;
-  ctx.font = 'bold 18px "Inter", sans-serif';
-  const badgeWidth = ctx.measureText(badgeText).width + 36;
-  const badgeX = (W - badgeWidth) / 2;
-  ctx.beginPath();
-  if (ctx.roundRect) ctx.roundRect(badgeX, curY, badgeWidth, 36, 18);
-  else ctx.rect(badgeX, curY, badgeWidth, 36);
-  ctx.fill();
-  ctx.stroke();
+    ctx.fillStyle = '#FFFFFF';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(badgeText, W / 2, badgeY + 17);
+    ctx.restore();
 
-  ctx.fillStyle = '#FFD740';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillText(badgeText, W / 2, curY + 18);
-  ctx.restore();
+    // Main Title (JUARA TURNAMEN GAPLE)
+    const titleY = 220;
+    ctx.save();
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.shadowColor = 'rgba(255, 23, 68, 0.6)';
+    ctx.shadowBlur = 18;
+    const titleGrad = ctx.createLinearGradient(W / 2 - 250, titleY - 20, W / 2 + 250, titleY + 20);
+    titleGrad.addColorStop(0, '#FFFFFF');
+    titleGrad.addColorStop(0.5, '#FFF9C4');
+    titleGrad.addColorStop(1, '#FFD740');
+    ctx.fillStyle = titleGrad;
+    ctx.font = 'bold 40px "Press Start 2P", "Inter", sans-serif';
+    ctx.fillText(data.title, W / 2, titleY);
+    ctx.restore();
 
-  curY += isStory ? 75 : 55;
+    // Subtitle
+    const subY = 280;
+    ctx.save();
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = '#E2E8F0';
+    ctx.font = '600 20px "Inter", sans-serif';
+    ctx.fillText(`${data.gameName}  •  ${data.dateStr}`, W / 2, subY);
+    ctx.restore();
 
-  // Main Title
-  ctx.save();
-  ctx.textAlign = 'center';
-  ctx.shadowColor = 'rgba(255, 215, 0, 0.6)';
-  ctx.shadowBlur = 18;
-  const titleGrad = ctx.createLinearGradient(W / 2 - 200, curY, W / 2 + 200, curY + 40);
-  titleGrad.addColorStop(0, '#FFF59D');
-  titleGrad.addColorStop(0.5, '#FFD740');
-  titleGrad.addColorStop(1, '#FFAB00');
-  ctx.fillStyle = titleGrad;
-  ctx.font = `bold ${isStory ? 44 : 38}px "Press Start 2P", "Inter", sans-serif`;
-  ctx.fillText(data.title, W / 2, curY);
-  ctx.restore();
+  } else {
+    // SQUARE (1:1) HEADER
+    const badgeY = 62;
+    ctx.save();
+    ctx.fillStyle = 'rgba(255, 23, 68, 0.25)';
+    ctx.strokeStyle = '#FFFFFF';
+    ctx.lineWidth = 1.5;
+    const badgeText = data.badge.toUpperCase();
+    ctx.font = 'bold 15px "Inter", sans-serif';
+    const badgeW = ctx.measureText(badgeText).width + 32;
+    const badgeX = (W - badgeW) / 2;
+    ctx.beginPath();
+    if (ctx.roundRect) ctx.roundRect(badgeX, badgeY, badgeW, 30, 15);
+    else ctx.rect(badgeX, badgeY, badgeW, 30);
+    ctx.fill();
+    ctx.stroke();
 
-  curY += isStory ? 48 : 38;
+    ctx.fillStyle = '#FFFFFF';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(badgeText, W / 2, badgeY + 15);
+    ctx.restore();
 
-  // Subtitle (Game Name & Date)
-  ctx.save();
-  ctx.textAlign = 'center';
-  ctx.fillStyle = '#E2E8F0';
-  ctx.font = '600 20px "Inter", sans-serif';
-  ctx.fillText(`${data.gameName}  •  ${data.dateStr}`, W / 2, curY);
-  ctx.restore();
+    // Main Title (JUARA TURNAMEN GAPLE)
+    const titleY = 132;
+    ctx.save();
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.shadowColor = 'rgba(255, 23, 68, 0.6)';
+    ctx.shadowBlur = 16;
+    const titleGrad = ctx.createLinearGradient(W / 2 - 200, titleY - 15, W / 2 + 200, titleY + 15);
+    titleGrad.addColorStop(0, '#FFFFFF');
+    titleGrad.addColorStop(0.5, '#FFF9C4');
+    titleGrad.addColorStop(1, '#FFD740');
+    ctx.fillStyle = titleGrad;
+    ctx.font = 'bold 32px "Press Start 2P", "Inter", sans-serif';
+    ctx.fillText(data.title, W / 2, titleY);
+    ctx.restore();
+
+    // Subtitle
+    const subY = 178;
+    ctx.save();
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = '#E2E8F0';
+    ctx.font = '600 17px "Inter", sans-serif';
+    ctx.fillText(`${data.gameName}  •  ${data.dateStr}`, W / 2, subY);
+    ctx.restore();
+  }
 
   // ─────────────────────────────────────────────
   // HERO WINNER / CHAMPION SHOWCASE
   // ─────────────────────────────────────────────
-  curY += isStory ? 80 : 40;
-  const champBoxW = W - 140;
-  const champBoxH = isStory ? 520 : 360;
+  const champBoxW = W - 140; // 940px
   const champBoxX = 70;
-  const champBoxY = curY;
 
-  ctx.save();
-  // Glassmorphic Hero Box
-  ctx.fillStyle = 'rgba(36, 8, 13, 0.75)';
-  ctx.strokeStyle = '#FFD740';
-  ctx.lineWidth = 3;
-  ctx.beginPath();
-  if (ctx.roundRect) ctx.roundRect(champBoxX, champBoxY, champBoxW, champBoxH, 24);
-  else ctx.rect(champBoxX, champBoxY, champBoxW, champBoxH);
-  ctx.fill();
-  ctx.stroke();
+  if (isStory) {
+    const champBoxY = 340;
+    const champBoxH = 580;
 
-  // Crown Emoji & Glowing Ring
-  const avatarCenterY = champBoxY + (isStory ? 175 : 125);
-  const avatarSize = isStory ? 130 : 100;
-  const circleRadius = avatarSize * 0.75;
+    ctx.save();
+    // Glassmorphic Hero Box
+    ctx.fillStyle = 'rgba(38, 6, 12, 0.85)';
+    ctx.strokeStyle = '#FF1744';
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    if (ctx.roundRect) ctx.roundRect(champBoxX, champBoxY, champBoxW, champBoxH, 24);
+    else ctx.rect(champBoxX, champBoxY, champBoxW, champBoxH);
+    ctx.fill();
+    ctx.stroke();
 
-  // Glowing Circle
-  const ringGrad = ctx.createRadialGradient(W / 2, avatarCenterY, circleRadius * 0.7, W / 2, avatarCenterY, circleRadius * 1.3);
-  ringGrad.addColorStop(0, 'rgba(255, 215, 0, 0.4)');
-  ringGrad.addColorStop(1, 'rgba(255, 215, 0, 0)');
-  ctx.fillStyle = ringGrad;
-  ctx.beginPath();
-  ctx.arc(W / 2, avatarCenterY, circleRadius * 1.3, 0, Math.PI * 2);
-  ctx.fill();
+    // Winner Avatar in Glowing Merah Putih Circle
+    const avatarCenterY = champBoxY + 180;
+    const circleRadius = 90;
+    const avatarSize = 120;
 
-  ctx.fillStyle = data.winner.color || '#FF5252';
-  ctx.beginPath();
-  ctx.arc(W / 2, avatarCenterY, circleRadius, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.strokeStyle = '#FFD740';
-  ctx.lineWidth = 4;
-  ctx.stroke();
+    const ringGrad = ctx.createRadialGradient(W / 2, avatarCenterY, circleRadius * 0.7, W / 2, avatarCenterY, circleRadius * 1.35);
+    ringGrad.addColorStop(0, 'rgba(255, 23, 68, 0.5)');
+    ringGrad.addColorStop(0.6, 'rgba(255, 255, 255, 0.3)');
+    ringGrad.addColorStop(1, 'rgba(255, 23, 68, 0)');
+    ctx.fillStyle = ringGrad;
+    ctx.beginPath();
+    ctx.arc(W / 2, avatarCenterY, circleRadius * 1.35, 0, Math.PI * 2);
+    ctx.fill();
 
-  // Draw Crown above avatar
-  ctx.font = `${isStory ? 48 : 38}px "Segoe UI Emoji", "Apple Color Emoji", sans-serif`;
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillText('', W / 2, avatarCenterY - circleRadius - 16);
+    ctx.fillStyle = data.winner.color || '#FF5252';
+    ctx.beginPath();
+    ctx.arc(W / 2, avatarCenterY, circleRadius, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = '#FFFFFF';
+    ctx.lineWidth = 4;
+    ctx.stroke();
 
-  // Draw Winner Avatar
-  drawCanvasPixelAvatar(ctx, data.winner.avatar, W / 2 - avatarSize / 2, avatarCenterY - avatarSize / 2, avatarSize);
+    drawCanvasPixelAvatar(ctx, data.winner.avatar, W / 2 - avatarSize / 2, avatarCenterY - avatarSize / 2, avatarSize);
 
-  // Winner Name
-  let champTextY = avatarCenterY + circleRadius + (isStory ? 55 : 38);
-  ctx.textAlign = 'center';
-  ctx.fillStyle = '#FFFFFF';
-  ctx.font = `bold ${isStory ? 38 : 30}px "Press Start 2P", "Inter", sans-serif`;
-  ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
-  ctx.shadowBlur = 8;
-  ctx.fillText(data.winner.name, W / 2, champTextY);
+    // Winner Name
+    const nameY = champBoxY + 340;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = '#FFFFFF';
+    ctx.font = 'bold 34px "Press Start 2P", "Inter", sans-serif';
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
+    ctx.shadowBlur = 10;
+    ctx.fillText(data.winner.name, W / 2, nameY);
 
-  // Winner Score Pill
-  champTextY += isStory ? 55 : 40;
-  const scorePillText = data.winner.scoreText;
-  ctx.font = 'bold 20px "Inter", sans-serif';
-  const pillW = ctx.measureText(scorePillText).width + 40;
-  const pillH = 38;
-  const pillX = (W - pillW) / 2;
+    // Winner Score Pill (Red to Gold Gradient)
+    const pillY = champBoxY + 420;
+    const pillH = 46;
+    ctx.font = 'bold 20px "Inter", sans-serif';
+    const pillText = data.winner.scoreText;
+    const pillW = ctx.measureText(pillText).width + 48;
+    const pillX = (W - pillW) / 2;
 
-  const pillGrad = ctx.createLinearGradient(pillX, champTextY - pillH / 2, pillX + pillW, champTextY + pillH / 2);
-  pillGrad.addColorStop(0, '#FFD740');
-  pillGrad.addColorStop(1, '#FF9100');
-  ctx.fillStyle = pillGrad;
-  ctx.beginPath();
-  if (ctx.roundRect) ctx.roundRect(pillX, champTextY - pillH / 2, pillW, pillH, 19);
-  else ctx.rect(pillX, champTextY - pillH / 2, pillW, pillH);
-  ctx.fill();
+    const pillGrad = ctx.createLinearGradient(pillX, pillY, pillX + pillW, pillY + pillH);
+    pillGrad.addColorStop(0, '#FF1744');
+    pillGrad.addColorStop(1, '#D50000');
+    ctx.fillStyle = pillGrad;
+    ctx.beginPath();
+    if (ctx.roundRect) ctx.roundRect(pillX, pillY, pillW, pillH, 23);
+    else ctx.rect(pillX, pillY, pillW, pillH);
+    ctx.fill();
+    ctx.strokeStyle = '#FFFFFF';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
 
-  ctx.fillStyle = '#100608';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillText(scorePillText, W / 2, champTextY);
+    ctx.fillStyle = '#FFFFFF';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(pillText, W / 2, pillY + pillH / 2);
 
-  // Title / Julukan (if exists)
-  if (data.winner.title) {
-    champTextY += isStory ? 45 : 34;
-    ctx.fillStyle = '#FF8A80';
-    ctx.font = 'bold 18px "Inter", sans-serif';
-    ctx.fillText(data.winner.title, W / 2, champTextY);
+    // Title / Julukan
+    if (data.winner.title) {
+      const titleLabelY = champBoxY + 505;
+      ctx.fillStyle = '#FFD740';
+      ctx.font = 'bold 20px "Inter", sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(data.winner.title, W / 2, titleLabelY);
+    }
+    ctx.restore();
+
+  } else {
+    // SQUARE (1:1) HERO BOX
+    const champBoxY = 210;
+    const champBoxH = 340;
+
+    ctx.save();
+    // Glassmorphic Hero Box
+    ctx.fillStyle = 'rgba(38, 6, 12, 0.85)';
+    ctx.strokeStyle = '#FF1744';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    if (ctx.roundRect) ctx.roundRect(champBoxX, champBoxY, champBoxW, champBoxH, 20);
+    else ctx.rect(champBoxX, champBoxY, champBoxW, champBoxH);
+    ctx.fill();
+    ctx.stroke();
+
+    // Winner Avatar in Glowing Circle
+    const avatarCenterY = champBoxY + 95;
+    const circleRadius = 58;
+    const avatarSize = 80;
+
+    const ringGrad = ctx.createRadialGradient(W / 2, avatarCenterY, circleRadius * 0.7, W / 2, avatarCenterY, circleRadius * 1.35);
+    ringGrad.addColorStop(0, 'rgba(255, 23, 68, 0.5)');
+    ringGrad.addColorStop(0.6, 'rgba(255, 255, 255, 0.3)');
+    ringGrad.addColorStop(1, 'rgba(255, 23, 68, 0)');
+    ctx.fillStyle = ringGrad;
+    ctx.beginPath();
+    ctx.arc(W / 2, avatarCenterY, circleRadius * 1.35, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = data.winner.color || '#FF5252';
+    ctx.beginPath();
+    ctx.arc(W / 2, avatarCenterY, circleRadius, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = '#FFFFFF';
+    ctx.lineWidth = 3;
+    ctx.stroke();
+
+    drawCanvasPixelAvatar(ctx, data.winner.avatar, W / 2 - avatarSize / 2, avatarCenterY - avatarSize / 2, avatarSize);
+
+    // Winner Name
+    const nameY = champBoxY + 195;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = '#FFFFFF';
+    ctx.font = 'bold 24px "Press Start 2P", "Inter", sans-serif';
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
+    ctx.shadowBlur = 8;
+    ctx.fillText(data.winner.name, W / 2, nameY);
+
+    // Winner Score Pill (Red to Gold Gradient)
+    const pillY = champBoxY + 242;
+    const pillH = 36;
+    ctx.font = 'bold 16px "Inter", sans-serif';
+    const pillText = data.winner.scoreText;
+    const pillW = ctx.measureText(pillText).width + 38;
+    const pillX = (W - pillW) / 2;
+
+    const pillGrad = ctx.createLinearGradient(pillX, pillY, pillX + pillW, pillY + pillH);
+    pillGrad.addColorStop(0, '#FF1744');
+    pillGrad.addColorStop(1, '#D50000');
+    ctx.fillStyle = pillGrad;
+    ctx.beginPath();
+    if (ctx.roundRect) ctx.roundRect(pillX, pillY, pillW, pillH, 18);
+    else ctx.rect(pillX, pillY, pillW, pillH);
+    ctx.fill();
+    ctx.strokeStyle = '#FFFFFF';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+    ctx.fillStyle = '#FFFFFF';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(pillText, W / 2, pillY + pillH / 2);
+
+    // Title / Julukan
+    if (data.winner.title) {
+      const titleLabelY = champBoxY + 305;
+      ctx.fillStyle = '#FFD740';
+      ctx.font = 'bold 15px "Inter", sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(data.winner.title, W / 2, titleLabelY);
+    }
+    ctx.restore();
   }
-  ctx.restore();
 
   // ─────────────────────────────────────────────
   // LEADERBOARD / PODIUM ROWS (TOP 4)
   // ─────────────────────────────────────────────
-  curY = champBoxY + champBoxH + (isStory ? 50 : 25);
+  const players = (data.players || []).slice(0, 4);
 
-  const players = data.players || [];
-  const cardW = (W - 140);
-  const cardH = isStory ? 80 : 58;
-  const gap = isStory ? 14 : 10;
+  if (isStory) {
+    const startY = 970;
+    const cardH = 110;
+    const gap = 20;
 
-  players.forEach((p, idx) => {
-    const cardY = curY + idx * (cardH + gap);
+    players.forEach((p, idx) => {
+      const cardY = startY + idx * (cardH + gap);
+      ctx.save();
+
+      // Row Background (Merah Putih styling)
+      let rowBg = 'rgba(255, 255, 255, 0.04)';
+      let borderCol = 'rgba(255, 255, 255, 0.12)';
+      let rankBadgeBg = '#334155';
+      let rankTextColor = '#FFFFFF';
+
+      if (p.rank === 1) {
+        rowBg = 'linear-gradient(90deg, rgba(255, 23, 68, 0.28), rgba(255, 255, 255, 0.06))';
+        borderCol = '#FF1744';
+        rankBadgeBg = '#FFD740';
+        rankTextColor = '#100608';
+      } else if (p.rank === 2) {
+        rowBg = 'rgba(226, 232, 240, 0.08)';
+        borderCol = '#FFFFFF';
+        rankBadgeBg = '#FFFFFF';
+        rankTextColor = '#100608';
+      } else if (p.rank === 3) {
+        rowBg = 'rgba(205, 127, 50, 0.08)';
+        borderCol = '#CD7F32';
+        rankBadgeBg = '#CD7F32';
+        rankTextColor = '#FFFFFF';
+      }
+
+      ctx.fillStyle = (typeof rowBg === 'string' && !rowBg.startsWith('linear')) ? rowBg : 'rgba(255,255,255,0.05)';
+      ctx.strokeStyle = borderCol;
+      ctx.lineWidth = p.rank === 1 ? 2 : 1;
+      ctx.beginPath();
+      if (ctx.roundRect) ctx.roundRect(70, cardY, champBoxW, cardH, 18);
+      else ctx.rect(70, cardY, champBoxW, cardH);
+      ctx.fill();
+      ctx.stroke();
+
+      // Rank Pill Badge
+      const badgeCenterX = 125;
+      const badgeCenterY = cardY + cardH / 2;
+      ctx.fillStyle = rankBadgeBg;
+      ctx.beginPath();
+      ctx.arc(badgeCenterX, badgeCenterY, 22, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.font = 'bold 20px "Press Start 2P", "Inter", sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = rankTextColor;
+      ctx.fillText(`${p.rank}`, badgeCenterX, badgeCenterY);
+
+      // Mini Avatar Circle
+      const miniSize = 64;
+      const miniX = 175;
+      const miniY = cardY + (cardH - miniSize) / 2;
+      ctx.fillStyle = p.color || '#448AFF';
+      ctx.beginPath();
+      ctx.arc(miniX + miniSize / 2, miniY + miniSize / 2, miniSize / 2, 0, Math.PI * 2);
+      ctx.fill();
+      drawCanvasPixelAvatar(ctx, p.avatar, miniX, miniY, miniSize);
+
+      // Player Name
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = p.rank === 1 ? '#FFFFFF' : '#E2E8F0';
+      ctx.font = 'bold 26px "Inter", sans-serif';
+      ctx.fillText(p.name, miniX + miniSize + 22, cardY + cardH / 2 - (p.subtitle ? 15 : 0));
+
+      // Player Subtitle
+      if (p.subtitle) {
+        ctx.fillStyle = '#94A3B8';
+        ctx.font = '500 17px "Inter", sans-serif';
+        ctx.fillText(p.subtitle, miniX + miniSize + 22, cardY + cardH / 2 + 18);
+      }
+
+      // Score Tag
+      ctx.textAlign = 'right';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = p.rank === 1 ? '#FFD740' : '#FFFFFF';
+      ctx.font = 'bold 26px "Press Start 2P", "Inter", sans-serif';
+      ctx.fillText(p.score, 70 + champBoxW - 28, cardY + cardH / 2);
+
+      ctx.restore();
+    });
+
+    // Story Footer
     ctx.save();
-
-    // Row Background
-    let rowBg = 'rgba(255, 255, 255, 0.04)';
-    let borderCol = 'rgba(255, 255, 255, 0.1)';
-    let rankColor = '#AAA';
-    let medalEmoji = `${p.rank}`;
-
-    if (p.rank === 1) {
-      rowBg = 'linear-gradient(90deg, rgba(255, 215, 0, 0.2), rgba(255, 215, 0, 0.04))';
-      borderCol = '#FFD740';
-      rankColor = '#FFD740';
-      medalEmoji = '1';
-    } else if (p.rank === 2) {
-      rowBg = 'rgba(226, 232, 240, 0.08)';
-      borderCol = '#E2E8F0';
-      rankColor = '#E2E8F0';
-      medalEmoji = '2';
-    } else if (p.rank === 3) {
-      rowBg = 'rgba(205, 127, 50, 0.08)';
-      borderCol = '#CD7F32';
-      rankColor = '#CD7F32';
-      medalEmoji = '3';
-    }
-
-    ctx.fillStyle = (typeof rowBg === 'string' && !rowBg.startsWith('linear')) ? rowBg : 'rgba(255,255,255,0.05)';
-    ctx.strokeStyle = borderCol;
-    ctx.lineWidth = p.rank === 1 ? 2 : 1;
-    ctx.beginPath();
-    if (ctx.roundRect) ctx.roundRect(70, cardY, cardW, cardH, 14);
-    else ctx.rect(70, cardY, cardW, cardH);
-    ctx.fill();
-    ctx.stroke();
-
-    // Medal / Rank
-    ctx.font = 'bold 22px "Segoe UI Emoji", "Inter", sans-serif';
+    const footStatsY = 1680;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillStyle = rankColor;
-    ctx.fillText(medalEmoji, 110, cardY + cardH / 2);
+    ctx.fillStyle = '#FFD740';
+    ctx.font = 'bold 20px "Inter", sans-serif';
+    ctx.fillText(`${data.stats.item1}   •   ${data.stats.item2}`, W / 2, footStatsY);
 
-    // Mini Avatar
-    const miniSize = cardH - 18;
-    const miniX = 145;
-    const miniY = cardY + 9;
-    ctx.fillStyle = p.color || '#448AFF';
-    ctx.beginPath();
-    ctx.arc(miniX + miniSize / 2, miniY + miniSize / 2, miniSize / 2, 0, Math.PI * 2);
-    ctx.fill();
-    drawCanvasPixelAvatar(ctx, p.avatar, miniX, miniY, miniSize);
-
-    // Player Name
-    ctx.textAlign = 'left';
-    ctx.fillStyle = p.rank === 1 ? '#FFD740' : '#FFFFFF';
-    ctx.font = `bold ${isStory ? 22 : 18}px "Inter", sans-serif`;
-    ctx.fillText(p.name, miniX + miniSize + 16, cardY + cardH / 2 - (p.subtitle ? 8 : 0));
-
-    // Player Subtitle
-    if (p.subtitle) {
-      ctx.fillStyle = '#94A3B8';
-      ctx.font = '14px "Inter", sans-serif';
-      ctx.fillText(p.subtitle, miniX + miniSize + 16, cardY + cardH / 2 + 14);
-    }
-
-    // Score Tag
-    ctx.textAlign = 'right';
-    ctx.fillStyle = p.rank === 1 ? '#FFD740' : '#E2E8F0';
-    ctx.font = `bold ${isStory ? 24 : 19}px "Press Start 2P", "Inter", sans-serif`;
-    ctx.fillText(p.score, 70 + cardW - 20, cardY + cardH / 2);
-
+    const footBrandY = 1735;
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+    ctx.font = '16px "Inter", sans-serif';
+    ctx.fillText('Edisi Spesial Kemerdekaan RI • Gaple Score Tracker', W / 2, footBrandY);
     ctx.restore();
-  });
 
-  // ─────────────────────────────────────────────
-  // FOOTER & WATERMARK
-  // ─────────────────────────────────────────────
-  const footY = H - (isStory ? 140 : 80);
+  } else {
+    // SQUARE (1:1) LEADERBOARD ROWS
+    const startY = 575;
+    const cardH = 68;
+    const gap = 12;
 
-  ctx.save();
-  // Stats line
-  ctx.textAlign = 'center';
-  ctx.fillStyle = '#FFD740';
-  ctx.font = '600 17px "Inter", sans-serif';
-  ctx.fillText(` ${data.stats.item1}   •    ${data.stats.item2}`, W / 2, footY);
+    players.forEach((p, idx) => {
+      const cardY = startY + idx * (cardH + gap);
+      ctx.save();
 
-  // App Watermark
-  ctx.fillStyle = 'rgba(255, 255, 255, 0.45)';
-  ctx.font = '14px "Inter", sans-serif';
-  ctx.fillText(' Dicatat dengan Gaple Score Tracker  •  #GapleScoreTracker', W / 2, footY + 28);
-  ctx.restore();
+      // Row Background (Merah Putih styling)
+      let rowBg = 'rgba(255, 255, 255, 0.04)';
+      let borderCol = 'rgba(255, 255, 255, 0.1)';
+      let rankBadgeBg = '#334155';
+      let rankTextColor = '#FFFFFF';
+
+      if (p.rank === 1) {
+        rowBg = 'linear-gradient(90deg, rgba(255, 23, 68, 0.28), rgba(255, 255, 255, 0.06))';
+        borderCol = '#FF1744';
+        rankBadgeBg = '#FFD740';
+        rankTextColor = '#100608';
+      } else if (p.rank === 2) {
+        rowBg = 'rgba(226, 232, 240, 0.08)';
+        borderCol = '#FFFFFF';
+        rankBadgeBg = '#FFFFFF';
+        rankTextColor = '#100608';
+      } else if (p.rank === 3) {
+        rowBg = 'rgba(205, 127, 50, 0.08)';
+        borderCol = '#CD7F32';
+        rankBadgeBg = '#CD7F32';
+        rankTextColor = '#FFFFFF';
+      }
+
+      ctx.fillStyle = (typeof rowBg === 'string' && !rowBg.startsWith('linear')) ? rowBg : 'rgba(255,255,255,0.05)';
+      ctx.strokeStyle = borderCol;
+      ctx.lineWidth = p.rank === 1 ? 2 : 1;
+      ctx.beginPath();
+      if (ctx.roundRect) ctx.roundRect(70, cardY, champBoxW, cardH, 14);
+      else ctx.rect(70, cardY, champBoxW, cardH);
+      ctx.fill();
+      ctx.stroke();
+
+      // Rank Pill Badge
+      const badgeCenterX = 112;
+      const badgeCenterY = cardY + cardH / 2;
+      ctx.fillStyle = rankBadgeBg;
+      ctx.beginPath();
+      ctx.arc(badgeCenterX, badgeCenterY, 16, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.font = 'bold 15px "Press Start 2P", "Inter", sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = rankTextColor;
+      ctx.fillText(`${p.rank}`, badgeCenterX, badgeCenterY);
+
+      // Mini Avatar Circle
+      const miniSize = 46;
+      const miniX = 146;
+      const miniY = cardY + (cardH - miniSize) / 2;
+      ctx.fillStyle = p.color || '#448AFF';
+      ctx.beginPath();
+      ctx.arc(miniX + miniSize / 2, miniY + miniSize / 2, miniSize / 2, 0, Math.PI * 2);
+      ctx.fill();
+      drawCanvasPixelAvatar(ctx, p.avatar, miniX, miniY, miniSize);
+
+      // Player Name
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = p.rank === 1 ? '#FFFFFF' : '#E2E8F0';
+      ctx.font = 'bold 19px "Inter", sans-serif';
+      ctx.fillText(p.name, miniX + miniSize + 16, cardY + cardH / 2 - (p.subtitle ? 10 : 0));
+
+      // Player Subtitle
+      if (p.subtitle) {
+        ctx.fillStyle = '#94A3B8';
+        ctx.font = '500 13px "Inter", sans-serif';
+        ctx.fillText(p.subtitle, miniX + miniSize + 16, cardY + cardH / 2 + 13);
+      }
+
+      // Score Tag
+      ctx.textAlign = 'right';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = p.rank === 1 ? '#FFD740' : '#FFFFFF';
+      ctx.font = 'bold 19px "Press Start 2P", "Inter", sans-serif';
+      ctx.fillText(p.score, 70 + champBoxW - 20, cardY + cardH / 2);
+
+      ctx.restore();
+    });
+
+    // Square Footer
+    ctx.save();
+    const footStatsY = 998;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = '#FFD740';
+    ctx.font = 'bold 16px "Inter", sans-serif';
+    ctx.fillText(`${data.stats.item1}   •   ${data.stats.item2}`, W / 2, footStatsY);
+
+    const footBrandY = 1030;
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.55)';
+    ctx.font = '13px "Inter", sans-serif';
+    ctx.fillText('Edisi Spesial Kemerdekaan RI • Gaple Score Tracker', W / 2, footBrandY);
+    ctx.restore();
+  }
 
   currentExportCanvas = canvas;
   const previewImg = document.getElementById('ig-export-preview-img');
