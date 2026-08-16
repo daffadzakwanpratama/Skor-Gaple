@@ -750,10 +750,54 @@ document.addEventListener('DOMContentLoaded', () => {
   renderSetupPlayerInputs();
   updateMuteIcon();
 
-  // Restore active page on refresh
+  // Restore active tournament & page on refresh
   try {
     const savedPage = localStorage.getItem('gaple_activePage') || 'home';
-    if (savedPage === 'dashboard' && state.currentGame && state.currentGame.status === 'active') {
+    const activeTourneyId = localStorage.getItem('gaple_activeTournamentId');
+
+    // Muat turnamen jika ada
+    try {
+      const savedTourney = localStorage.getItem('gaple_tournamentState');
+      if (savedTourney) {
+        const parsed = JSON.parse(savedTourney);
+        if (parsed && parsed.id && Array.isArray(parsed.players) && parsed.players.length > 0) {
+          tournamentState = parsed;
+          tourneySelectedSize = parsed.players.length;
+        }
+      }
+    } catch (e) {
+      console.warn('Gagal membaca gaple_tournamentState:', e);
+    }
+
+    // Fetch turnamen terbaru dari server secara persisten
+    const tourneyIdToFetch = (tournamentState && tournamentState.id) || activeTourneyId;
+    if (tourneyIdToFetch) {
+      fetch(`/api/tournaments/${tourneyIdToFetch}`)
+        .then(r => r.ok ? r.json() : null)
+        .then(t => {
+          if (t && t.id && Array.isArray(t.players) && t.players.length > 0) {
+            tournamentState = t;
+            tourneySelectedSize = t.players.length;
+            saveTournamentStateLocalOnly();
+            if (document.getElementById('page-tournament') && document.getElementById('page-tournament').classList.contains('active')) {
+              renderTournamentView();
+            }
+          } else if (tournamentState && tournamentState.id) {
+            saveTournamentState();
+          }
+        })
+        .catch(() => {
+          if (tournamentState && tournamentState.id) {
+            saveTournamentState();
+          }
+        });
+    }
+
+    if (savedPage === 'tournament') {
+      if (!tournamentState) initTournamentData();
+      renderTournamentView();
+      showPage('tournament');
+    } else if (savedPage === 'dashboard' && state.currentGame && state.currentGame.status === 'active') {
       resumeGame();
     } else if (savedPage === 'gameover' && state.currentGame) {
       renderGameOver();
@@ -767,6 +811,8 @@ document.addEventListener('DOMContentLoaded', () => {
     } else {
       showPage('home');
     }
+
+    startTournamentAutoSync();
   } catch (e) {
     showPage('home');
   }
@@ -995,6 +1041,7 @@ let pendingBackAction = null;
 function syncTournamentOngoingGame(g) {
   if (!g || !g.isTournamentMatch || !g.tournamentContext || !tournamentState) return;
   const { mode, roundIdx, tableIdx } = g.tournamentContext;
+  
   if (mode === 'roundrobin' && tournamentState.rrMatches) {
     const match = tournamentState.rrMatches.find(m => m.roundIdx === roundIdx && m.tableIdx === tableIdx);
     if (match) match.ongoingGame = JSON.parse(JSON.stringify(g));
@@ -1002,7 +1049,30 @@ function syncTournamentOngoingGame(g) {
     const tbl = tournamentState.rounds[roundIdx].tables[tableIdx];
     if (tbl) tbl.ongoingGame = JSON.parse(JSON.stringify(g));
   }
-  saveTournamentState();
+  saveTournamentStateLocalOnly();
+
+  // Hitung skor sementara per pemain dari game yang sedang berjalan
+  const currentScoresObj = {};
+  g.players.forEach((p, pIdx) => {
+    let pId = null;
+    if (mode === 'roundrobin' && tournamentState.rrMatches) {
+      const match = tournamentState.rrMatches.find(m => m.roundIdx === roundIdx && m.tableIdx === tableIdx);
+      pId = match && match.playerIds ? match.playerIds[pIdx] : null;
+    } else if (tournamentState.rounds && tournamentState.rounds[roundIdx]) {
+      const tbl = tournamentState.rounds[roundIdx].tables[tableIdx];
+      pId = tbl && tbl.playerIds ? tbl.playerIds[pIdx] : null;
+    }
+    if (pId !== null && pId !== undefined) {
+      currentScoresObj[pId] = p.total;
+    }
+  });
+
+  // Kirim update skor berjalan ke server secara real-time
+  syncTournamentTableScore(roundIdx, tableIdx, {
+    scores: currentScoresObj,
+    isDone: false,
+    ongoingGame: g
+  });
 }
 
 function handleDashboardBack() {
@@ -1495,6 +1565,9 @@ function finalizeSaveRound(scores) {
   // Recalculate totals from scratch
   recalcTotals();
   saveState();
+  if (g.isTournamentMatch) {
+    syncTournamentOngoingGame(g);
+  }
   renderDashboard();
 
   if (scores) {
@@ -1761,6 +1834,8 @@ function openEditRound(idx) {
   }, 120);
 }
 
+let pendingEditRoundScores = null;
+
 function saveEditRound() {
   const g = state.currentGame;
   if (!g || state.editingRoundIndex === null) return;
@@ -1775,6 +1850,18 @@ function saveEditRound() {
     }
     scores.push(num);
   }
+
+  pendingEditRoundScores = scores;
+  openModal('modal-confirm-edit-round');
+}
+
+function executeConfirmedEditRound() {
+  closeModal('modal-confirm-edit-round');
+  const g = state.currentGame;
+  if (!g || state.editingRoundIndex === null || !pendingEditRoundScores) return;
+
+  const scores = pendingEditRoundScores;
+  pendingEditRoundScores = null;
 
   // Check if anyone scored -20 (Gaple) or all scores are 0
   const allZero = scores.every(s => s === 0);
@@ -1810,7 +1897,7 @@ function finalizeEditRound(scores) {
   if (scores) {
     triggerAppreciationIfNeeded(scores);
   }
-  showToast('Ronde diperbarui ✓');
+  showToast('Perubahan skor ronde berhasil diperbarui dan disinkronkan! ✓');
 }
 
 // ─────────────────────────────────────────────
@@ -2974,47 +3061,66 @@ function setupSocketListeners() {
   socket.on('connect', () => {
     updateTournamentConnectionStatus(true);
     flushTournamentOfflineQueue();
-    if (tournamentState && tournamentState.id) {
-      socket.emit('tournament:join', {
-        tournamentId: tournamentState.id,
-        role: currentJudgeRole || 'host',
-        judgeName: currentJudgeName || 'Laptop Server'
-      });
-    }
+    ensureTournamentRoomJoined();
   });
 
   socket.on('disconnect', () => {
     updateTournamentConnectionStatus(false);
   });
 
-  // Menerima pembaruan skor meja dari juri / perangkat lain
+  // Menerima pembaruan skor meja dari juri / perangkat lain secara real-time
   socket.on('tournament:tableUpdated', ({ tournamentId, tournament, payload }) => {
-    if (tournamentState && tournamentState.id === tournamentId && tournament) {
-      console.log('[Turnamen Sync] Menerima pembaruan meja dari server:', payload);
+    const curId = (tournamentState && tournamentState.id) || localStorage.getItem('gaple_activeTournamentId');
+    if (tournament && (!curId || isSameTournament(curId, tournamentId) || isSameTournament(tournament.id, curId))) {
+      console.log('[Turnamen Sync Realtime] Menerima update meja:', payload);
       
       const isMyActiveTable = state.currentGame && state.currentGame.isTournamentMatch &&
         state.currentGame.tournamentContext &&
-        state.currentGame.tournamentContext.roundIdx === payload.roundIdx &&
-        state.currentGame.tournamentContext.tableIdx === payload.tableIdx;
+        state.currentGame.tournamentContext.roundIdx === (payload && payload.roundIdx) &&
+        state.currentGame.tournamentContext.tableIdx === (payload && payload.tableIdx);
 
       tournamentState = tournament;
+      if (tournament.players) {
+        tourneySelectedSize = tournament.players.length;
+      }
       saveTournamentStateLocalOnly();
+      renderTournamentView();
 
-      if (!isMyActiveTable) {
-        renderTournamentView();
+      if (!isMyActiveTable && payload) {
         const judgeInfo = payload.judgeName ? ` oleh ${payload.judgeName}` : '';
-        showToast(`Meja ${payload.tableIdx + 1} diperbarui${judgeInfo}! ⚡`, 2500);
+        const roundInfo = payload.roundIdx !== undefined ? `Babak ${payload.roundIdx + 1} ` : '';
+        showToast(`${roundInfo}Meja ${payload.tableIdx + 1} diperbarui${judgeInfo}! ⚡`, 2500);
       }
     }
   });
 
-  // Menerima sinkronisasi menyeluruh dari server
+  // Menerima sinkronisasi menyeluruh dari server (Perubahan Nama, Bagan, dll.)
   socket.on('tournament:stateSynced', ({ tournament }) => {
-    if (tournament && tournamentState && tournamentState.id === tournament.id) {
+    const curId = (tournamentState && tournamentState.id) || localStorage.getItem('gaple_activeTournamentId');
+    if (tournament && (!curId || isSameTournament(curId, tournament.id))) {
+      console.log('[Turnamen Sync Realtime] Sinkronisasi data menyeluruh:', tournament.id);
       tournamentState = tournament;
+      if (tournament.players) {
+        tourneySelectedSize = tournament.players.length;
+      }
       saveTournamentStateLocalOnly();
       renderTournamentView();
-      showToast('Data turnamen disinkronkan dari server ✓', 2000);
+      showToast('Data turnamen diperbarui secara real-time ✓', 2000);
+    }
+  });
+
+  // Menerima event reset turnamen dari Host
+  socket.on('tournament:reset', ({ tournament }) => {
+    const curId = (tournamentState && tournamentState.id) || localStorage.getItem('gaple_activeTournamentId');
+    if (tournament && (!curId || isSameTournament(curId, tournament.id))) {
+      console.log('[Turnamen Sync Realtime] Reset turnamen:', tournament.id);
+      tournamentState = tournament;
+      if (tournament.players) {
+        tourneySelectedSize = tournament.players.length;
+      }
+      saveTournamentStateLocalOnly();
+      renderTournamentView();
+      showToast('Turnamen telah di-reset ke kondisi awal oleh Host! 🔄', 3000);
     }
   });
 
@@ -4165,112 +4271,61 @@ let roundRobinRoundsCount = 3;
 // TOURNAMENT BRACKET ENGINE — Universal Algorithm (Knockout)
 // ─────────────────────────────────────────────
 
-function canReach4(N, memo) {
-  if (!memo) memo = new Map();
-  if (N === 4) return true;
-  if (N < 4) return false;
-  if (memo.has(N)) return memo.get(N);
-
-  const numTables = Math.floor(N / 4);
-  const byes = N % 4;
-
-  if (numTables === 0) {
-    memo.set(N, false);
-    return false;
-  }
-
-  for (let q = 1; q <= 4; q++) {
-    const next = numTables * q + byes;
-    if (next === 4 || canReach4(next, memo)) {
-      memo.set(N, true);
-      return true;
-    }
-  }
-
-  memo.set(N, false);
-  return false;
-}
-
-function findSFConfig(sfInput) {
-  const numTables = Math.floor(sfInput / 4);
-  const byes = sfInput % 4;
-  if (numTables === 0) return null;
-  const q = (4 - byes) / numTables;
-  if (Number.isInteger(q) && q >= 1 && q <= 4) {
-    return { numTables, qCount: q, numByes: byes };
-  }
-  return null;
-}
-
 function computeBracketRounds(N) {
-  const memo = new Map();
+  if (N <= 4) {
+    return [{
+      name: 'Final',
+      isFinal: true,
+      numTables: 1,
+      qCount: 4,
+      numByes: 0,
+      inputCount: 4,
+      outputCount: null
+    }];
+  }
 
-  const naturalConfigs = [];
+  const stages = [];
   let cur = N;
+
   while (cur > 4) {
     const numTables = Math.floor(cur / 4);
-    const byes = cur % 4;
-    let chosen = null;
-    for (let q = 1; q <= 4; q++) {
-      const next = numTables * q + byes;
-      if (next === 4 || canReach4(next, memo)) {
-        chosen = { numTables, qCount: q, numByes: byes, inputCount: cur, outputCount: numTables * q + byes };
-        break;
-      }
-    }
-    if (!chosen) break;
-    naturalConfigs.push(chosen);
-    cur = chosen.outputCount;
+    // Pola baku Knockout Gaple: Setiap meja 4 pemain, tepat 2 pemain terbaik lolos (q=2), tanpa BYE
+    const q = 2;
+    const nextCount = numTables * q;
+
+    stages.push({
+      numTables,
+      qCount: q,
+      numByes: 0,
+      inputCount: cur,
+      outputCount: nextCount
+    });
+
+    cur = nextCount;
   }
 
-  if (naturalConfigs.length < 2) {
-    const numTablesP = Math.floor(N / 4);
-    const byesP = N % 4;
-
-    let penyisihanCfg = null;
-    let semiFinalCfg = null;
-
-    for (let qP = 1; qP <= 4; qP++) {
-      const sfInput = numTablesP * qP + byesP;
-      const sfCfg = findSFConfig(sfInput);
-      if (sfCfg && sfCfg.qCount < 4) {
-        penyisihanCfg = { numTables: numTablesP, qCount: qP, numByes: byesP, inputCount: N, outputCount: sfInput };
-        semiFinalCfg  = { numTables: sfCfg.numTables, qCount: sfCfg.qCount, numByes: sfCfg.numByes, inputCount: sfInput, outputCount: 4 };
-        break;
-      }
+  const totalRounds = stages.length + 1; // + 1 untuk Babak Final
+  const rounds = stages.map((cfg, idx) => {
+    let name = '';
+    const roundsFromFinal = totalRounds - 1 - idx;
+    if (roundsFromFinal === 1) {
+      name = 'Semifinal';
+    } else if (roundsFromFinal === 2) {
+      name = (totalRounds === 3) ? 'Babak Penyisihan' : 'Perempatfinal';
+    } else {
+      name = `Babak Penyisihan ${idx + 1}`;
     }
 
-    if (!penyisihanCfg) {
-      for (let qP = 1; qP <= 4; qP++) {
-        const sfInput = numTablesP * qP + byesP;
-        const sfCfg = findSFConfig(sfInput);
-        if (sfCfg) {
-          penyisihanCfg = { numTables: numTablesP, qCount: qP, numByes: byesP, inputCount: N, outputCount: sfInput };
-          semiFinalCfg  = { numTables: sfCfg.numTables, qCount: sfCfg.qCount, numByes: sfCfg.numByes, inputCount: sfInput, outputCount: 4 };
-          break;
-        }
-      }
-    }
-
-    if (penyisihanCfg && semiFinalCfg) {
-      naturalConfigs.splice(0, naturalConfigs.length, penyisihanCfg, semiFinalCfg);
-    }
-  }
-
-  const playRounds = naturalConfigs.length;
-  const rounds = naturalConfigs.map((cfg, idx) => ({
-    name: idx === playRounds - 1
-          ? 'Semifinal'
-          : playRounds === 2
-            ? 'Babak Penyisihan'
-            : `Babak Penyisihan ${idx + 1}`,
-    isFinal: false,
-    numTables: cfg.numTables,
-    qCount: cfg.qCount,
-    numByes: cfg.numByes,
-    inputCount: cfg.inputCount,
-    outputCount: cfg.outputCount
-  }));
+    return {
+      name,
+      isFinal: false,
+      numTables: cfg.numTables,
+      qCount: cfg.qCount,
+      numByes: 0,
+      inputCount: cfg.inputCount,
+      outputCount: cfg.outputCount
+    };
+  });
 
   rounds.push({
     name: 'Final',
@@ -4490,11 +4545,37 @@ function updateTournamentConnectionStatus(isConnected) {
 function updateTournamentIdDisplay() {
   const idEl = document.getElementById('tourney-shared-id-display');
   const judgeEl = document.getElementById('tourney-judge-name-display');
+  const judgeBadge = document.getElementById('tourney-judge-badge');
+  const hostToolbar = document.getElementById('tournament-host-toolbar');
+  const changeModeBtn = document.querySelector('.btn-tourney-change-mode');
+
+  const isJudge = currentJudgeRole === 'judge';
+
   if (idEl) {
     idEl.textContent = (tournamentState && tournamentState.id) ? tournamentState.id : 'GAPLE-001';
   }
   if (judgeEl) {
-    judgeEl.textContent = currentJudgeName || 'Laptop Server';
+    const roleLabel = isJudge ? '(Juri Meja)' : '(Host/Admin)';
+    judgeEl.textContent = `${currentJudgeName || 'Laptop Server'} ${roleLabel}`;
+  }
+  if (judgeBadge) {
+    if (isJudge) {
+      judgeBadge.style.background = 'rgba(68, 138, 255, 0.15)';
+      judgeBadge.style.borderColor = '#448AFF';
+      judgeBadge.style.color = '#448AFF';
+    } else {
+      judgeBadge.style.background = 'rgba(255, 23, 68, 0.15)';
+      judgeBadge.style.borderColor = '#FF1744';
+      judgeBadge.style.color = '#FF1744';
+    }
+  }
+
+  // Pembatasan akses Juri vs Host pada UI
+  if (hostToolbar) {
+    hostToolbar.style.display = isJudge ? 'none' : 'flex';
+  }
+  if (changeModeBtn) {
+    changeModeBtn.style.display = isJudge ? 'none' : 'inline-flex';
   }
 }
 
@@ -4511,9 +4592,71 @@ function copyTournamentId() {
   }
 }
 
+function isSameTournament(idA, idB) {
+  if (!idA && !idB) return true;
+  if (!idA || !idB) return false;
+  return String(idA).trim().toUpperCase() === String(idB).trim().toUpperCase();
+}
+
+let tourneySyncTimer = null;
+let lastTourneyJson = '';
+
+function startTournamentAutoSync() {
+  if (tourneySyncTimer) clearInterval(tourneySyncTimer);
+  
+  tourneySyncTimer = setInterval(() => {
+    const activeTourneyId = (tournamentState && tournamentState.id) || localStorage.getItem('gaple_activeTournamentId');
+    if (!activeTourneyId) return;
+
+    fetch(`/api/tournaments/${activeTourneyId}`)
+      .then(r => r.ok ? r.json() : null)
+      .then(t => {
+        if (!t || !t.id) return;
+        const currentJson = JSON.stringify(t);
+        if (currentJson !== lastTourneyJson) {
+          console.log('[Auto-Sync Live] Perubahan server terdeteksi, merefresh tampilan turnamen secara otomatis!');
+          lastTourneyJson = currentJson;
+          tournamentState = t;
+          if (t.players) {
+            tourneySelectedSize = t.players.length;
+          }
+          saveTournamentStateLocalOnly();
+          if (document.getElementById('page-tournament') && document.getElementById('page-tournament').classList.contains('active')) {
+            renderTournamentView();
+          }
+        }
+      })
+      .catch(() => {});
+  }, 1500);
+}
+
+function ensureTournamentRoomJoined() {
+  const activeTourneyId = (tournamentState && tournamentState.id) || localStorage.getItem('gaple_activeTournamentId');
+  if (activeTourneyId && socket && socket.connected) {
+    socket.emit('tournament:join', {
+      tournamentId: activeTourneyId,
+      role: currentJudgeRole || 'host',
+      judgeName: currentJudgeName || (currentJudgeRole === 'host' ? 'Laptop Server' : 'Juri')
+    }, (res) => {
+      if (res && res.success && res.tournament) {
+        tournamentState = res.tournament;
+        if (tournamentState.players) {
+          tourneySelectedSize = tournamentState.players.length;
+        }
+        saveTournamentStateLocalOnly();
+        if (document.getElementById('page-tournament') && document.getElementById('page-tournament').classList.contains('active')) {
+          renderTournamentView();
+        }
+      }
+    });
+  }
+}
+
 function saveTournamentStateLocalOnly() {
   try {
-    if (tournamentState) {
+    if (tournamentState && tournamentState.id) {
+      tournamentState.id = String(tournamentState.id).trim().toUpperCase();
+      localStorage.setItem('gaple_activeTournamentId', tournamentState.id);
       localStorage.setItem('gaple_tournamentState', JSON.stringify(tournamentState));
       updateTournamentIdDisplay();
     }
@@ -4526,22 +4669,26 @@ function saveTournamentState() {
   saveTournamentStateLocalOnly();
 
   if (tournamentState && tournamentState.id) {
+    const role = currentJudgeRole || 'host';
+    if (role === 'judge') return; // Juri tidak boleh menimpa konfigurasi turnamen secara utuh
+
+    // 1. Simpan ke database server secara persisten (REST API)
+    fetch('/api/tournaments', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...tournamentState, role: 'host' })
+    }).then(r => r.json()).then(res => {
+      updateTournamentConnectionStatus(true);
+    }).catch(err => {
+      console.warn('POST /api/tournaments gagal:', err);
+    });
+
+    // 2. Broadcast ke semua perangkat via WebSocket
     if (socket && socket.connected) {
-      socket.emit('tournament:create', tournamentState, (res) => {
+      socket.emit('tournament:create', { ...tournamentState, role: 'host' }, (res) => {
         if (res && res.success) {
           updateTournamentConnectionStatus(true);
         }
-      });
-    } else {
-      fetch('/api/tournaments', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(tournamentState)
-      }).then(r => r.json()).then(res => {
-        updateTournamentConnectionStatus(true);
-      }).catch(err => {
-        updateTournamentConnectionStatus(false);
-        queueTournamentOfflineAction({ type: 'syncTournament', data: tournamentState });
       });
     }
   }
@@ -4582,6 +4729,42 @@ function syncTournamentTableScore(roundIdx, tableIdx, payload) {
   }
 }
 
+function syncTournamentOngoingGame(game) {
+  if (!game || !game.isTournamentMatch || !game.tournamentContext || !tournamentState) return;
+  const { mode, roundIdx, tableIdx } = game.tournamentContext;
+  
+  const scoresObj = {};
+  if (mode === 'roundrobin') {
+    const match = tournamentState.rrMatches ? tournamentState.rrMatches.find(m => m.roundIdx === roundIdx && m.tableIdx === tableIdx) : null;
+    if (match) {
+      match.ongoingGame = game;
+      if (Array.isArray(match.playerIds)) {
+        match.playerIds.forEach((pId, idx) => {
+          scoresObj[pId] = game.players[idx] ? game.players[idx].total : 0;
+        });
+      }
+    }
+  } else {
+    const round = tournamentState.rounds ? tournamentState.rounds[roundIdx] : null;
+    const tbl = round && round.tables ? round.tables[tableIdx] : null;
+    if (tbl) {
+      tbl.ongoingGame = game;
+      if (Array.isArray(tbl.playerIds)) {
+        tbl.playerIds.forEach((pId, idx) => {
+          scoresObj[pId] = game.players[idx] ? game.players[idx].total : 0;
+        });
+      }
+    }
+  }
+
+  saveTournamentStateLocalOnly();
+  syncTournamentTableScore(roundIdx, tableIdx, {
+    scores: scoresObj,
+    isDone: false,
+    ongoingGame: game
+  });
+}
+
 function queueTournamentOfflineAction(action) {
   tournamentOfflineQueue.push({ ...action, timestamp: Date.now() });
   try {
@@ -4619,11 +4802,23 @@ function flushTournamentOfflineQueue() {
 function openTournamentConnectModal() {
   const hostIdInput = document.getElementById('input-host-tourney-id');
   const hostJudgeInput = document.getElementById('input-host-judge-name');
+  const joinIdInput = document.getElementById('input-join-tourney-id');
+  const joinJudgeInput = document.getElementById('input-join-judge-name');
+
+  const activeId = (tournamentState && tournamentState.id) ? tournamentState.id : (localStorage.getItem('gaple_activeTournamentId') || '');
+  const savedJudgeName = localStorage.getItem('gaple_judgeName') || currentJudgeName || '';
+
   if (hostIdInput) {
-    hostIdInput.value = (tournamentState && tournamentState.id) ? tournamentState.id : generateRandomTourneyIdString();
+    hostIdInput.value = activeId || generateRandomTourneyIdString();
   }
   if (hostJudgeInput) {
-    hostJudgeInput.value = currentJudgeName || 'Laptop Server';
+    hostJudgeInput.value = (currentJudgeRole === 'host' && savedJudgeName) ? savedJudgeName : 'Laptop Server';
+  }
+  if (joinIdInput && activeId) {
+    joinIdInput.value = activeId;
+  }
+  if (joinJudgeInput) {
+    joinJudgeInput.value = (currentJudgeRole === 'judge' && savedJudgeName) ? savedJudgeName : '';
   }
   openModal('modal-tournament-connect');
 }
@@ -4652,8 +4847,12 @@ function switchTourneyConnectTab(tab) {
 }
 
 function generateRandomTourneyIdString() {
-  const rand = Math.random().toString(36).substring(2, 6).toUpperCase();
-  return `GAPLE-17AGUSTUS-${rand}`;
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let res = '';
+  for (let i = 0; i < 6; i++) {
+    res += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return res;
 }
 
 function generateRandomTourneyId() {
@@ -4661,6 +4860,44 @@ function generateRandomTourneyId() {
   if (hostIdInput) {
     hostIdInput.value = generateRandomTourneyIdString();
   }
+}
+
+function handleTournamentBack() {
+  openTournamentLeaveModal();
+}
+
+function openTournamentLeaveModal() {
+  openModal('modal-tournament-leave-confirm');
+}
+
+function executeLeaveTournament() {
+  const activeTourneyId = (tournamentState && tournamentState.id) || localStorage.getItem('gaple_activeTournamentId');
+  if (socket && socket.connected && activeTourneyId) {
+    socket.emit('tournament:leave', {
+      tournamentId: activeTourneyId,
+      judgeName: currentJudgeName,
+      role: currentJudgeRole
+    });
+  }
+
+  if (tourneySyncTimer) {
+    clearInterval(tourneySyncTimer);
+    tourneySyncTimer = null;
+  }
+
+  localStorage.removeItem('gaple_activeTournamentId');
+  localStorage.removeItem('gaple_tournamentState');
+  localStorage.removeItem('gaple_judgeName');
+  localStorage.removeItem('gaple_judgeRole');
+  localStorage.setItem('gaple_activePage', 'home');
+
+  tournamentState = null;
+  currentJudgeRole = 'host';
+  currentJudgeName = 'Laptop Server';
+
+  closeModal('modal-tournament-leave-confirm');
+  showPage('home');
+  showToast('Anda telah keluar dari turnamen. 👋', 3000);
 }
 
 function executeHostTournament() {
@@ -4693,10 +4930,18 @@ function executeJoinTournament() {
   const tourneyId = joinIdInput ? joinIdInput.value.trim().toUpperCase() : '';
   if (!tourneyId) {
     showToast('Silakan masukkan Tournament ID');
+    if (joinIdInput) joinIdInput.focus();
     return;
   }
 
-  currentJudgeName = (joinJudgeInput && joinJudgeInput.value.trim()) ? joinJudgeInput.value.trim() : 'Juri Meja';
+  const judgeName = joinJudgeInput ? joinJudgeInput.value.trim() : '';
+  if (!judgeName) {
+    showToast('Silakan masukkan Nama Juri / Meja Tugas Anda!');
+    if (joinJudgeInput) joinJudgeInput.focus();
+    return;
+  }
+
+  currentJudgeName = judgeName;
   currentJudgeRole = 'judge';
   localStorage.setItem('gaple_judgeName', currentJudgeName);
   localStorage.setItem('gaple_judgeRole', currentJudgeRole);
@@ -4758,10 +5003,18 @@ function openTournamentMode() {
 }
 
 function openTournamentModeSelectionModal() {
+  if (currentJudgeRole === 'judge') {
+    showToast('Akses Ditolak: Hanya Host yang dapat mengubah format turnamen.');
+    return;
+  }
   openModal('modal-tournament-mode-select');
 }
 
 function selectTournamentMode(mode) {
+  if (currentJudgeRole === 'judge') {
+    showToast('Akses Ditolak: Hanya Host yang dapat mengubah format turnamen.');
+    return;
+  }
   closeModal('modal-tournament-mode-select');
   const size = tourneySelectedSize || 16;
   initTournamentData(true, size, mode);
@@ -4795,8 +5048,20 @@ function selectTournamentSizePreset(size) {
 }
 
 function changeTournamentPlayerCount(delta) {
-  const minCount = 4; // 1 meja gaple harus minimal 4 pemain
-  tourneySelectedSize = Math.max(minCount, Math.min(64, tourneySelectedSize + delta));
+  const isKnockout = !tournamentState || tournamentState.mode === 'knockout';
+  if (isKnockout) {
+    const validSizes = [4, 8, 16, 32, 64];
+    let curIdx = validSizes.indexOf(tourneySelectedSize);
+    if (curIdx === -1) {
+      curIdx = validSizes.findIndex(s => s >= tourneySelectedSize);
+      if (curIdx === -1) curIdx = validSizes.length - 1;
+    }
+    const nextIdx = Math.max(0, Math.min(validSizes.length - 1, curIdx + delta));
+    tourneySelectedSize = validSizes[nextIdx];
+  } else {
+    tourneySelectedSize = Math.max(4, Math.min(32, tourneySelectedSize + delta));
+  }
+
   const countEl = document.getElementById('tourney-player-count-display');
   if (countEl) countEl.textContent = tourneySelectedSize;
 
@@ -4824,6 +5089,11 @@ function selectRoundRobinRoundsCount(rounds) {
 }
 
 function randomizeTournamentSeeding() {
+  if (currentJudgeRole === 'judge') {
+    showToast('Akses Ditolak: Hanya Host yang dapat mengacak susunan meja.');
+    return;
+  }
+
   if (!tournamentState) initTournamentData();
   
   const shuffledPlayers = [...tournamentState.players];
@@ -4849,33 +5119,96 @@ function randomizeTournamentSeeding() {
   showToast(`${count} Pemain berhasil diacak! `);
 }
 
-function resetTournamentData() {
-  const modeText = (tournamentState && tournamentState.mode === 'roundrobin') ? 'Round Robin' : 'Knockout';
-  if (confirm(`Anda yakin ingin mereset seluruh data turnamen ${modeText} dari awal?`)) {
-    const currentMode = tournamentState ? tournamentState.mode : 'knockout';
-    initTournamentData(true, tourneySelectedSize, currentMode);
-    renderTournamentView();
-    showToast(`Data turnamen ${modeText} telah direset! `);
+function openTournamentResetModal() {
+  if (currentJudgeRole === 'judge') {
+    showToast('Akses Ditolak: Hanya Host yang dapat melakukan Reset Turnamen.');
+    return;
   }
+  openModal('modal-tournament-reset-confirm');
+}
+
+function executeResetTournament() {
+  if (currentJudgeRole === 'judge') {
+    showToast('Akses Ditolak: Hanya Host yang dapat melakukan Reset Turnamen.');
+    closeModal('modal-tournament-reset-confirm');
+    return;
+  }
+
+  const currentCount = (tournamentState && tournamentState.players) ? tournamentState.players.length : (tourneySelectedSize || 16);
+  const currentMode = (tournamentState && tournamentState.mode) ? tournamentState.mode : 'knockout';
+  const tourneyId = (tournamentState && tournamentState.id) ? tournamentState.id : generateRandomTourneyIdString();
+  const savedPlayers = (tournamentState && tournamentState.players) ? [...tournamentState.players] : null;
+
+  // 1. Reset state lokal secara instan
+  initTournamentData(true, currentCount, currentMode);
+  tournamentState.id = tourneyId;
+
+  // Pertahankan nama-nama pemain yang sudah diisi
+  if (savedPlayers && savedPlayers.length === tournamentState.players.length) {
+    tournamentState.players = savedPlayers;
+    if (tournamentState.mode === 'knockout' && tournamentState.rounds && tournamentState.rounds[0]) {
+      const firstRound = tournamentState.rounds[0];
+      const bracketConfigs = computeBracketRounds(currentCount);
+      const firstCfg = bracketConfigs[0];
+      const firstActiveIds = savedPlayers.slice(0, firstCfg.numTables * 4).map(p => p.id);
+      const firstByeIds = savedPlayers.slice(firstCfg.numTables * 4).map(p => p.id);
+
+      firstRound.tables.forEach((tbl, tIdx) => {
+        tbl.playerIds = firstActiveIds.slice(tIdx * 4, (tIdx + 1) * 4);
+      });
+      firstRound.byePlayerIds = firstByeIds;
+    } else if (tournamentState.mode === 'roundrobin') {
+      tournamentState.rrMatches = generateRoundRobinMatches(savedPlayers, roundRobinRoundsCount);
+    }
+  }
+
+  saveTournamentStateLocalOnly();
+  closeModal('modal-tournament-reset-confirm');
+  renderTournamentView();
+
+  // 2. Simpan dan broadcast ke server
+  saveTournamentState();
+
+  if (socket && socket.connected) {
+    socket.emit('tournament:reset', { tournamentId: tourneyId, role: 'host' }, (res) => {
+      if (res && res.success && res.tournament) {
+        tournamentState = res.tournament;
+        saveTournamentStateLocalOnly();
+        renderTournamentView();
+      }
+    });
+  } else {
+    fetch(`/api/tournaments/${tourneyId}/reset`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ role: 'host' })
+    }).then(r => r.json()).catch(() => {});
+  }
+
+  showToast('Seluruh data skor dan progres turnamen berhasil direset ke awal! 🔄');
 }
 
 function openTournamentSetupModal() {
+  if (currentJudgeRole === 'judge') {
+    showToast('Akses Ditolak: Hanya Host yang dapat mengatur peserta turnamen.');
+    return;
+  }
+
   if (!tournamentState) initTournamentData();
   const count = tournamentState.players.length;
   tourneySelectedSize = count;
   const countEl = document.getElementById('tourney-player-count-display');
   if (countEl) countEl.textContent = count;
 
-  // Highlight active preset button if matches count
-  document.querySelectorAll('.tourney-preset-btn').forEach(btn => {
-    if (btn.textContent.trim().startsWith(count + ' ')) {
-      btn.classList.add('active');
-    } else {
-      btn.classList.remove('active');
-    }
-  });
-
   const isRR = tournamentState.mode === 'roundrobin';
+  const presetContainer = document.getElementById('tourney-preset-buttons-container');
+  if (presetContainer) {
+    const presets = isRR ? [4, 6, 8, 12, 16] : [4, 8, 16, 32, 64];
+    presetContainer.innerHTML = presets.map(p => `
+      <button class="btn btn-sm btn-outline tourney-preset-btn ${p === count ? 'active' : ''}" onclick="selectTournamentSizePreset(${p})">${p} Peserta</button>
+    `).join('');
+  }
+
   const rrOptions = document.getElementById('rr-setup-options-container');
   const subtitle = document.getElementById('tourney-setup-subtitle');
 
@@ -4887,7 +5220,7 @@ function openTournamentSetupModal() {
       if (subtitle) subtitle.textContent = 'Atur peserta & jumlah babak untuk Turnamen Round Robin.';
     } else {
       rrOptions.classList.add('hidden');
-      if (subtitle) subtitle.textContent = 'Pilih format jumlah peserta & atur nama pemain turnamen.';
+      if (subtitle) subtitle.textContent = 'Pilih format peserta kelipatan 4 (4, 8, 16, 32, 64) tanpa sistem BYE.';
     }
   }
 
@@ -4907,13 +5240,10 @@ function renderTournamentSetupInputs(count) {
     const avatarKey = existing ? existing.avatar : DEFAULT_AVATARS[i % DEFAULT_AVATARS.length];
     const avatarColor = existing ? existing.color : DEFAULT_COLORS[i % DEFAULT_COLORS.length];
 
-    // Check if player has a custom typed name; if it's default/empty, leave input value blank
+    // Jika pemain sudah punya nama khusus, isi ke value input
     let inputValue = '';
-    if (existing && existing.name) {
-      const n = existing.name.trim();
-      if (!n.startsWith('Nama Pemain ') && !n.startsWith('Peserta ') && !n.startsWith('Pemain ')) {
-        inputValue = n;
-      }
+    if (existing && existing.name && !existing.name.startsWith('Nama Pemain ')) {
+      inputValue = existing.name.trim();
     }
 
     const item = document.createElement('div');
@@ -4944,29 +5274,99 @@ function renderTournamentSetupInputs(count) {
 }
 
 function saveTournamentSetupNames() {
-  const count = tourneySelectedSize;
-  const customNames = [];
-  
-  for (let i = 0; i < count; i++) {
-    const el = document.getElementById(`tourney-player-input-${i}`);
-    if (el) {
-      customNames.push(el.value.trim() || `Nama Pemain ${i + 1}`);
-    }
+  if (currentJudgeRole === 'judge') {
+    showToast('Akses Ditolak: Hanya Host yang dapat mengubah nama peserta.');
+    closeModal('modal-tournament-setup');
+    return;
   }
 
-  const currentMode = tournamentState ? tournamentState.mode : 'knockout';
-  initTournamentData(true, count, currentMode);
+  const count = tourneySelectedSize || 16;
+  const currentMode = (tournamentState && tournamentState.mode) ? tournamentState.mode : 'knockout';
+  const tourneyId = (tournamentState && tournamentState.id) ? tournamentState.id : generateRandomTourneyIdString();
+  const existingPlayers = (tournamentState && tournamentState.players) ? tournamentState.players : [];
 
-  customNames.forEach((name, i) => {
-    if (tournamentState.players[i]) {
-      tournamentState.players[i].name = name;
-    }
-  });
+  const newPlayers = [];
+  for (let i = 0; i < count; i++) {
+    const el = document.getElementById(`tourney-player-input-${i}`);
+    const typedName = el ? el.value.trim() : '';
+    const defaultName = `Nama Pemain ${i + 1}`;
+    const existingP = existingPlayers[i];
+    newPlayers.push({
+      id: i + 1,
+      name: typedName || (existingP && existingP.name && !existingP.name.startsWith('Nama Pemain ') ? existingP.name : defaultName),
+      avatar: existingP ? existingP.avatar : DEFAULT_AVATARS[i % DEFAULT_AVATARS.length],
+      color: existingP ? existingP.color : DEFAULT_COLORS[i % DEFAULT_COLORS.length]
+    });
+  }
 
+  if (currentMode === 'roundrobin') {
+    const rrMatches = generateRoundRobinMatches(newPlayers, roundRobinRoundsCount);
+    tournamentState = {
+      id: tourneyId,
+      name: 'Turnamen Round Robin Gaple',
+      mode: 'roundrobin',
+      players: newPlayers,
+      rrConfig: {
+        roundsCount: roundRobinRoundsCount,
+        playerCount: count
+      },
+      rrMatches,
+      activeTab: 'standings',
+      winners: { juara1: null, juara2: null, juara3: null, juara4: null }
+    };
+  } else {
+    const bracketConfigs = computeBracketRounds(count);
+    const firstCfg = bracketConfigs[0];
+    const firstActiveIds = newPlayers.slice(0, firstCfg.numTables * 4).map(p => p.id);
+    const firstByeIds = newPlayers.slice(firstCfg.numTables * 4).map(p => p.id);
+
+    const rounds = bracketConfigs.map((cfg, roundIdx) => {
+      let tables = [];
+      if (roundIdx === 0) {
+        for (let t = 0; t < cfg.numTables; t++) {
+          const label = cfg.name === 'Final' ? 'Meja Final '
+            : cfg.name === 'Semifinal' ? `Meja Semifinal ${t + 1}`
+            : `Meja ${t + 1}`;
+          tables.push(makeTournamentTable(t + 1, label, firstActiveIds.slice(t * 4, (t + 1) * 4)));
+        }
+      } else {
+        for (let t = 0; t < cfg.numTables; t++) {
+          const label = cfg.isFinal ? 'Meja Final '
+            : cfg.name === 'Semifinal' ? `Meja Semifinal ${t + 1}`
+            : `Meja ${cfg.name} ${t + 1}`;
+          tables.push(makeTournamentTable(t + 1, label, []));
+        }
+      }
+
+      return {
+        key: roundIdx === bracketConfigs.length - 1 ? 'final' : `round_${roundIdx}`,
+        name: cfg.name,
+        isFinal: cfg.isFinal,
+        numTables: cfg.numTables,
+        qCount: cfg.qCount,
+        numByes: cfg.numByes,
+        tables,
+        byePlayerIds: roundIdx === 0 ? firstByeIds : []
+      };
+    });
+
+    tournamentState = {
+      id: tourneyId,
+      name: 'Turnamen Knockout Gaple',
+      mode: 'knockout',
+      players: newPlayers,
+      rounds,
+      currentRoundIndex: 0,
+      winners: { juara1: null, juara2: null, juara3: null, juara4: null }
+    };
+  }
+
+  // SIMPAN SECARA UTUH KE LOCALSTORAGE DAN KE DISK SERVER
   saveTournamentState();
+
   closeModal('modal-tournament-setup');
   renderTournamentView();
-  showToast(`Turnamen dengan ${count} Peserta berhasil disimpan!`);
+  showToast(`Perubahan ${count} peserta berhasil disimpan ke server! ✓`);
 }
 
 function getTournamentPlayerObj(id) {
@@ -5139,17 +5539,20 @@ function renderTableCardHTML(roundIdx, tableIdx, tableObj, roundObj) {
       if (isFinalRound && isDone) {
         if (tableObj.winnerIds[0] === player.id) {
           slotClass = 'champion-1';
-          badgeTag = '<span style="color:#FFD740;">Juara 1</span>';
+          badgeTag = '<span style="color:#FFD740;">Juara 1 👑</span>';
         } else if (tableObj.winnerIds[1] === player.id) {
           slotClass = 'champion-2';
-          badgeTag = '<span style="color:#C0C0C0;">Juara 2</span>';
+          badgeTag = '<span style="color:#C0C0C0;">Juara 2 🥈</span>';
         } else if (tableObj.winnerIds[2] === player.id) {
           slotClass = 'champion-3';
-          badgeTag = '<span style="color:#CD7F32;">Juara 3</span>';
+          badgeTag = '<span style="color:#CD7F32;">Juara 3 🥉</span>';
+        } else if (tableObj.winnerIds[3] === player.id) {
+          slotClass = '';
+          badgeTag = '<span style="color:#94A3B8;">Peringkat 4</span>';
         }
       } else if (isWinner) {
         slotClass = 'qualified';
-        badgeTag = '<span style="color:#4CAF50;">Lolos</span>';
+        badgeTag = '<span style="color:#69F0AE; font-weight: bold;">Lolos (2 Terbaik) ✓</span>';
       }
 
       const scoreVal = isDone && tableObj.scores[player.id] !== undefined ? tableObj.scores[player.id] : '';
@@ -5161,7 +5564,7 @@ function renderTableCardHTML(roundIdx, tableIdx, tableObj, roundObj) {
           </div>
           <div style="display: flex; align-items: center; gap: 6px;">
             ${badgeTag ? `<span style="font-size: 0.65rem; font-weight: bold;">${badgeTag}</span>` : ''}
-            <span class="bracket-player-score">${scoreVal !== '' ? scoreVal : ''}</span>
+            <span class="bracket-player-score">${scoreVal !== '' ? scoreVal + ' Poin' : ''}</span>
           </div>
         </div>
       `;
@@ -5169,12 +5572,27 @@ function renderTableCardHTML(roundIdx, tableIdx, tableObj, roundObj) {
   }
 
   let actionBtnsHtml = '';
-  if (!isDone && isCurrentStage && tableObj.playerIds.length > 0) {
+  const has4Players = tableObj.playerIds && tableObj.playerIds.filter(Boolean).length === 4;
+  const isOngoing = tableObj.ongoingGame && tableObj.ongoingGame.status === 'active';
+
+  if (!isDone && isCurrentStage && has4Players) {
+    const btnLabel = isOngoing ? 'Lanjutkan / Koreksi Skor' : 'Catat Skor Meja';
+    const btnBg = isOngoing ? 'linear-gradient(135deg, #FF9100 0%, #FF6D00 100%)' : '#FF1744';
     actionBtnsHtml = `
       <div class="bracket-action-btns">
-        <button class="btn btn-sm btn-primary" style="flex: 1; font-family: var(--font-pixel); background: #FF1744; display: inline-flex; align-items: center; justify-content: center; gap: 6px;" onclick="startTournamentTableMatch(${roundIdx}, ${tableIdx})">
+        <button class="btn btn-sm btn-primary" style="flex: 1; font-family: var(--font-pixel); background: ${btnBg}; display: inline-flex; align-items: center; justify-content: center; gap: 6px;" onclick="startTournamentTableMatch(${roundIdx}, ${tableIdx})">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-          Catat Skor Meja
+          ${btnLabel}
+        </button>
+      </div>
+    `;
+  } else if (isDone && isCurrentStage) {
+    // Tombol koreksi jika masih di babak aktif sebelum dikunci
+    actionBtnsHtml = `
+      <div class="bracket-action-btns">
+        <button class="btn btn-sm btn-outline" style="flex: 1; font-family: var(--font-pixel); border-color: rgba(255, 215, 0, 0.5); color: #FFD740; display: inline-flex; align-items: center; justify-content: center; gap: 6px; background: rgba(255, 215, 0, 0.08);" onclick="startTournamentTableMatch(${roundIdx}, ${tableIdx})">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          Koreksi Skor
         </button>
       </div>
     `;
@@ -5464,12 +5882,25 @@ function renderRoundRobinMatchCardHTML(matchObj, roundIdx, tableIdx) {
   });
 
   let actionBtnsHtml = '';
+  const isOngoing = matchObj.ongoingGame && matchObj.ongoingGame.status === 'active';
+
   if (!isDone) {
+    const btnLabel = isOngoing ? 'Lanjutkan / Koreksi Skor' : 'Catat Skor Meja';
+    const btnBg = isOngoing ? 'linear-gradient(135deg, #FF9100 0%, #FF6D00 100%)' : '#FF1744';
     actionBtnsHtml = `
       <div class="bracket-action-btns">
-        <button class="btn btn-sm btn-primary" style="flex: 1; font-family: var(--font-pixel); background: #FF1744; display: inline-flex; align-items: center; justify-content: center; gap: 6px;" onclick="startRoundRobinTableMatch(${roundIdx}, ${tableIdx})">
+        <button class="btn btn-sm btn-primary" style="flex: 1; font-family: var(--font-pixel); background: ${btnBg}; display: inline-flex; align-items: center; justify-content: center; gap: 6px;" onclick="startRoundRobinTableMatch(${roundIdx}, ${tableIdx})">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-          Catat Skor Meja
+          ${btnLabel}
+        </button>
+      </div>
+    `;
+  } else {
+    actionBtnsHtml = `
+      <div class="bracket-action-btns">
+        <button class="btn btn-sm btn-outline" style="flex: 1; font-family: var(--font-pixel); border-color: rgba(255, 215, 0, 0.5); color: #FFD740; display: inline-flex; align-items: center; justify-content: center; gap: 6px; background: rgba(255, 215, 0, 0.08);" onclick="startRoundRobinTableMatch(${roundIdx}, ${tableIdx})">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          Koreksi Skor
         </button>
       </div>
     `;
@@ -5500,13 +5931,14 @@ function startRoundRobinTableMatch(roundIdx, tableIdx) {
     return;
   }
 
-  // Jika meja ini sudah memiliki pertandingan yang sedang berlangsung (ongoing)
-  if (match.ongoingGame && match.ongoingGame.status === 'active') {
+  // Jika meja ini sudah memiliki pertandingan yang sedang berlangsung / selesai tapi ingin dikoreksi
+  if (match.ongoingGame) {
+    match.ongoingGame.status = 'active';
     state.currentGame = match.ongoingGame;
     saveState();
     renderDashboard();
     showPage('dashboard');
-    showToast(`Melanjutkan skor ${match.name}! Data skor dipulihkan ✓`);
+    showToast(`Membuka catatan skor ${match.name}! Data skor siap dikoreksi/dilanjutkan ✓`);
     return;
   }
 
@@ -5557,13 +5989,14 @@ function startTournamentTableMatch(roundIdx, tableIdx) {
     return;
   }
 
-  // Jika meja ini sudah memiliki pertandingan yang sedang berlangsung (ongoing)
-  if (tbl.ongoingGame && tbl.ongoingGame.status === 'active') {
+  // Jika meja ini sudah memiliki pertandingan yang sedang berlangsung / selesai tapi ingin dikoreksi
+  if (tbl.ongoingGame) {
+    tbl.ongoingGame.status = 'active';
     state.currentGame = tbl.ongoingGame;
     saveState();
     renderDashboard();
     showPage('dashboard');
-    showToast(`Melanjutkan skor ${tbl.name}! Data skor dipulihkan ✓`);
+    showToast(`Membuka catatan skor ${tbl.name}! Data skor siap dikoreksi/dilanjutkan ✓`);
     return;
   }
 
@@ -5711,15 +6144,50 @@ function processTableMatchResult(roundIdx, tableIdx, scoresObj) {
 
 function checkAndAdvanceTournamentRound(completedRoundIdx) {
   const st = tournamentState;
-  const round = st.rounds[completedRoundIdx];
-  if (!round) return;
+  const currentRound = st.rounds[completedRoundIdx];
+  if (!currentRound) return;
+  const nextRound = st.rounds[completedRoundIdx + 1];
 
-  const allDone = round.tables.every(t => t.status === 'completed');
+  // Tempatkan 2 pemenang dari meja yang selesai langsung ke meja babak berikutnya
+  if (nextRound && nextRound.tables) {
+    currentRound.tables.forEach((tbl, tIdx) => {
+      if (tbl.winnerIds && tbl.winnerIds.length > 0) {
+        const targetTableIdx = Math.floor(tIdx / 2);
+        const slotOffset = (tIdx % 2) * 2;
+        const targetTable = nextRound.tables[targetTableIdx];
+        if (targetTable) {
+          if (!targetTable.playerIds) targetTable.playerIds = [];
+          tbl.winnerIds.forEach((pId, wIdx) => {
+            targetTable.playerIds[slotOffset + wIdx] = pId;
+          });
+        }
+      }
+    });
+
+    // Jika ada peserta BYE dari babak pertama
+    if (currentRound.byePlayerIds && currentRound.byePlayerIds.length > 0) {
+      const allAdvancing = [];
+      currentRound.tables.forEach(tbl => {
+        if (tbl.winnerIds) allAdvancing.push(...tbl.winnerIds);
+      });
+      allAdvancing.push(...currentRound.byePlayerIds);
+
+      const playersInTables = nextRound.numTables * 4;
+      nextRound.tables.forEach((nxtTbl, tIdx) => {
+        nxtTbl.playerIds = allAdvancing.slice(tIdx * 4, (tIdx + 1) * 4);
+      });
+      nextRound.byePlayerIds = allAdvancing.slice(playersInTables);
+    }
+  }
+
+  const allDone = currentRound.tables.every(t => t.status === 'completed' || t.isDone);
   if (!allDone) return;
 
-  if (round.isFinal) {
+  currentRound.isDone = true;
+
+  if (currentRound.isFinal) {
     st.currentRoundIndex = 'completed';
-    const finalTable = round.tables[0];
+    const finalTable = currentRound.tables[0];
     const winners = finalTable.winnerIds;
     st.winners = {
       juara1: getTournamentPlayerObj(winners[0]) || null,
@@ -5732,34 +6200,15 @@ function checkAndAdvanceTournamentRound(completedRoundIdx) {
     return;
   }
 
-  const roundWinners = [];
-  round.tables.forEach(tbl => {
-    roundWinners.push(...tbl.winnerIds);
-  });
-
-  const allAdvancing = [...roundWinners, ...(round.byePlayerIds || [])];
-
-  const nextRoundIdx = completedRoundIdx + 1;
-  const nextRound = st.rounds[nextRoundIdx];
-  if (!nextRound) return;
-
-  const playersInTables = nextRound.numTables * 4;
-  nextRound.tables.forEach((tbl, tIdx) => {
-    tbl.playerIds = allAdvancing.slice(tIdx * 4, (tIdx + 1) * 4);
-    tbl.status = 'pending';
-    tbl.scores = {};
-    tbl.winnerIds = [];
-  });
-
-  nextRound.byePlayerIds = allAdvancing.slice(playersInTables);
-  st.currentRoundIndex = nextRoundIdx;
-
-  const toastMsg = nextRound.isFinal
-    ? 'Final 4 Orang telah ditentukan! Selamat untuk Para Finalis '
-    : nextRound.name.includes('Semifinal')
-      ? `Pemenang lolos ke ${nextRound.name}! `
-      : `Lanjut ke ${nextRound.name}! `;
-  showToast(toastMsg);
+  if (nextRound) {
+    st.currentRoundIndex = completedRoundIdx + 1;
+    const toastMsg = nextRound.isFinal
+      ? 'Final 4 Orang telah ditentukan! Selamat untuk Para Finalis '
+      : nextRound.name.includes('Semifinal')
+        ? `Pemenang lolos ke ${nextRound.name}! `
+        : `Lanjut ke ${nextRound.name}! `;
+    showToast(toastMsg);
+  }
 }
 
 function showTournamentPodium() {

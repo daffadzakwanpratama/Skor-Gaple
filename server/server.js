@@ -56,12 +56,38 @@ app.post('/api/tournaments/:id/table', (req, res) => {
   }
 });
 
+app.post('/api/tournaments/:id/players', (req, res) => {
+  const { players, role } = req.body;
+  const result = tournamentDb.updatePlayers(req.params.id, players, role || 'host');
+  if (result.success) {
+    io.to(`tournament_${req.params.id}`).emit('tournament:stateSynced', { tournament: result.tournament });
+    res.json(result);
+  } else {
+    res.status(403).json(result);
+  }
+});
+
+app.post('/api/tournaments/:id/reset', (req, res) => {
+  const { role } = req.body;
+  const result = tournamentDb.resetTournament(req.params.id, role || 'host');
+  if (result.success) {
+    io.to(`tournament_${req.params.id}`).emit('tournament:reset', { tournament: result.tournament });
+    io.to(`tournament_${req.params.id}`).emit('tournament:stateSynced', { tournament: result.tournament });
+    res.json(result);
+  } else {
+    res.status(403).json(result);
+  }
+});
+
 app.delete('/api/tournaments/:id', (req, res) => {
-  const deleted = tournamentDb.deleteTournament(req.params.id);
+  const role = req.headers['x-user-role'] || req.query.role || 'host';
+  const deleted = tournamentDb.deleteTournament(req.params.id, role);
   if (deleted) {
     io.to(`tournament_${req.params.id}`).emit('tournament:deleted', { tournamentId: req.params.id });
+    res.json({ success: true });
+  } else {
+    res.status(403).json({ success: false, error: 'Akses ditolak atau turnamen tidak ditemukan' });
   }
-  res.json({ success: deleted });
 });
 
 const server = http.createServer(app);
@@ -700,19 +726,25 @@ io.on('connection', socket => {
   // SHARED TOURNAMENT SOCKET.IO HANDLERS
   // ─────────────────────────────────────────────
 
-  // Juri/Host membuat atau menyimpan turnamen
+  // Host membuat atau memperbarui turnamen utuh
   socket.on('tournament:create', (tournamentData, callback) => {
     try {
       if (!tournamentData || !tournamentData.id) {
         if (typeof callback === 'function') callback({ success: false, error: 'Data turnamen tidak valid' });
         return;
       }
+      const role = socket.role || tournamentData.role || 'host';
+      if (role === 'judge') {
+        if (typeof callback === 'function') callback({ success: false, error: 'Akses ditolak: Hanya Host yang dapat mengubah konfigurasi turnamen' });
+        return;
+      }
+      tournamentData.id = String(tournamentData.id).trim().toUpperCase();
       const saved = tournamentDb.saveTournament(tournamentData);
       socket.join(`tournament_${saved.id}`);
       socket.tournamentId = saved.id;
-      console.log(`[Turnamen] Turnamen dibuat/diperbarui: ${saved.id} (${saved.name || 'Turnamen'})`);
+      console.log(`[Turnamen] Turnamen dibuat/diperbarui oleh Host: ${saved.id} (${saved.name || 'Turnamen'})`);
       if (typeof callback === 'function') callback({ success: true, tournament: saved });
-      socket.to(`tournament_${saved.id}`).emit('tournament:stateSynced', { tournament: saved });
+      io.to(`tournament_${saved.id}`).emit('tournament:stateSynced', { tournament: saved });
     } catch (err) {
       console.error('[Turnamen] Error pada tournament:create:', err);
       if (typeof callback === 'function') callback({ success: false, error: err.message });
@@ -728,21 +760,20 @@ io.on('connection', socket => {
         return;
       }
 
-      const t = tournamentDb.getTournament(tournamentId);
-      if (!t) {
-        if (typeof callback === 'function') callback({ success: false, error: `Turnamen dengan ID "${tournamentId}" tidak ditemukan di server.` });
-        return;
-      }
-
-      socket.join(`tournament_${tournamentId}`);
-      socket.tournamentId = tournamentId;
-      socket.judgeName = judgeName || 'Juri';
+      const cleanId = String(tournamentId).trim().toUpperCase();
+      socket.join(`tournament_${cleanId}`);
+      socket.tournamentId = cleanId;
+      socket.judgeName = judgeName || (role === 'host' ? 'Laptop Server' : 'Juri');
       socket.role = role || 'judge';
 
-      console.log(`[Turnamen] ${socket.judgeName} (${socket.role}) bergabung ke turnamen: ${tournamentId}`);
+      const t = tournamentDb.getTournament(cleanId);
+      console.log(`[Turnamen] ${socket.judgeName} (${socket.role}) bergabung ke room turnamen: ${cleanId} (Data ada: ${Boolean(t)})`);
 
-      if (typeof callback === 'function') callback({ success: true, tournament: t });
-      socket.to(`tournament_${tournamentId}`).emit('tournament:userJoined', {
+      if (typeof callback === 'function') {
+        callback({ success: true, tournament: t || null });
+      }
+
+      socket.to(`tournament_${cleanId}`).emit('tournament:userJoined', {
         judgeName: socket.judgeName,
         role: socket.role,
         socketId: socket.id
@@ -753,7 +784,7 @@ io.on('connection', socket => {
     }
   });
 
-  // Juri mengupdate skor meja tertentu secara atomik
+  // Juri/Host mengupdate skor meja tertentu secara atomik
   socket.on('tournament:updateTable', (data, callback) => {
     try {
       const { tournamentId, payload } = data || {};
@@ -762,12 +793,13 @@ io.on('connection', socket => {
         return;
       }
 
-      const result = tournamentDb.updateTable(tournamentId, payload);
+      const cleanId = String(tournamentId).trim().toUpperCase();
+      const result = tournamentDb.updateTable(cleanId, payload);
       if (result.success) {
         if (typeof callback === 'function') callback({ success: true, tournament: result.tournament });
-        // Broadcast ke semua perangkat di turnamen ini (termasuk juri lain & layar dashboard)
-        io.to(`tournament_${tournamentId}`).emit('tournament:tableUpdated', {
-          tournamentId,
+        // Broadcast ke semua perangkat di turnamen ini (Host & seluruh Juri)
+        io.to(`tournament_${cleanId}`).emit('tournament:tableUpdated', {
+          tournamentId: cleanId,
           tournament: result.tournament,
           payload
         });
@@ -780,13 +812,68 @@ io.on('connection', socket => {
     }
   });
 
-  // Sinkronisasi penuh state turnamen
+  // Host memperbarui nama/data peserta turnamen secara persisten
+  socket.on('tournament:updatePlayers', (data, callback) => {
+    try {
+      const { tournamentId, players, role } = data || {};
+      const callerRole = role || socket.role || 'host';
+      if (callerRole !== 'host') {
+        if (typeof callback === 'function') callback({ success: false, error: 'Akses ditolak: Hanya Host yang dapat mengubah nama peserta.' });
+        return;
+      }
+      const cleanId = String(tournamentId).trim().toUpperCase();
+      const result = tournamentDb.updatePlayers(cleanId, players, callerRole);
+      if (result.success) {
+        io.to(`tournament_${cleanId}`).emit('tournament:stateSynced', { tournament: result.tournament });
+        if (typeof callback === 'function') callback({ success: true, tournament: result.tournament });
+      } else {
+        if (typeof callback === 'function') callback(result);
+      }
+    } catch (err) {
+      console.error('[Turnamen] Error pada tournament:updatePlayers:', err);
+      if (typeof callback === 'function') callback({ success: false, error: err.message });
+    }
+  });
+
+  // Host mereset turnamen ke kondisi awal
+  socket.on('tournament:reset', (data, callback) => {
+    try {
+      const { tournamentId, role } = data || {};
+      const callerRole = role || socket.role || 'host';
+      if (callerRole !== 'host') {
+        if (typeof callback === 'function') callback({ success: false, error: 'Akses ditolak: Hanya Host yang dapat mereset turnamen.' });
+        return;
+      }
+      const cleanId = String(tournamentId).trim().toUpperCase();
+      const result = tournamentDb.resetTournament(cleanId, callerRole);
+      if (result.success) {
+        console.log(`[Turnamen] Turnamen ${cleanId} telah di-reset oleh Host`);
+        io.to(`tournament_${cleanId}`).emit('tournament:reset', { tournament: result.tournament });
+        io.to(`tournament_${cleanId}`).emit('tournament:stateSynced', { tournament: result.tournament });
+        if (typeof callback === 'function') callback({ success: true, tournament: result.tournament });
+      } else {
+        if (typeof callback === 'function') callback(result);
+      }
+    } catch (err) {
+      console.error('[Turnamen] Error pada tournament:reset:', err);
+      if (typeof callback === 'function') callback({ success: false, error: err.message });
+    }
+  });
+
+  // Sinkronisasi penuh state turnamen (Hanya Host)
   socket.on('tournament:syncState', (data, callback) => {
     try {
-      const { tournamentId, tournamentData } = data || {};
+      const { tournamentId, tournamentData, role } = data || {};
+      const callerRole = role || socket.role || 'host';
+      if (callerRole === 'judge') {
+        if (typeof callback === 'function') callback({ success: false, error: 'Akses ditolak: Juri tidak dapat menimpa state turnamen' });
+        return;
+      }
       if (!tournamentId || !tournamentData) return;
+      const cleanId = String(tournamentId).trim().toUpperCase();
+      tournamentData.id = cleanId;
       const saved = tournamentDb.saveTournament(tournamentData);
-      io.to(`tournament_${tournamentId}`).emit('tournament:stateSynced', { tournament: saved });
+      io.to(`tournament_${cleanId}`).emit('tournament:stateSynced', { tournament: saved });
       if (typeof callback === 'function') callback({ success: true, tournament: saved });
     } catch (err) {
       console.error('[Turnamen] Error pada tournament:syncState:', err);
@@ -803,6 +890,20 @@ io.on('connection', socket => {
         tableIdx,
         judgeName
       });
+    }
+  });
+
+  // Juri / Host keluar dari turnamen
+  socket.on('tournament:leave', (data) => {
+    const { tournamentId, judgeName } = data || {};
+    const cleanId = tournamentId ? String(tournamentId).trim().toUpperCase() : socket.tournamentId;
+    if (cleanId) {
+      socket.leave(`tournament_${cleanId}`);
+      socket.to(`tournament_${cleanId}`).emit('tournament:userLeft', {
+        judgeName: judgeName || socket.judgeName || 'Juri',
+        role: socket.role
+      });
+      console.log(`[Turnamen] ${judgeName || socket.judgeName || 'Pengguna'} (${socket.role}) keluar dari turnamen: ${cleanId}`);
     }
   });
 

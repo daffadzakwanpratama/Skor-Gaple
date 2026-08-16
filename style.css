@@ -3870,7 +3870,104 @@ body.kemerdekaan-mode .kemerdekaan-confetti-container {
 
 #page-tournament .page-header {
   border-radius: 0 0 16px 16px;
-  margin-bottom: 1.5rem;
+  margin-bottom: 1.25rem;
+}
+
+/* Tournament Header Layout & Mobile Responsiveness */
+.tourney-page-header {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  flex-wrap: wrap !important;
+  gap: 0.6rem !important;
+  padding: 0.85rem 1.25rem !important;
+}
+
+.tourney-header-left {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-shrink: 0;
+}
+
+.tourney-header-brand {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.tourney-header-title {
+  font-family: var(--font-title);
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: #FF1744;
+  letter-spacing: 0.05em;
+  line-height: 1;
+}
+
+.tourney-header-right {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: nowrap;
+  margin-left: auto;
+}
+
+.btn-tourney-change-mode {
+  background: rgba(255, 255, 255, 0.06) !important;
+  border-color: rgba(255, 255, 255, 0.25) !important;
+  color: #FFF !important;
+  font-family: var(--font-pixel);
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 5px !important;
+  padding: 0.35rem 0.65rem !important;
+  font-size: 0.72rem !important;
+  border-radius: 8px !important;
+  white-space: nowrap !important;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+}
+
+.btn-tourney-change-mode:hover {
+  background: rgba(255, 23, 68, 0.2) !important;
+  border-color: #FF1744 !important;
+  transform: translateY(-1px);
+}
+
+@media (max-width: 540px) {
+  .tourney-page-header {
+    padding: 0.75rem 0.85rem !important;
+    gap: 0.4rem !important;
+  }
+
+  .tourney-header-title {
+    font-size: 0.88rem;
+  }
+
+  .tourney-header-right {
+    gap: 0.35rem;
+  }
+
+  #tourney-mode-indicator {
+    font-size: 0.58rem !important;
+    padding: 2px 6px !important;
+  }
+
+  .btn-tourney-change-mode {
+    padding: 0.3rem 0.5rem !important;
+    font-size: 0.68rem !important;
+    gap: 4px !important;
+  }
+}
+
+@media (max-width: 380px) {
+  .tourney-header-title {
+    font-size: 0.78rem;
+  }
+  .btn-tourney-change-mode span {
+    font-size: 0.62rem;
+  }
 }
 
 /* Tournament Responsive Toolbar */

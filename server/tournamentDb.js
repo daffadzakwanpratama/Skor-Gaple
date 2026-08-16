@@ -36,8 +36,9 @@ function saveTournaments(data) {
  */
 function getTournament(id) {
   if (!id) return null;
+  const cleanId = String(id).trim().toUpperCase();
   const all = loadTournaments();
-  return all[id] || null;
+  return all[cleanId] || null;
 }
 
 /**
@@ -45,12 +46,14 @@ function getTournament(id) {
  */
 function saveTournament(tournament) {
   if (!tournament || !tournament.id) return null;
+  const cleanId = String(tournament.id).trim().toUpperCase();
+  tournament.id = cleanId;
   const all = loadTournaments();
 
   tournament.updatedAt = new Date().toISOString();
   tournament.revision = (tournament.revision || 0) + 1;
 
-  all[tournament.id] = tournament;
+  all[cleanId] = tournament;
   saveTournaments(all);
   return tournament;
 }
@@ -59,8 +62,9 @@ function saveTournament(tournament) {
  * Memperbarui skor meja tertentu secara atomik (tanpa menimpa meja lain)
  */
 function updateTable(tournamentId, payload) {
+  const cleanId = String(tournamentId || '').trim().toUpperCase();
   const all = loadTournaments();
-  const t = all[tournamentId];
+  const t = all[cleanId];
   if (!t) return { success: false, error: 'Turnamen tidak ditemukan' };
 
   const { mode, roundIdx, tableIdx, scores, isDone, ongoingGame, judgeName } = payload;
@@ -103,18 +107,24 @@ function updateTable(tournamentId, payload) {
     if (!tbl) return { success: false, error: 'Meja Knockout tidak ditemukan' };
 
     if (scores !== undefined) tbl.scores = scores;
-    if (isDone !== undefined) tbl.isDone = isDone;
+    if (isDone !== undefined) {
+      tbl.isDone = isDone;
+      tbl.status = isDone ? 'completed' : 'pending';
+    }
     if (ongoingGame !== undefined) tbl.ongoingGame = ongoingGame;
     if (judgeName !== undefined) tbl.judgeName = judgeName;
 
     if (isDone && scores) {
-      // Ambil 2 pemain dengan skor terendah di meja ini untuk lolos
-      const sorted = tbl.playerIds.map(pId => ({ id: pId, score: scores[pId] !== undefined ? scores[pId] : 999 }))
-        .sort((a, b) => a.score - b.score);
-      const advancingCount = round.isFinal ? 1 : 2;
-      tbl.winnerIds = sorted.slice(0, advancingCount).map(s => s.id);
+      // Ambil pemain terbaik di meja ini untuk lolos (2 pemain terbaik per meja di babak non-final, atau urutan finalis di final)
+      const sorted = tbl.playerIds.map(pId => ({
+        id: pId,
+        score: scores[pId] !== undefined ? Number(scores[pId]) : 999
+      })).sort((a, b) => a.score - b.score);
 
-      // Cek apakah seluruh meja pada babak ini telah selesai
+      const advancingCount = round.isFinal ? 4 : (round.qCount || 2);
+      tbl.winnerIds = round.isFinal ? sorted.map(s => s.id) : sorted.slice(0, advancingCount).map(s => s.id);
+
+      // Alirkan pemenang langsung ke babak berikutnya dan cek kemajuan turnamen
       advanceKnockoutStageIfReady(t, roundIdx);
     }
   }
@@ -122,7 +132,7 @@ function updateTable(tournamentId, payload) {
   t.updatedAt = new Date().toISOString();
   t.revision = (t.revision || 0) + 1;
 
-  all[tournamentId] = t;
+  all[cleanId] = t;
   saveTournaments(all);
   return { success: true, tournament: t };
 }
@@ -175,22 +185,61 @@ function getPlayerFromList(players, id) {
 }
 
 /**
- * Otomatis memajukan pemenang Knockout ke babak berikutnya di server jika satu babak tuntas
+ * Otomatis memajukan pemenang Knockout ke babak berikutnya di server
  */
 function advanceKnockoutStageIfReady(t, roundIdx) {
   const currentRound = t.rounds[roundIdx];
   if (!currentRound) return;
-  const allTablesDone = currentRound.tables.every(tbl => tbl.isDone);
+  const nextRound = t.rounds[roundIdx + 1];
+
+  // Tempatkan 2 pemenang dari meja yang selesai langsung ke meja babak berikutnya
+  if (nextRound && nextRound.tables) {
+    currentRound.tables.forEach((tbl, tIdx) => {
+      if (tbl.winnerIds && tbl.winnerIds.length > 0) {
+        const targetTableIdx = Math.floor(tIdx / 2);
+        const slotOffset = (tIdx % 2) * 2;
+        const targetTable = nextRound.tables[targetTableIdx];
+        if (targetTable) {
+          if (!targetTable.playerIds) targetTable.playerIds = [];
+          tbl.winnerIds.forEach((pId, wIdx) => {
+            targetTable.playerIds[slotOffset + wIdx] = pId;
+          });
+        }
+      }
+    });
+
+    // Jika ada peserta BYE dari babak penyisihan pertama
+    if (currentRound.byePlayerIds && currentRound.byePlayerIds.length > 0) {
+      const allAdvancing = [];
+      currentRound.tables.forEach(tbl => {
+        if (tbl.winnerIds) allAdvancing.push(...tbl.winnerIds);
+      });
+      allAdvancing.push(...currentRound.byePlayerIds);
+
+      const playersInTables = nextRound.numTables * 4;
+      nextRound.tables.forEach((nxtTbl, tIdx) => {
+        nxtTbl.playerIds = allAdvancing.slice(tIdx * 4, (tIdx + 1) * 4);
+      });
+      nextRound.byePlayerIds = allAdvancing.slice(playersInTables);
+    }
+  }
+
+  // Cek apakah seluruh meja pada babak ini telah selesai
+  const allTablesDone = currentRound.tables.every(tbl => tbl.isDone || tbl.status === 'completed');
 
   if (allTablesDone) {
     currentRound.isDone = true;
 
     // Jika ini Final, tentukan Juara
     if (currentRound.isFinal) {
+      t.currentRoundIndex = 'completed';
       const finalTable = currentRound.tables[0];
       if (finalTable && finalTable.scores) {
-        const sorted = finalTable.playerIds.map(pId => ({ id: pId, score: finalTable.scores[pId] !== undefined ? finalTable.scores[pId] : 999 }))
-          .sort((a, b) => a.score - b.score);
+        const sorted = finalTable.playerIds.map(pId => ({
+          id: pId,
+          score: finalTable.scores[pId] !== undefined ? Number(finalTable.scores[pId]) : 999
+        })).sort((a, b) => a.score - b.score);
+
         t.winners = {
           juara1: getPlayerFromList(t.players, sorted[0] ? sorted[0].id : null),
           juara2: getPlayerFromList(t.players, sorted[1] ? sorted[1].id : null),
@@ -198,34 +247,127 @@ function advanceKnockoutStageIfReady(t, roundIdx) {
           juara4: getPlayerFromList(t.players, sorted[3] ? sorted[3].id : null)
         };
       }
-      return;
-    }
-
-    // Jika bukan final, masukkan pemenang ke babak berikutnya
-    const nextRound = t.rounds[roundIdx + 1];
-    if (nextRound) {
-      const allWinners = [];
-      currentRound.tables.forEach(tbl => {
-        if (tbl.winnerIds) allWinners.push(...tbl.winnerIds);
-      });
-
-      // Distribusikan pemenang ke meja babak berikutnya
-      let wIdx = 0;
-      nextRound.tables.forEach(nxtTbl => {
-        nxtTbl.playerIds = [];
-        for (let i = 0; i < 4 && wIdx < allWinners.length; i++) {
-          nxtTbl.playerIds.push(allWinners[wIdx++]);
-        }
-      });
+    } else if (nextRound) {
       t.currentRoundIndex = roundIdx + 1;
     }
   }
 }
 
 /**
+ * Memperbarui nama/data peserta turnamen (Hanya Host)
+ */
+function updatePlayers(tournamentId, players, role) {
+  if (role !== 'host') {
+    return { success: false, error: 'Akses ditolak: Hanya Host yang dapat mengubah nama/data peserta.' };
+  }
+  const cleanId = String(tournamentId || '').trim().toUpperCase();
+  const all = loadTournaments();
+  let t = all[cleanId];
+  if (!t) {
+    t = {
+      id: cleanId,
+      name: 'Turnamen Gaple',
+      mode: 'knockout',
+      players: Array.isArray(players) ? players : [],
+      rounds: [],
+      currentRoundIndex: 0,
+      winners: { juara1: null, juara2: null, juara3: null, juara4: null }
+    };
+  }
+
+  if (Array.isArray(players)) {
+    t.players = players;
+    // Sinkronkan nama di babak pertama jika turnamen knockout belum berjalan
+    if (t.mode === 'knockout' && Array.isArray(t.rounds) && t.rounds[0] && t.currentRoundIndex === 0) {
+      const firstRound = t.rounds[0];
+      if (Array.isArray(firstRound.tables)) {
+        firstRound.tables.forEach((tbl, tIdx) => {
+          tbl.playerIds = players.slice(tIdx * 4, (tIdx + 1) * 4).map(p => p.id);
+        });
+      }
+    }
+  }
+
+  t.updatedAt = new Date().toISOString();
+  t.revision = (t.revision || 0) + 1;
+  all[cleanId] = t;
+  saveTournaments(all);
+  return { success: true, tournament: t };
+}
+
+/**
+ * Mereset turnamen ke kondisi awal (Hanya Host)
+ */
+function resetTournament(tournamentId, role) {
+  if (role !== 'host') {
+    return { success: false, error: 'Akses ditolak: Hanya Host yang dapat mereset turnamen.' };
+  }
+  const cleanId = String(tournamentId || '').trim().toUpperCase();
+  const all = loadTournaments();
+  let t = all[cleanId];
+  if (!t) {
+    t = {
+      id: cleanId,
+      name: 'Turnamen Gaple',
+      mode: 'knockout',
+      players: [],
+      rounds: [],
+      currentRoundIndex: 0,
+      winners: { juara1: null, juara2: null, juara3: null, juara4: null }
+    };
+  }
+
+  t.winners = { juara1: null, juara2: null, juara3: null, juara4: null };
+  t.currentRoundIndex = 0;
+
+  if (t.mode === 'roundrobin') {
+    if (Array.isArray(t.rrMatches)) {
+      t.rrMatches.forEach(m => {
+        m.scores = {};
+        m.winnerIds = [];
+        m.status = 'pending';
+        m.ongoingGame = null;
+        m.judgeName = null;
+      });
+    }
+    t.standings = [];
+  } else {
+    // Knockout System
+    if (Array.isArray(t.rounds)) {
+      t.rounds.forEach((round, rIdx) => {
+        round.isDone = false;
+        if (Array.isArray(round.tables)) {
+          round.tables.forEach((tbl, tIdx) => {
+            tbl.scores = {};
+            tbl.winnerIds = [];
+            tbl.status = 'pending';
+            tbl.isDone = false;
+            tbl.ongoingGame = null;
+            tbl.judgeName = null;
+            // Babak 0 tetap memiliki playerIds awal, babak lanjutan dikosongkan
+            if (rIdx > 0) {
+              tbl.playerIds = [];
+            }
+          });
+        }
+      });
+    }
+  }
+
+  t.updatedAt = new Date().toISOString();
+  t.revision = (t.revision || 0) + 1;
+  all[cleanId] = t;
+  saveTournaments(all);
+  return { success: true, tournament: t };
+}
+
+/**
  * Menghapus data turnamen
  */
-function deleteTournament(id) {
+function deleteTournament(id, role) {
+  if (role && role !== 'host') {
+    return false;
+  }
   if (!id) return false;
   const all = loadTournaments();
   if (all[id]) {
@@ -248,7 +390,7 @@ function listTournaments() {
     playerCount: t.players ? t.players.length : 0,
     updatedAt: t.updatedAt,
     revision: t.revision,
-    isCompleted: Boolean(t.winners)
+    isCompleted: Boolean(t.winners && t.winners.juara1)
   }));
 }
 
@@ -256,6 +398,8 @@ module.exports = {
   getTournament,
   saveTournament,
   updateTable,
+  updatePlayers,
+  resetTournament,
   deleteTournament,
   listTournaments
 };
