@@ -3085,6 +3085,7 @@ function setupSocketListeners() {
       }
       saveTournamentStateLocalOnly();
       renderTournamentView();
+      syncActiveGameWithTournamentTable(tournament);
 
       if (!isMyActiveTable && payload) {
         const judgeInfo = payload.judgeName ? ` oleh ${payload.judgeName}` : '';
@@ -3094,7 +3095,7 @@ function setupSocketListeners() {
     }
   });
 
-  // Menerima sinkronisasi menyeluruh dari server (Perubahan Nama, Bagan, dll.)
+  // Menerima sinkronisasi menyeluruh dari server (Perubahan Nama, Bagan, Pengacakan Meja, dll.)
   socket.on('tournament:stateSynced', ({ tournament }) => {
     const curId = (tournamentState && tournamentState.id) || localStorage.getItem('gaple_activeTournamentId');
     if (tournament && (!curId || isSameTournament(curId, tournament.id))) {
@@ -3105,6 +3106,7 @@ function setupSocketListeners() {
       }
       saveTournamentStateLocalOnly();
       renderTournamentView();
+      syncActiveGameWithTournamentTable(tournament);
       showToast('Data turnamen diperbarui secara real-time ✓', 2000);
     }
   });
@@ -3120,6 +3122,7 @@ function setupSocketListeners() {
       }
       saveTournamentStateLocalOnly();
       renderTournamentView();
+      syncActiveGameWithTournamentTable(tournament);
       showToast('Turnamen telah di-reset ke kondisi awal oleh Host! 🔄', 3000);
     }
   });
@@ -4622,6 +4625,64 @@ function isSameTournament(idA, idB) {
 let tourneySyncTimer = null;
 let lastTourneyJson = '';
 
+function syncActiveGameWithTournamentTable(tournament) {
+  if (!tournament || !state.currentGame || !state.currentGame.isTournamentMatch || !state.currentGame.tournamentContext) {
+    return;
+  }
+
+  const { mode, roundIdx, tableIdx } = state.currentGame.tournamentContext;
+  let currentTablePlayerIds = [];
+  let tableName = state.currentGame.name;
+
+  if (mode === 'roundrobin') {
+    const match = tournament.rrMatches ? tournament.rrMatches.find(m => m.roundIdx === roundIdx && m.tableIdx === tableIdx) : null;
+    if (match && Array.isArray(match.playerIds)) {
+      currentTablePlayerIds = match.playerIds;
+      if (match.name) tableName = `Tournament - ${match.name}`;
+    }
+  } else {
+    const round = tournament.rounds ? tournament.rounds[roundIdx] : null;
+    const tbl = round && round.tables ? round.tables[tableIdx] : null;
+    if (tbl && Array.isArray(tbl.playerIds)) {
+      currentTablePlayerIds = tbl.playerIds;
+      if (tbl.name) tableName = `Tournament - ${tbl.name}`;
+    }
+  }
+
+  if (currentTablePlayerIds.length === 0) return;
+
+  const newPlayers = currentTablePlayerIds.map((pId, idx) => {
+    const p = (tournament.players && tournament.players.find(pl => pl.id === pId)) || getTournamentPlayerObj(pId) || { id: pId, name: `Pemain ${pId}` };
+    const prevMatching = state.currentGame.players ? state.currentGame.players.find(pl => pl.id === pId) : null;
+    return {
+      id: p.id,
+      name: p.name,
+      avatar: p.avatar || DEFAULT_AVATARS[idx % DEFAULT_AVATARS.length],
+      color: p.color || DEFAULT_COLORS[idx % DEFAULT_COLORS.length],
+      total: prevMatching ? prevMatching.total : 0
+    };
+  });
+
+  const isChanged = !state.currentGame.players ||
+    state.currentGame.players.length !== newPlayers.length ||
+    state.currentGame.players.some((pl, idx) => pl.id !== newPlayers[idx].id || pl.name !== newPlayers[idx].name || pl.avatar !== newPlayers[idx].avatar || pl.color !== newPlayers[idx].color);
+
+  if (isChanged) {
+    console.log('[Turnamen Sync Juri] Memperbarui susunan pemain di halaman Catat Skor Juri secara real-time:', newPlayers);
+    state.currentGame.players = newPlayers;
+    state.currentGame.name = tableName;
+    saveState();
+
+    const dashPage = document.getElementById('page-dashboard');
+    if (dashPage && dashPage.classList.contains('active')) {
+      const nameEl = document.getElementById('dash-game-name');
+      if (nameEl) nameEl.textContent = state.currentGame.name;
+      renderDashboard();
+      showToast('Susunan meja telah diperbarui oleh Host! 🔄', 2500);
+    }
+  }
+}
+
 function startTournamentAutoSync() {
   if (tourneySyncTimer) clearInterval(tourneySyncTimer);
   
@@ -4645,6 +4706,7 @@ function startTournamentAutoSync() {
           if (document.getElementById('page-tournament') && document.getElementById('page-tournament').classList.contains('active')) {
             renderTournamentView();
           }
+          syncActiveGameWithTournamentTable(t);
         }
       })
       .catch(() => {});
@@ -5108,6 +5170,7 @@ function randomizeTournamentSeeding() {
 
   if (!tournamentState) initTournamentData();
   
+  // Salin dan acak array pemain
   const shuffledPlayers = [...tournamentState.players];
   for (let i = shuffledPlayers.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
@@ -5116,19 +5179,75 @@ function randomizeTournamentSeeding() {
 
   const count = shuffledPlayers.length;
   const currentMode = tournamentState.mode || 'knockout';
-  initTournamentData(true, count, currentMode);
+  const tourneyId = tournamentState.id || generateRandomTourneyIdString();
 
-  shuffledPlayers.forEach((p, i) => {
-    if (tournamentState.players[i]) {
-      tournamentState.players[i].name = p.name;
-      tournamentState.players[i].avatar = p.avatar;
-      tournamentState.players[i].color = p.color;
-    }
-  });
+  if (currentMode === 'roundrobin') {
+    const rrMatches = generateRoundRobinMatches(shuffledPlayers, roundRobinRoundsCount);
+    tournamentState = {
+      id: tourneyId,
+      name: 'Turnamen Round Robin Gaple',
+      mode: 'roundrobin',
+      players: shuffledPlayers,
+      rrConfig: {
+        roundsCount: roundRobinRoundsCount,
+        playerCount: count
+      },
+      rrMatches,
+      activeTab: 'standings',
+      winners: { juara1: null, juara2: null, juara3: null, juara4: null }
+    };
+  } else {
+    const bracketConfigs = computeBracketRounds(count);
+    const firstCfg = bracketConfigs[0];
+    const firstActiveIds = shuffledPlayers.slice(0, firstCfg.numTables * 4).map(p => p.id);
+    const firstByeIds = shuffledPlayers.slice(firstCfg.numTables * 4).map(p => p.id);
 
+    const rounds = bracketConfigs.map((cfg, roundIdx) => {
+      let tables = [];
+      if (roundIdx === 0) {
+        for (let t = 0; t < cfg.numTables; t++) {
+          const label = cfg.name === 'Final' ? 'Meja Final '
+            : cfg.name === 'Semifinal' ? `Meja Semifinal ${t + 1}`
+            : `Meja ${t + 1}`;
+          tables.push(makeTournamentTable(t + 1, label, firstActiveIds.slice(t * 4, (t + 1) * 4)));
+        }
+      } else {
+        for (let t = 0; t < cfg.numTables; t++) {
+          const label = cfg.isFinal ? 'Meja Final '
+            : cfg.name === 'Semifinal' ? `Meja Semifinal ${t + 1}`
+            : `Meja ${cfg.name} ${t + 1}`;
+          tables.push(makeTournamentTable(t + 1, label, []));
+        }
+      }
+
+      return {
+        key: roundIdx === bracketConfigs.length - 1 ? 'final' : `round_${roundIdx}`,
+        name: cfg.name,
+        isFinal: cfg.isFinal,
+        numTables: cfg.numTables,
+        qCount: cfg.qCount,
+        numByes: cfg.numByes,
+        tables,
+        byePlayerIds: roundIdx === 0 ? firstByeIds : []
+      };
+    });
+
+    tournamentState = {
+      id: tourneyId,
+      name: 'Turnamen Knockout Gaple',
+      mode: 'knockout',
+      players: shuffledPlayers,
+      rounds,
+      currentRoundIndex: 0,
+      winners: { juara1: null, juara2: null, juara3: null, juara4: null }
+    };
+  }
+
+  // Simpan dan broadcast ke server
   saveTournamentState();
+  syncActiveGameWithTournamentTable(tournamentState);
   renderTournamentView();
-  showToast(`${count} Pemain berhasil diacak! `);
+  showToast(`${count} Pemain berhasil diacak dan disinkronkan ke seluruh meja! 🎲`);
 }
 
 function openTournamentResetModal() {
@@ -5943,8 +6062,22 @@ function startRoundRobinTableMatch(roundIdx, tableIdx) {
     return;
   }
 
+  // Petakan pemain berdasarkan ID terbaru dari turnamen
+  const matchPlayers = match.playerIds.map((pId, idx) => {
+    const p = getTournamentPlayerObj(pId) || { id: pId, name: `Pemain ${pId}` };
+    const prevScore = (match.scores && match.scores[p.id] !== undefined) ? Number(match.scores[p.id]) : 0;
+    return {
+      id: p.id,
+      name: p.name,
+      total: prevScore,
+      avatar: p.avatar || DEFAULT_AVATARS[idx % DEFAULT_AVATARS.length],
+      color: p.color || DEFAULT_COLORS[idx % DEFAULT_COLORS.length]
+    };
+  });
+
   // Jika meja ini sudah memiliki pertandingan yang sedang berlangsung / selesai tapi ingin dikoreksi
   if (match.ongoingGame) {
+    match.ongoingGame.players = matchPlayers;
     match.ongoingGame.status = 'active';
     state.currentGame = match.ongoingGame;
     saveState();
@@ -5953,16 +6086,6 @@ function startRoundRobinTableMatch(roundIdx, tableIdx) {
     showToast(`Membuka catatan skor ${match.name}! Data skor siap dikoreksi/dilanjutkan ✓`);
     return;
   }
-
-  const matchPlayers = match.playerIds.map(pId => {
-    const p = getTournamentPlayerObj(pId);
-    return {
-      name: p.name,
-      total: 0,
-      avatar: p.avatar,
-      color: p.color
-    };
-  });
 
   const game = {
     id: `tourney_rr_r${roundIdx}_t${tableIdx}_${Date.now()}`,
@@ -6001,8 +6124,22 @@ function startTournamentTableMatch(roundIdx, tableIdx) {
     return;
   }
 
+  // Petakan pemain berdasarkan ID terbaru dari turnamen
+  const matchPlayers = tbl.playerIds.map((pId, idx) => {
+    const p = getTournamentPlayerObj(pId) || { id: pId, name: `Pemain ${pId}` };
+    const prevScore = (tbl.scores && tbl.scores[p.id] !== undefined) ? Number(tbl.scores[p.id]) : 0;
+    return {
+      id: p.id,
+      name: p.name,
+      total: prevScore,
+      avatar: p.avatar || DEFAULT_AVATARS[idx % DEFAULT_AVATARS.length],
+      color: p.color || DEFAULT_COLORS[idx % DEFAULT_COLORS.length]
+    };
+  });
+
   // Jika meja ini sudah memiliki pertandingan yang sedang berlangsung / selesai tapi ingin dikoreksi
   if (tbl.ongoingGame) {
+    tbl.ongoingGame.players = matchPlayers;
     tbl.ongoingGame.status = 'active';
     state.currentGame = tbl.ongoingGame;
     saveState();
@@ -6011,16 +6148,6 @@ function startTournamentTableMatch(roundIdx, tableIdx) {
     showToast(`Membuka catatan skor ${tbl.name}! Data skor siap dikoreksi/dilanjutkan ✓`);
     return;
   }
-
-  const matchPlayers = tbl.playerIds.map(pId => {
-    const p = getTournamentPlayerObj(pId);
-    return {
-      name: p.name,
-      total: 0,
-      avatar: p.avatar,
-      color: p.color
-    };
-  });
 
   const game = {
     id: `tourney_r${roundIdx}_t${tableIdx}_${Date.now()}`,
