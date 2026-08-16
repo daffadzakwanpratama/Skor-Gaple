@@ -1970,5 +1970,167 @@
     "role": "host",
     "updatedAt": "2026-08-16T10:09:49.052Z",
     "revision": 1
+  },
+  "G4JGRH": {
+    "id": "G4JGRH",
+    "name": "Turnamen Round Robin Gaple",
+    "mode": "roundrobin",
+    "players": [
+      {
+        "id": 1,
+        "name": "Nama Pemain 1",
+        "avatar": "fox",
+        "color": "#FF5252"
+      },
+      {
+        "id": 2,
+        "name": "Nama Pemain 2",
+        "avatar": "frog",
+        "color": "#448AFF"
+      },
+      {
+        "id": 3,
+        "name": "Nama Pemain 3",
+        "avatar": "cat",
+        "color": "#69F0AE"
+      },
+      {
+        "id": 4,
+        "name": "Nama Pemain 4",
+        "avatar": "panda",
+        "color": "#FFD740"
+      }
+    ],
+    "rrConfig": {
+      "roundsCount": 3,
+      "playerCount": 4
+    },
+    "rrMatches": [
+      {
+        "id": "rr_r0_t0",
+        "roundIdx": 0,
+        "tableIdx": 0,
+        "name": "Babak 1 • Meja 1",
+        "playerIds": [
+          1,
+          2,
+          3,
+          4
+        ],
+        "byePlayerIds": [],
+        "scores": {},
+        "winnerIds": [],
+        "status": "pending"
+      },
+      {
+        "id": "rr_r1_t0",
+        "roundIdx": 1,
+        "tableIdx": 0,
+        "name": "Babak 2 • Meja 1",
+        "playerIds": [
+          4,
+          1,
+          2,
+          3
+        ],
+        "byePlayerIds": [],
+        "scores": {},
+        "winnerIds": [],
+        "status": "pending"
+      },
+      {
+        "id": "rr_r2_t0",
+        "roundIdx": 2,
+        "tableIdx": 0,
+        "name": "Babak 3 • Meja 1",
+        "playerIds": [
+          3,
+          4,
+          1,
+          2
+        ],
+        "byePlayerIds": [],
+        "scores": {},
+        "winnerIds": [],
+        "status": "pending"
+      }
+    ],
+    "activeTab": "standings",
+    "winners": {
+      "juara1": null,
+      "juara2": null,
+      "juara3": null,
+      "juara4": null
+    },
+    "role": "host",
+    "updatedAt": "2026-08-16T10:20:16.348Z",
+    "revision": 1
+  },
+  "3RX58K": {
+    "id": "3RX58K",
+    "name": "Turnamen Knockout Gaple",
+    "mode": "knockout",
+    "players": [
+      {
+        "id": 1,
+        "name": "Nama Pemain 1",
+        "avatar": "fox",
+        "color": "#FF5252"
+      },
+      {
+        "id": 2,
+        "name": "Nama Pemain 2",
+        "avatar": "frog",
+        "color": "#448AFF"
+      },
+      {
+        "id": 3,
+        "name": "Nama Pemain 3",
+        "avatar": "cat",
+        "color": "#69F0AE"
+      },
+      {
+        "id": 4,
+        "name": "Nama Pemain 4",
+        "avatar": "panda",
+        "color": "#FFD740"
+      }
+    ],
+    "rounds": [
+      {
+        "key": "final",
+        "name": "Final",
+        "isFinal": true,
+        "numTables": 1,
+        "qCount": 4,
+        "numByes": 0,
+        "tables": [
+          {
+            "id": 1,
+            "name": "Meja Final ",
+            "playerIds": [
+              1,
+              2,
+              3,
+              4
+            ],
+            "scores": {},
+            "winnerIds": [],
+            "status": "pending"
+          }
+        ],
+        "byePlayerIds": []
+      }
+    ],
+    "currentRoundIndex": 0,
+    "winners": {
+      "juara1": null,
+      "juara2": null,
+      "juara3": null,
+      "juara4": null
+    },
+    "role": "host",
+    "updatedAt": "2026-08-16T10:57:58.518Z",
+    "revision": 1
   }
 }

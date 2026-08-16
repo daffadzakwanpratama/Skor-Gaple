@@ -4272,6 +4272,7 @@ let roundRobinRoundsCount = 3;
 // ─────────────────────────────────────────────
 
 function computeBracketRounds(N) {
+  N = Math.max(4, Number(N) || 4);
   if (N <= 4) {
     return [{
       name: 'Final',
@@ -4279,29 +4280,49 @@ function computeBracketRounds(N) {
       numTables: 1,
       qCount: 4,
       numByes: 0,
-      inputCount: 4,
+      inputCount: N,
       outputCount: null
     }];
   }
 
+  // Checkpoint eliminasi baku: 4, 8, 16, 32, 64
+  const checkpoints = [4, 8, 16, 32, 64];
+  let targetK = 4;
+  for (let i = checkpoints.length - 1; i >= 0; i--) {
+    if (checkpoints[i] < N) {
+      targetK = checkpoints[i];
+      break;
+    }
+  }
+
+  // Babak 1 (Penyisihan / Kualifikasi Play-in):
+  // Mengeliminasi (N - targetK) pemain. Setiap meja 4 pemain mengeliminasi 2 pemain (q=2).
+  let numTablesRound1 = Math.ceil((N - targetK) / 2);
+  let activeInRound1 = Math.min(N, numTablesRound1 * 4);
+  let byesRound1 = Math.max(0, N - activeInRound1);
+  numTablesRound1 = Math.ceil(activeInRound1 / 4);
+
   const stages = [];
-  let cur = N;
+  stages.push({
+    numTables: numTablesRound1,
+    qCount: 2,
+    numByes: byesRound1,
+    inputCount: activeInRound1,
+    outputCount: numTablesRound1 * 2
+  });
 
-  while (cur > 4) {
-    const numTables = Math.floor(cur / 4);
-    // Pola baku Knockout Gaple: Setiap meja 4 pemain, tepat 2 pemain terbaik lolos (q=2), tanpa BYE
-    const q = 2;
-    const nextCount = numTables * q;
-
+  // Babak-babak selanjutnya dari targetK menuju Final (4)
+  let curK = targetK;
+  while (curK > 4) {
+    const numTables = Math.floor(curK / 4);
     stages.push({
       numTables,
-      qCount: q,
+      qCount: 2,
       numByes: 0,
-      inputCount: cur,
-      outputCount: nextCount
+      inputCount: curK,
+      outputCount: numTables * 2
     });
-
-    cur = nextCount;
+    curK = numTables * 2;
   }
 
   const totalRounds = stages.length + 1; // + 1 untuk Babak Final
@@ -4321,7 +4342,7 @@ function computeBracketRounds(N) {
       isFinal: false,
       numTables: cfg.numTables,
       qCount: cfg.qCount,
-      numByes: 0,
+      numByes: cfg.numByes,
       inputCount: cfg.inputCount,
       outputCount: cfg.outputCount
     };
@@ -5049,18 +5070,9 @@ function selectTournamentSizePreset(size) {
 
 function changeTournamentPlayerCount(delta) {
   const isKnockout = !tournamentState || tournamentState.mode === 'knockout';
-  if (isKnockout) {
-    const validSizes = [4, 8, 16, 32, 64];
-    let curIdx = validSizes.indexOf(tourneySelectedSize);
-    if (curIdx === -1) {
-      curIdx = validSizes.findIndex(s => s >= tourneySelectedSize);
-      if (curIdx === -1) curIdx = validSizes.length - 1;
-    }
-    const nextIdx = Math.max(0, Math.min(validSizes.length - 1, curIdx + delta));
-    tourneySelectedSize = validSizes[nextIdx];
-  } else {
-    tourneySelectedSize = Math.max(4, Math.min(32, tourneySelectedSize + delta));
-  }
+  const maxLimit = isKnockout ? 64 : 32;
+  
+  tourneySelectedSize = Math.max(4, Math.min(maxLimit, tourneySelectedSize + delta));
 
   const countEl = document.getElementById('tourney-player-count-display');
   if (countEl) countEl.textContent = tourneySelectedSize;
@@ -5220,7 +5232,7 @@ function openTournamentSetupModal() {
       if (subtitle) subtitle.textContent = 'Atur peserta & jumlah babak untuk Turnamen Round Robin.';
     } else {
       rrOptions.classList.add('hidden');
-      if (subtitle) subtitle.textContent = 'Pilih format peserta kelipatan 4 (4, 8, 16, 32, 64) tanpa sistem BYE.';
+      if (subtitle) subtitle.textContent = 'Atur jumlah peserta (4 - 64). Jumlah non-kelipatan baku otomatis menggunakan sistem BYE.';
     }
   }
 
