@@ -486,6 +486,7 @@ body.truf-theme .truf-card {
   align-items: center;
   justify-content: space-between;
   gap: 0.35rem;
+  min-height: 36px;
   font-size: 0.82rem;
   color: var(--t-muted);
   font-weight: 700;
@@ -496,12 +497,18 @@ body.truf-theme .truf-card {
 }
 
 .truf-tile-truf-dot {
-  font-size: 0.78rem;
-  color: var(--t-text);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  font-size: 1.55rem;
+  line-height: 1;
   background: #FEF3C7;
-  padding: 0.12rem 0.5rem;
-  border-radius: 999px;
+  border: 1px solid #FDE68A;
+  border-radius: 10px;
   font-weight: 700;
+  flex-shrink: 0;
 }
 
 .truf-tile-name {
@@ -624,6 +631,53 @@ body.truf-theme .truf-card {
   display: inline-flex;
   align-items: center;
   gap: 0.25rem;
+}
+
+.truf-suit-emblem {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  font-size: 1.45rem;
+  line-height: 1;
+  background: #FEF3C7;
+  border: 1px solid #FDE68A;
+  border-radius: 9px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.truf-suit-emblem.sm {
+  width: 28px;
+  height: 28px;
+  font-size: 1.2rem;
+  border-radius: 8px;
+}
+
+.truf-suit-emblem.xs {
+  width: 24px;
+  height: 24px;
+  font-size: 1.05rem;
+  border-radius: 7px;
+}
+
+.truf-active-suit-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.18rem 0.6rem;
+  border-radius: 999px;
+  background: #FEF3C7;
+  border: 1px solid #FDE68A;
+  color: #0F172A;
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+
+.truf-active-suit-sym {
+  font-size: 1.35rem;
+  line-height: 1;
 }
 
 .truf-row-sub {
@@ -795,6 +849,30 @@ body.truf-theme .truf-card {
   gap: 0.5rem;
 }
 
+.truf-pas13-actions .truf-stepper {
+  height: 36px;
+  background: #FFFFFF;
+}
+
+.truf-pas13-actions .truf-step-btn {
+  width: 30px;
+  height: 34px;
+  font-size: 1rem;
+}
+
+.truf-pas13-actions .truf-step-val {
+  min-width: 24px;
+  font-size: 0.96rem;
+}
+
+.truf-pas13-btn {
+  height: 36px;
+  padding: 0 0.85rem !important;
+  gap: 0 !important;
+  font-size: 0.86rem !important;
+  font-variant-numeric: proportional-nums;
+}
+
 /* Progress Bar */
 .truf-progress-track {
   width: 100%;
@@ -861,8 +939,29 @@ body.truf-theme .truf-card {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
-  max-height: 380px;
+  max-height: 295px;
   overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-right: 6px;
+  scrollbar-width: thin;
+  scrollbar-color: #CBD5E1 transparent;
+}
+
+.truf-history-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.truf-history-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.truf-history-list::-webkit-scrollbar-thumb {
+  background: #CBD5E1;
+  border-radius: 999px;
+}
+
+.truf-history-list::-webkit-scrollbar-thumb:hover {
+  background: #94A3B8;
 }
 
 .truf-history-item {
@@ -870,6 +969,7 @@ body.truf-theme .truf-card {
   border-radius: 12px;
   overflow: hidden;
   background: #FFFFFF;
+  flex-shrink: 0;
 }
 
 .truf-history-head {
@@ -1119,6 +1219,19 @@ body.truf-theme .modal-card {
   gap: 0.4rem;
   flex-wrap: wrap;
   margin-bottom: 0.6rem;
+}
+
+.truf-summary-right {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.truf-pas13-revert-btn {
+  padding: 0.28rem 0.72rem !important;
+  font-size: 0.8rem !important;
+  border-radius: 999px !important;
+  line-height: 1.25;
 }
 
 .truf-rules-heading {
@@ -1918,7 +2031,29 @@ body:not(.truf-theme) .btn-sm {
 /* Clean Round History Cards */
 .round-history {
   gap: 0.75rem !important;
-  padding: 0.15rem 0.25rem 0.15rem 0 !important;
+  max-height: 300px !important;
+  overflow-y: auto !important;
+  overscroll-behavior: contain;
+  padding: 0.15rem 6px 0.15rem 0 !important;
+  scrollbar-width: thin;
+  scrollbar-color: #CBD5E1 transparent;
+}
+
+.round-history::-webkit-scrollbar {
+  width: 6px;
+}
+
+.round-history::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.round-history::-webkit-scrollbar-thumb {
+  background: #CBD5E1;
+  border-radius: 999px;
+}
+
+.round-history::-webkit-scrollbar-thumb:hover {
+  background: #94A3B8;
 }
 
 .round-card {
@@ -1928,6 +2063,7 @@ body:not(.truf-theme) .btn-sm {
   box-shadow: none !important;
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
+  flex-shrink: 0 !important;
 }
 
 .round-card-header {

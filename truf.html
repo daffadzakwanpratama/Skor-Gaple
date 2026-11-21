@@ -12,7 +12,7 @@
     href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
     rel="stylesheet" />
   <link rel="stylesheet" href="style.css?v=8.0" />
-  <link rel="stylesheet" href="truf.css?v=14.0" />
+  <link rel="stylesheet" href="truf.css?v=19.0" />
   <link rel="manifest" href="manifest.json" />
   <link rel="icon" type="image/svg+xml" href="assets/icon.svg" />
   <meta name="theme-color" content="#FFFFFF" />
@@ -155,7 +155,7 @@
               <polyline points="23 4 23 10 17 10" />
               <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
             </svg>
-            Lanjut · <span id="truf-resume-info">R1</span>
+            <span>Lanjut · <span id="truf-resume-info">R1</span></span>
           </button>
         </div>
       </div>
@@ -205,11 +205,11 @@
               <span id="pas13-delta-val" class="truf-step-val">1</span>
               <button class="truf-step-btn" type="button" onclick="changePas13Delta(1)">+</button>
             </div>
-            <button class="btn btn-sm btn-outline" type="button" onclick="applyCustomPas13(-1)">
-              ▼ −<span class="pas13-delta-label">1</span>
+            <button class="btn btn-sm btn-outline truf-pas13-btn" type="button" onclick="applyCustomPas13(-1)">
+              <span>Main Bawah (−<span class="pas13-delta-label">1</span>)</span>
             </button>
-            <button class="btn btn-sm btn-outline" type="button" onclick="applyCustomPas13(1)">
-              ▲ +<span class="pas13-delta-label">1</span>
+            <button class="btn btn-sm btn-outline truf-pas13-btn" type="button" onclick="applyCustomPas13(1)">
+              <span>Main Atas (+<span class="pas13-delta-label">1</span>)</span>
             </button>
           </div>
         </div>
@@ -337,7 +337,7 @@
         </div>
         <div class="truf-rule-item">
           <div class="truf-rule-label">Pas Bid</div>
-          <div class="truf-rule-desc">Poin <strong>+Bid</strong></div>
+          <div class="truf-rule-desc">Poin <strong>+Bid</strong> · Bid 0: Bawah <strong>+10</strong>, Atas <strong>+5</strong></div>
         </div>
         <div class="truf-rule-item">
           <div class="truf-rule-label">Atas (&gt;13)</div>
@@ -375,7 +375,7 @@
   </div>
 
   <script src="mode-transition.js?v=2.0"></script>
-  <script src="truf.js?v=6.0"></script>
+  <script src="truf.js?v=10.0"></script>
   <script>
     document.addEventListener('DOMContentLoaded', function () {
       if (typeof initModeTransitionArrival === 'function') {

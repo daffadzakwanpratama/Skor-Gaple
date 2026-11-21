@@ -41,6 +41,7 @@ function getDefaultState(names) {
       { value: 3, suit: 'keriting' },
       { value: 3, suit: 'diamond' }
     ],
+    pas13Snapshot: null,
     results: [3, 3, 3, 3],
     history: []
   };
@@ -117,13 +118,17 @@ function getKocokStatus(history) {
 
 /**
  * Calculate score for one player in a round.
- * - hasil === bid -> +bid
+ * - hasil === bid -> +bid (khusus bid 0: BAWAH -> +10, ATAS -> +5)
  * - ATAS (totalBid > 13): kurang -> -2 * (bid - hasil), lebih -> -1
  * - BAWAH (totalBid < 13): lebih -> -2 * (hasil - bid), kurang -> -1
  */
 function calculatePlayerRoundScore(bidVal, resultVal, mode) {
   if (resultVal === bidVal) {
-    return { points: bidVal, label: bidVal > 0 ? `✓ +${bidVal}` : '✓ 0', cls: 'pos' };
+    if (bidVal === 0) {
+      const bonus = mode === 'BAWAH' ? 10 : 5;
+      return { points: bonus, label: `✓ +${bonus}`, cls: 'pos' };
+    }
+    return { points: bidVal, label: `✓ +${bidVal}`, cls: 'pos' };
   }
   if (mode === 'ATAS') {
     if (resultVal < bidVal) {
@@ -237,7 +242,7 @@ function renderScoreboard() {
       : (p.lastDelta === null ? '—' : (p.lastDelta > 0 ? `▲ +${p.lastDelta}` : (p.lastDelta < 0 ? `▼ ${p.lastDelta}` : '• 0')));
     const suitDotColor = trufSuit.isRed ? 'color:#DC2626;' : 'color:#0F172A;';
     const trufDot = idx === trufIdx
-      ? `<span class="truf-tile-truf-dot" style="${suitDotColor}" title="Penentu Truf">Truf ${trufSuit.symbol}</span>`
+      ? `<span class="truf-tile-truf-dot" style="${suitDotColor}" title="Truf ${trufSuit.name}" aria-label="Truf ${trufSuit.name}">${trufSuit.symbol}</span>`
       : '';
     const rankIcon = (rank === 1 && hasRounds) ? `${ICONS.crown} ` : '';
 
@@ -263,8 +268,8 @@ function renderBidPhase() {
   const highestSuit = getSuitObj(trufState.bids[highestIdx].suit);
 
   const totalPill = document.getElementById('bid-total-pill');
-  const pillIcon = mode === 'ATAS' ? ICONS.up : (mode === 'BAWAH' ? ICONS.down : ICONS.equal);
-  totalPill.innerHTML = `${pillIcon} ${totalBid}/13`;
+  const pillLabel = mode === 'ATAS' ? 'Atas' : (mode === 'BAWAH' ? 'Bawah' : 'Pas 13');
+  totalPill.textContent = `${pillLabel} · ${totalBid}/13`;
   totalPill.className = 'truf-badge ' + (
     mode === 'ATAS' ? 'truf-badge-atas' :
     mode === 'BAWAH' ? 'truf-badge-bawah' : 'truf-badge-pas13'
@@ -289,7 +294,7 @@ function renderBidPhase() {
           ${renderMiniPlayingCard(b.value, suitObj, false)}
           <div class="truf-row-name">
             ${escapeHtml(p.name)}
-            ${isHighest ? `<span class="truf-truf-tag" title="Penentu Truf">Truf</span>` : ''}
+            ${isHighest ? `<span class="truf-suit-emblem sm" style="${suitObj.isRed ? 'color:#DC2626;' : 'color:#0F172A;'}" title="Truf ${suitObj.name}" aria-label="Truf ${suitObj.name}">${suitObj.symbol}</span>` : ''}
           </div>
         </div>
         <div class="truf-controls">
@@ -311,15 +316,16 @@ function renderBidPhase() {
     ? `<span class="truf-badge truf-badge-bawah">${ICONS.down} Bawah</span>`
     : `<span class="truf-badge truf-badge-pas13">${ICONS.equal} Pas 13</span>`;
 
+  const editPas13Btn = (mode !== 'PAS13' && Array.isArray(trufState.pas13Snapshot))
+    ? `<button class="btn btn-sm btn-outline truf-pas13-revert-btn" type="button" onclick="revertPas13Adjustment()" title="Ubah kembali pilihan Pas 13">Edit</button>`
+    : '';
+
   document.getElementById('truf-bid-summary').innerHTML = `
-    <div style="display:flex;align-items:center;gap:0.45rem;">
-      <span class="truf-truf-tag" style="padding:0.2rem 0.55rem;">
-        Truf
-        <strong style="${highestSuit.isRed ? 'color:#DC2626;' : 'color:#0F172A;'}">${highestSuit.symbol}</strong>
-      </span>
+    <div style="display:flex;align-items:center;gap:0.55rem;">
+      <span class="truf-suit-emblem" style="${highestSuit.isRed ? 'color:#DC2626;' : 'color:#0F172A;'}" title="Truf ${highestSuit.name}" aria-label="Truf ${highestSuit.name}">${highestSuit.symbol}</span>
       <strong style="color:#0F172A;">${escapeHtml(trufState.players[highestIdx].name)}</strong>
     </div>
-    ${modeBadge}
+    <div class="truf-summary-right">${modeBadge}${editPas13Btn}</div>
   `;
 
   // Pas 13 Box
@@ -339,6 +345,7 @@ function renderBidPhase() {
 function changeBidValue(playerIdx, delta) {
   const next = Math.max(0, Math.min(13, trufState.bids[playerIdx].value + delta));
   trufState.bids[playerIdx].value = next;
+  trufState.pas13Snapshot = null;
   saveState();
   renderScoreboard();
   renderBidPhase();
@@ -346,6 +353,9 @@ function changeBidValue(playerIdx, delta) {
 
 function setPlayerSuit(playerIdx, suitId) {
   trufState.bids[playerIdx].suit = suitId;
+  if (Array.isArray(trufState.pas13Snapshot) && trufState.pas13Snapshot[playerIdx]) {
+    trufState.pas13Snapshot[playerIdx].suit = suitId;
+  }
   saveState();
   renderScoreboard();
   renderBidPhase();
@@ -367,9 +377,19 @@ function applyCustomPas13(sign) {
 }
 
 function adjustBidsFromPas13(delta) {
+  trufState.pas13Snapshot = trufState.bids.map(b => ({ value: b.value, suit: b.suit }));
   trufState.bids.forEach(b => {
     b.value = Math.max(0, Math.min(13, b.value + delta));
   });
+  saveState();
+  renderScoreboard();
+  renderBidPhase();
+}
+
+function revertPas13Adjustment() {
+  if (!Array.isArray(trufState.pas13Snapshot) || trufState.pas13Snapshot.length !== 4) return;
+  trufState.bids = trufState.pas13Snapshot.map(b => ({ value: b.value, suit: b.suit }));
+  trufState.pas13Snapshot = null;
   saveState();
   renderScoreboard();
   renderBidPhase();
@@ -420,7 +440,10 @@ function renderResultPhase() {
     : `<span class="truf-badge truf-badge-bawah" style="padding:0.18rem 0.55rem;font-size:0.78rem;">${ICONS.down} Bawah · ${totalBid}</span>`;
 
   document.getElementById('truf-active-banner').innerHTML = `
-    <span class="truf-truf-tag">Truf <strong style="${highestSuit.isRed ? 'color:#DC2626;' : 'color:#0F172A;'}">${highestSuit.symbol}</strong> · ${escapeHtml(trufState.players[highestIdx].name)}</span>
+    <span class="truf-active-suit-chip" title="Truf ${highestSuit.name}">
+      <span class="truf-active-suit-sym" style="${highestSuit.isRed ? 'color:#DC2626;' : 'color:#0F172A;'}">${highestSuit.symbol}</span>
+      <span>${escapeHtml(trufState.players[highestIdx].name)}</span>
+    </span>
     ${modeChip}
   `;
 
@@ -438,7 +461,7 @@ function renderResultPhase() {
           ${renderMiniPlayingCard(bid.value, suitObj, true)}
           <div class="truf-row-name">
             ${escapeHtml(p.name)}
-            ${isHighest ? `<span class="truf-truf-tag" title="Penentu Truf">Truf</span>` : ''}
+            ${isHighest ? `<span class="truf-suit-emblem sm" style="${suitObj.isRed ? 'color:#DC2626;' : 'color:#0F172A;'}" title="Truf ${suitObj.name}" aria-label="Truf ${suitObj.name}">${suitObj.symbol}</span>` : ''}
           </div>
         </div>
         <div class="truf-controls">
@@ -500,6 +523,7 @@ function saveRoundResult() {
 
   trufState.round += 1;
   trufState.phase = 'bid';
+  trufState.pas13Snapshot = null;
   trufState.results = [0, 0, 0, 0];
   saveState();
   renderAll();
@@ -519,6 +543,7 @@ function undoLastRound() {
   });
   trufState.round = last.round;
   trufState.phase = 'bid';
+  trufState.pas13Snapshot = null;
   saveState();
   renderAll();
 }
@@ -535,7 +560,7 @@ function renderHistory() {
 
   listEl.innerHTML = trufState.history.map(item => {
     const suit = getSuitObj(item.trufSuit);
-    const modeIcon = item.mode === 'ATAS' ? ICONS.up : ICONS.down;
+    const modeLabel = item.mode === 'ATAS' ? 'Atas' : 'Bawah';
     const modeCls = item.mode === 'ATAS' ? 'truf-badge-atas' : 'truf-badge-bawah';
 
     const rankedEntries = [...item.entries].sort((a, b) => {
@@ -551,7 +576,7 @@ function renderHistory() {
       const totalVal = typeof e.totalAfter === 'number' ? e.totalAfter : e.points;
       const totalColor = totalVal > 0 ? '#059669' : (totalVal < 0 ? '#DC2626' : '#0F172A');
       const trufTag = (e.isTrufMaker || e.name === item.trufMaker)
-        ? `<span class="truf-truf-tag" title="Penentu Truf">Truf</span>`
+        ? `<span class="truf-suit-emblem xs" style="${suit.isRed ? 'color:#DC2626;' : 'color:#0F172A;'}" title="Truf ${suit.name}" aria-label="Truf ${suit.name}">${suit.symbol}</span>`
         : '';
 
       return `
@@ -574,8 +599,8 @@ function renderHistory() {
     return `
       <div class="truf-history-item">
         <div class="truf-history-head">
-          <span>R${item.round} · <strong style="${suit.isRed ? 'color:#DC2626;' : 'color:#0F172A;'}">${suit.symbol}</strong></span>
-          <span class="truf-badge ${modeCls}" style="font-size:0.68rem;padding:0.12rem 0.48rem;">${modeIcon} ${item.totalBid}</span>
+          <span>R${item.round} · <strong style="font-size:1.15rem;line-height:1;${suit.isRed ? 'color:#DC2626;' : 'color:#0F172A;'}">${suit.symbol}</strong></span>
+          <span class="truf-badge ${modeCls}" style="font-size:0.74rem;padding:0.16rem 0.55rem;">${modeLabel} · ${item.totalBid}</span>
         </div>
         <div class="truf-lb-list">${rows}</div>
       </div>
