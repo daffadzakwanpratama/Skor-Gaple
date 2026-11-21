@@ -241,6 +241,28 @@ body.truf-theme {
   margin-bottom: 1.25rem;
 }
 
+.truf-topbar-suit {
+  grid-column: 1;
+  justify-self: start;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  font-size: 1.75rem;
+  line-height: 1;
+  font-weight: 700;
+  background: #FEF3C7;
+  border: 1.5px solid #FDE68A;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
+  user-select: none;
+}
+
+.truf-topbar-suit.hidden {
+  display: none;
+}
+
 .truf-topbar .mode-switcher {
   grid-column: 2;
   justify-self: center;
@@ -257,15 +279,28 @@ body.truf-theme {
 
 @media (max-width: 520px) {
   .truf-topbar {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0.55rem;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    row-gap: 0.6rem;
+    column-gap: 0.5rem;
+  }
+
+  .truf-topbar .mode-switcher {
+    grid-column: 1 / -1;
+    grid-row: 1;
+    justify-self: center;
+  }
+
+  .truf-topbar-suit {
+    grid-column: 1;
+    grid-row: 2;
+    justify-self: start;
   }
 
   .truf-topbar-actions {
-    width: 100%;
-    justify-content: flex-end;
+    grid-column: 2;
+    grid-row: 2;
+    justify-self: end;
   }
 }
 
@@ -486,7 +521,6 @@ body.truf-theme .truf-card {
   align-items: center;
   justify-content: space-between;
   gap: 0.35rem;
-  min-height: 36px;
   font-size: 0.82rem;
   color: var(--t-muted);
   font-weight: 700;

@@ -12,7 +12,7 @@
     href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
     rel="stylesheet" />
   <link rel="stylesheet" href="style.css?v=8.0" />
-  <link rel="stylesheet" href="truf.css?v=20.0" />
+  <link rel="stylesheet" href="truf.css?v=21.0" />
   <link rel="manifest" href="manifest.json" />
   <link rel="icon" type="image/svg+xml" href="assets/icon.svg" />
   <meta name="theme-color" content="#FFFFFF" />
@@ -37,6 +37,7 @@
   <div class="truf-shell">
     <!-- Top Bar -->
     <div class="truf-topbar">
+      <div id="truf-topbar-suit" class="truf-topbar-suit hidden" aria-label="Kembang Truf Aktif"></div>
       <div class="mode-switcher" role="navigation" aria-label="Pilih Mode Permainan">
         <a href="index.html" class="mode-pill" onclick="switchGameMode(event, 'gaple', 'index.html')">
           <span class="mode-icon" aria-hidden="true">
@@ -375,7 +376,7 @@
   </div>
 
   <script src="mode-transition.js?v=2.0"></script>
-  <script src="truf.js?v=10.0"></script>
+  <script src="truf.js?v=11.0"></script>
   <script>
     document.addEventListener('DOMContentLoaded', function () {
       if (typeof initModeTransitionArrival === 'function') {

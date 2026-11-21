@@ -233,6 +233,15 @@ function renderScoreboard() {
   const kocok = getKocokStatus(trufState.history);
   const hasRounds = trufState.history.length > 0;
 
+  const topSuitEl = document.getElementById('truf-topbar-suit');
+  if (topSuitEl) {
+    topSuitEl.textContent = trufSuit.symbol;
+    topSuitEl.style.color = trufSuit.isRed ? '#DC2626' : '#0F172A';
+    topSuitEl.title = `Truf ${trufSuit.name}`;
+    topSuitEl.setAttribute('aria-label', `Truf ${trufSuit.name}`);
+    topSuitEl.classList.remove('hidden');
+  }
+
   container.innerHTML = trufState.players.map((p, idx) => {
     const rank = rankMap[p.id];
     const scoreCls = p.score > 0 ? 'pos' : (p.score < 0 ? 'neg' : '');
@@ -240,17 +249,12 @@ function renderScoreboard() {
     const footText = isShuffler
       ? (kocok.isJenderal ? 'JENDERAL (5/5)' : `Kocok ${kocok.streak}/5`)
       : (p.lastDelta === null ? '—' : (p.lastDelta > 0 ? `▲ +${p.lastDelta}` : (p.lastDelta < 0 ? `▼ ${p.lastDelta}` : '• 0')));
-    const suitDotColor = trufSuit.isRed ? 'color:#DC2626;' : 'color:#0F172A;';
-    const trufDot = idx === trufIdx
-      ? `<span class="truf-tile-truf-dot" style="${suitDotColor}" title="Truf ${trufSuit.name}" aria-label="Truf ${trufSuit.name}">${trufSuit.symbol}</span>`
-      : '';
     const rankIcon = (rank === 1 && hasRounds) ? `${ICONS.crown} ` : '';
 
     return `
       <div class="truf-score-tile ${rank === 1 ? 'rank-1' : ''} ${isShuffler ? 'is-shuffler' : ''}">
         <div class="truf-tile-top">
           <span class="truf-tile-rank">${rankIcon}#${rank}</span>
-          ${trufDot}
         </div>
         <div class="truf-tile-name" title="${escapeHtml(p.name)}">${escapeHtml(p.name)}</div>
         <div class="truf-tile-score ${scoreCls}">${p.score}</div>
@@ -704,6 +708,8 @@ function resetSessionNow() {
   document.getElementById('truf-setup-view').classList.remove('hidden');
   document.getElementById('btn-truf-reset').classList.add('hidden');
   document.getElementById('truf-resume-wrap').classList.add('hidden');
+  const topSuitEl = document.getElementById('truf-topbar-suit');
+  if (topSuitEl) topSuitEl.classList.add('hidden');
 }
 
 function escapeHtml(str) {
