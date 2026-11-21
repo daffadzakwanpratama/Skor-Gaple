@@ -1,10 +1,14 @@
-const CACHE_NAME = 'gaple-tracker-v6';
+const CACHE_NAME = 'gaple-tracker-v9';
 
 const ASSETS = [
   './',
   './index.html',
+  './truf.html',
   './style.css',
+  './truf.css',
+  './mode-transition.js',
   './app.js?v=3.0',
+  './truf.js?v=2.0',
   './manifest.json',
   './assets/icon.svg',
   './assets/icon-192.png',
@@ -37,45 +41,31 @@ self.addEventListener('activate', event => {
   );
 });
 
-// Fetch Event - network first, fallback to cache
-// This is perfect for apps that might update, or cache first, fallback to network for assets.
-// Let's use "Cache first, fallback to network" for the static assets list to guarantee instant loading offline.
+// Fetch Event - network first, fallback to cache when offline
 self.addEventListener('fetch', event => {
-  // Only handle local HTTP/HTTPS requests (avoid chrome-extension:// etc)
   if (!event.request.url.startsWith(self.location.origin)) {
     return;
   }
 
   event.respondWith(
-    caches.match(event.request).then(cachedResponse => {
-      if (cachedResponse) {
-        // Fetch in background to update cache (stale-while-revalidate style)
-        fetch(event.request).then(networkResponse => {
-          if (networkResponse.status === 200) {
-            caches.open(CACHE_NAME).then(cache => cache.put(event.request, networkResponse));
-          }
-        }).catch(() => {/* ignore network failures offline */});
-        
-        return cachedResponse;
-      }
-      
-      return fetch(event.request).then(networkResponse => {
-        // Cache new successful requests on the fly
-        if (networkResponse.status === 200) {
+    fetch(event.request)
+      .then(networkResponse => {
+        if (networkResponse && networkResponse.status === 200) {
           const responseClone = networkResponse.clone();
           caches.open(CACHE_NAME).then(cache => {
             cache.put(event.request, responseClone);
           });
         }
         return networkResponse;
-      }).catch(err => {
-        // Fallback for document navigation if offline
-        const acceptHeader = event.request.headers.get('accept');
-        if (acceptHeader && acceptHeader.includes('text/html')) {
-          return caches.match('./index.html');
-        }
-        throw err;
-      });
-    })
+      })
+      .catch(() => {
+        return caches.match(event.request).then(cachedResponse => {
+          if (cachedResponse) return cachedResponse;
+          const acceptHeader = event.request.headers.get('accept');
+          if (acceptHeader && acceptHeader.includes('text/html')) {
+            return caches.match('./index.html');
+          }
+        });
+      })
   );
 });

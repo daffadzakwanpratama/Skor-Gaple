@@ -293,9 +293,9 @@ function getPixelDominoSVG(balakVal, color = '#FF5252', size = 16) {
   const dotsHTML2 = getDotsHTML(n2, 60, 20);
 
   return `
-    <svg viewBox="0 0 80 40" width="${size * 2}" height="${size}" style="display: inline-block; vertical-align: middle; filter: drop-shadow(2px 2px 2px rgba(0,0,0,0.45));">
-      <rect x="1.5" y="1.5" width="77" height="37" rx="4" fill="#FFFFFF" stroke="#1A1C1E" stroke-width="2.5" />
-      <line x1="40" y1="2.5" x2="40" y2="37.5" stroke="${color}" stroke-width="2.5" />
+    <svg viewBox="0 0 80 40" width="${size * 2}" height="${size}" style="display: inline-block; vertical-align: middle; filter: drop-shadow(0 1px 2px rgba(15,23,42,0.12));">
+      <rect x="1.5" y="1.5" width="77" height="37" rx="5" fill="#FFFFFF" stroke="#0F172A" stroke-width="2.5" />
+      <line x1="40" y1="3" x2="40" y2="37" stroke="${color}" stroke-width="2.5" />
       ${dotsHTML1}
       ${dotsHTML2}
     </svg>
@@ -716,7 +716,7 @@ function initKemerdekaanConfetti() {
 // ─────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
   toggleLiteMode(true);
-  toggleKemerdekaanTheme(true);
+  document.body.classList.remove('kemerdekaan-mode');
   loadState();
   loadSetupPlayerData();
   renderAvatarSelectionGrid();
@@ -726,11 +726,7 @@ document.addEventListener('DOMContentLoaded', () => {
     customNameInput.addEventListener('input', updateCustomizerPreview);
   }
 
-  // Real-time socket check
-  if (typeof io !== 'undefined') {
-    socket = io();
-    setupSocketListeners();
-  }
+  currentJudgeRole = 'host';
 
   // Load last player count if saved
   try {
@@ -750,12 +746,9 @@ document.addEventListener('DOMContentLoaded', () => {
   renderSetupPlayerInputs();
   updateMuteIcon();
 
-  // Restore active tournament & page on refresh
+  // Restore active tournament & page on refresh (100% LocalStorage)
   try {
     const savedPage = localStorage.getItem('gaple_activePage') || 'home';
-    const activeTourneyId = localStorage.getItem('gaple_activeTournamentId');
-
-    // Muat turnamen jika ada
     try {
       const savedTourney = localStorage.getItem('gaple_tournamentState');
       if (savedTourney) {
@@ -767,30 +760,6 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     } catch (e) {
       console.warn('Gagal membaca gaple_tournamentState:', e);
-    }
-
-    // Fetch turnamen terbaru dari server secara persisten
-    const tourneyIdToFetch = (tournamentState && tournamentState.id) || activeTourneyId;
-    if (tourneyIdToFetch) {
-      fetch(`/api/tournaments/${tourneyIdToFetch}`)
-        .then(r => r.ok ? r.json() : null)
-        .then(t => {
-          if (t && t.id && Array.isArray(t.players) && t.players.length > 0) {
-            tournamentState = t;
-            tourneySelectedSize = t.players.length;
-            saveTournamentStateLocalOnly();
-            if (document.getElementById('page-tournament') && document.getElementById('page-tournament').classList.contains('active')) {
-              renderTournamentView();
-            }
-          } else if (tournamentState && tournamentState.id) {
-            saveTournamentState();
-          }
-        })
-        .catch(() => {
-          if (tournamentState && tournamentState.id) {
-            saveTournamentState();
-          }
-        });
     }
 
     if (savedPage === 'tournament') {
@@ -811,8 +780,6 @@ document.addEventListener('DOMContentLoaded', () => {
     } else {
       showPage('home');
     }
-
-    startTournamentAutoSync();
   } catch (e) {
     showPage('home');
   }
@@ -1154,12 +1121,13 @@ function renderDashboard() {
   // Header
   document.getElementById('dash-game-name').textContent = g.name;
   const badge = document.getElementById('dash-status-badge');
-  if (g.status === 'done') {
-    badge.textContent = 'Selesai';
-    badge.className = 'status-badge status-done';
-  } else {
-    badge.textContent = 'Berlangsung';
-    badge.className = 'status-badge status-active';
+  if (badge) {
+    if (g.status === 'done') {
+      badge.textContent = 'Selesai';
+      badge.className = 'status-badge status-done';
+    } else {
+      badge.className = 'status-badge hidden';
+    }
   }
 
   document.getElementById('dash-round-info').textContent = `Ronde ${g.rounds.length}`;
@@ -1304,15 +1272,9 @@ function renderLeaderboard() {
     item.className = `lb-item${onFire ? ' fire-border' : ''}`;
     item.style.animationDelay = `${rank * 0.05}s`;
 
-    // Dynamic background and border color based on player custom color
+    // Clean flat accent strip on the left instead of glowing floating shadows
     const playerColor = p.color || '#FF5252';
-    const bgVal = `linear-gradient(135deg, ${hexToRgba(playerColor, 0.22)} 0%, ${hexToRgba(playerColor, 0.08)} 100%)`;
-    const borderVal = hexToRgba(playerColor, 0.45);
-    const shadowVal = `0 8px 24px ${hexToRgba(playerColor, 0.2)}`;
-
-    item.style.setProperty('background', bgVal, 'important');
-    item.style.setProperty('border-color', borderVal, 'important');
-    item.style.setProperty('box-shadow', shadowVal, 'important');
+    item.style.borderLeft = `4px solid ${playerColor}`;
 
     // Logika Bar Darah: Mulai dari 100% saat skor 0, berkurang ke 0% saat skor 100
     const barPct = Math.max(0, Math.min(100, 100 - p.total));
@@ -4685,55 +4647,9 @@ function syncActiveGameWithTournamentTable(tournament) {
 
 function startTournamentAutoSync() {
   if (tourneySyncTimer) clearInterval(tourneySyncTimer);
-  
-  tourneySyncTimer = setInterval(() => {
-    const activeTourneyId = (tournamentState && tournamentState.id) || localStorage.getItem('gaple_activeTournamentId');
-    if (!activeTourneyId) return;
-
-    fetch(`/api/tournaments/${activeTourneyId}`)
-      .then(r => r.ok ? r.json() : null)
-      .then(t => {
-        if (!t || !t.id) return;
-        const currentJson = JSON.stringify(t);
-        if (currentJson !== lastTourneyJson) {
-          console.log('[Auto-Sync Live] Perubahan server terdeteksi, merefresh tampilan turnamen secara otomatis!');
-          lastTourneyJson = currentJson;
-          tournamentState = t;
-          if (t.players) {
-            tourneySelectedSize = t.players.length;
-          }
-          saveTournamentStateLocalOnly();
-          if (document.getElementById('page-tournament') && document.getElementById('page-tournament').classList.contains('active')) {
-            renderTournamentView();
-          }
-          syncActiveGameWithTournamentTable(t);
-        }
-      })
-      .catch(() => {});
-  }, 1500);
 }
 
-function ensureTournamentRoomJoined() {
-  const activeTourneyId = (tournamentState && tournamentState.id) || localStorage.getItem('gaple_activeTournamentId');
-  if (activeTourneyId && socket && socket.connected) {
-    socket.emit('tournament:join', {
-      tournamentId: activeTourneyId,
-      role: currentJudgeRole || 'host',
-      judgeName: currentJudgeName || (currentJudgeRole === 'host' ? 'Laptop Server' : 'Juri')
-    }, (res) => {
-      if (res && res.success && res.tournament) {
-        tournamentState = res.tournament;
-        if (tournamentState.players) {
-          tourneySelectedSize = tournamentState.players.length;
-        }
-        saveTournamentStateLocalOnly();
-        if (document.getElementById('page-tournament') && document.getElementById('page-tournament').classList.contains('active')) {
-          renderTournamentView();
-        }
-      }
-    });
-  }
-}
+function ensureTournamentRoomJoined() {}
 
 function saveTournamentStateLocalOnly() {
   try {
@@ -4750,66 +4666,10 @@ function saveTournamentStateLocalOnly() {
 
 function saveTournamentState() {
   saveTournamentStateLocalOnly();
-
-  if (tournamentState && tournamentState.id) {
-    const role = currentJudgeRole || 'host';
-    if (role === 'judge') return; // Juri tidak boleh menimpa konfigurasi turnamen secara utuh
-
-    // 1. Simpan ke database server secara persisten (REST API)
-    fetch('/api/tournaments', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...tournamentState, role: 'host' })
-    }).then(r => r.json()).then(res => {
-      updateTournamentConnectionStatus(true);
-    }).catch(err => {
-      console.warn('POST /api/tournaments gagal:', err);
-    });
-
-    // 2. Broadcast ke semua perangkat via WebSocket
-    if (socket && socket.connected) {
-      socket.emit('tournament:create', { ...tournamentState, role: 'host' }, (res) => {
-        if (res && res.success) {
-          updateTournamentConnectionStatus(true);
-        }
-      });
-    }
-  }
 }
 
-function syncTournamentTableScore(roundIdx, tableIdx, payload) {
-  if (!tournamentState || !tournamentState.id) return;
-  const data = {
-    tournamentId: tournamentState.id,
-    payload: {
-      mode: tournamentState.mode,
-      roundIdx,
-      tableIdx,
-      scores: payload.scores,
-      isDone: payload.isDone,
-      ongoingGame: payload.ongoingGame,
-      judgeName: currentJudgeName
-    }
-  };
-
-  if (socket && socket.connected) {
-    socket.emit('tournament:updateTable', data, (res) => {
-      if (res && res.success) {
-        updateTournamentConnectionStatus(true);
-      }
-    });
-  } else {
-    fetch(`/api/tournaments/${tournamentState.id}/table`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data.payload)
-    }).then(r => r.json()).then(res => {
-      updateTournamentConnectionStatus(true);
-    }).catch(err => {
-      updateTournamentConnectionStatus(false);
-      queueTournamentOfflineAction({ type: 'updateTable', data });
-    });
-  }
+function syncTournamentTableScore() {
+  saveTournamentStateLocalOnly();
 }
 
 function syncTournamentOngoingGame(game) {
@@ -5296,26 +5156,6 @@ function executeResetTournament() {
   saveTournamentStateLocalOnly();
   closeModal('modal-tournament-reset-confirm');
   renderTournamentView();
-
-  // 2. Simpan dan broadcast ke server
-  saveTournamentState();
-
-  if (socket && socket.connected) {
-    socket.emit('tournament:reset', { tournamentId: tourneyId, role: 'host' }, (res) => {
-      if (res && res.success && res.tournament) {
-        tournamentState = res.tournament;
-        saveTournamentStateLocalOnly();
-        renderTournamentView();
-      }
-    });
-  } else {
-    fetch(`/api/tournaments/${tourneyId}/reset`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ role: 'host' })
-    }).then(r => r.json()).catch(() => {});
-  }
-
   showToast('Seluruh data skor dan progres turnamen berhasil direset ke awal! 🔄');
 }
 
@@ -5397,7 +5237,7 @@ function renderTournamentSetupInputs(count) {
         value="${escapeHtml(inputValue)}" 
         maxlength="20" 
         autocomplete="off"
-        style="flex: 1; height: 44px; border-radius: 14px; background: rgba(255,255,255,0.04); border: 1.5px solid rgba(255,255,255,0.1); color: #FFFFFF; font-size: 0.95rem; padding: 0 1rem;" 
+        style="flex: 1; height: 44px; border-radius: 10px; background: #FFFFFF; border: 1px solid #CBD5E1; color: #0F172A; font-size: 0.95rem; padding: 0 1rem;" 
       />
     `;
     grid.appendChild(item);
@@ -5569,13 +5409,13 @@ function renderTournamentBracket() {
       }).filter(Boolean).join(', ');
 
       roundByeBannerHtml = `
-        <div style="background: linear-gradient(90deg, rgba(255,215,0,0.15), rgba(255,215,0,0.05)); border: 1px solid #FFD740; border-radius: 10px; padding: 0.6rem 0.9rem; margin-bottom: 0.75rem; display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; flex-wrap: wrap;">
+        <div style="background: #FFFBEB; border: 1px solid #F59E0B; border-radius: 10px; padding: 0.6rem 0.9rem; margin-bottom: 0.75rem; display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; flex-wrap: wrap;">
           <div style="display: flex; align-items: center; gap: 6px;">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#FFD740" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v2z"/><path d="M13 5v2"/><path d="M13 17v2"/></svg>
-            <span style="font-family: var(--font-pixel); font-size: 0.7rem; color: #FFD740; font-weight: bold;">BYE — Lolos Langsung ke ${round.name}:</span>
-            <span style="font-size: 0.8rem; color: #FFF; font-weight: bold;">${byeNames}</span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#B45309" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v2z"/><path d="M13 5v2"/><path d="M13 17v2"/></svg>
+            <span style="font-family: var(--font-pixel); font-size: 0.72rem; color: #B45309; font-weight: bold;">BYE — Lolos Langsung ke ${round.name}:</span>
+            <span style="font-size: 0.82rem; color: #0F172A; font-weight: bold;">${byeNames}</span>
           </div>
-          <span class="stage-badge stage-badge-gold" style="font-size: 0.65rem;">Langsung Lolos ✓</span>
+          <span class="stage-badge stage-badge-gold" style="font-size: 0.65rem; color: #B45309;">Langsung Lolos ✓</span>
         </div>
       `;
     }
@@ -5891,10 +5731,10 @@ function renderRoundRobinStandingsTable() {
             ${renderPlayerBadgeHTML(playerObj, 'sm', { showTitle: false })}
           </div>
         </td>
-        <td style="text-align: center; font-family: var(--font-pixel); font-weight: bold; color: #E2E8F0;">
+        <td style="text-align: center; font-family: var(--font-pixel); font-weight: bold; color: #0F172A;">
           ${p.matchesPlayed}
         </td>
-        <td style="text-align: center; font-family: var(--font-pixel); font-weight: bold; color: #69F0AE;">
+        <td style="text-align: center; font-family: var(--font-pixel); font-weight: bold; color: #059669;">
           ${p.matchesWon}
         </td>
         <td style="text-align: right;">
@@ -5963,8 +5803,8 @@ function renderRoundRobinFixtures() {
       <div class="rr-round-section">
         <div class="rr-round-header">
           <div style="display: flex; align-items: center; gap: 8px;">
-            <span class="stage-badge stage-badge-gold">PUTARAN ${r + 1}</span>
-            <h3 style="font-family: var(--font-title); font-size: 1.1rem; color: #FFF; margin: 0;">Babak ${r + 1}</h3>
+            <span class="stage-badge stage-badge-gold" style="color: #B45309;">PUTARAN ${r + 1}</span>
+            <h3 style="font-family: var(--font-title); font-size: 1.05rem; color: #0F172A; margin: 0;">Babak ${r + 1}</h3>
           </div>
           <span class="table-status-pill ${isRoundDone ? 'table-status-done' : 'table-status-active'}">
             ${completedCount} / ${roundMatches.length} Meja Selesai
@@ -6005,7 +5845,7 @@ function renderRoundRobinMatchCardHTML(matchObj, roundIdx, tableIdx) {
           ${renderPlayerBadgeHTML(player, 'sm', { showTitle: false })}
         </div>
         <div style="display: flex; align-items: center; gap: 6px;">
-          ${isWinner ? '<span style="font-size: 0.65rem; font-weight: bold; color: #FFD740;">Menang ✓</span>' : ''}
+          ${isWinner ? '<span style="font-size: 0.68rem; font-weight: bold; color: #059669;">Menang ✓</span>' : ''}
           <span class="bracket-player-score">${scoreVal !== '' ? scoreVal + ' Pts' : ''}</span>
         </div>
       </div>

@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Truf Remi Score Tracker — Pencatat & penghitung skor otomatis permainan Truf Kampung." />
+  <title>Truf Remi Score Tracker</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+    rel="stylesheet" />
+  <link rel="stylesheet" href="style.css?v=8.0" />
+  <link rel="stylesheet" href="truf.css?v=12.0" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="icon" type="image/svg+xml" href="assets/icon.svg" />
+  <meta name="theme-color" content="#FFFFFF" />
+</head>
+
+<body class="truf-theme">
+  <script>
+    if (localStorage.getItem('lite-mode') === 'true') {
+      document.body.classList.add('lite-mode');
+    }
+    try {
+      if (sessionStorage.getItem('mode-transition') === 'truf') {
+        document.documentElement.classList.add('mode-arriving');
+        const hold = document.createElement('div');
+        hold.id = 'mode-transition-curtain';
+        hold.className = 'mode-transition-curtain curtain-truf curtain-holding';
+        document.body.appendChild(hold);
+      }
+    } catch (_) {}
+  </script>
+
+  <div class="truf-shell">
+    <!-- Top Bar -->
+    <div class="truf-topbar">
+      <div class="mode-switcher" role="navigation" aria-label="Pilih Mode Permainan">
+        <a href="index.html" class="mode-pill" onclick="switchGameMode(event, 'gaple', 'index.html')">
+          <span class="mode-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="6" y="2" width="12" height="20" rx="3" />
+              <line x1="6" y1="12" x2="18" y2="12" />
+              <circle cx="12" cy="7" r="1.2" fill="currentColor" />
+              <circle cx="9.5" cy="15.5" r="1.1" fill="currentColor" />
+              <circle cx="14.5" cy="18.5" r="1.1" fill="currentColor" />
+            </svg>
+          </span>
+          Mode Gaple
+        </a>
+        <a href="truf.html" class="mode-pill active-truf" onclick="switchGameMode(event, 'truf', 'truf.html')">
+          <span class="mode-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="4" y="2" width="16" height="20" rx="3" />
+              <path d="M12 7c-2.2 2.4-4 4-4 6a2.3 2.3 0 0 0 4 1.5A2.3 2.3 0 0 0 16 13c0-2-1.8-3.6-4-6z" fill="currentColor" stroke="none" />
+              <path d="M12 14.5v3M10.2 17.5h3.6" />
+            </svg>
+          </span>
+          Mode Truf Remi
+        </a>
+      </div>
+      <div style="display: flex; gap: 0.4rem;">
+        <button class="truf-icon-btn" onclick="openRulesModal()" title="Aturan" aria-label="Aturan">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10" />
+            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+            <line x1="12" y1="17" x2="12.01" y2="17" />
+          </svg>
+        </button>
+        <button id="btn-truf-reset" class="truf-icon-btn hidden" onclick="confirmResetSession()" title="Reset Sesi" aria-label="Reset Sesi">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="23 4 23 10 17 10" />
+            <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- ===== SETUP VIEW ===== -->
+    <div id="truf-setup-view" class="truf-setup-wrap">
+      <div class="truf-card truf-hero-card">
+        <div aria-hidden="true" style="margin-bottom: 0.35rem;">
+          <svg width="124" height="82" viewBox="0 0 160 106" fill="none" xmlns="http://www.w3.org/2000/svg"
+            style="filter: drop-shadow(0 6px 14px rgba(15, 23, 42, 0.12));">
+            <g transform="translate(26 16) rotate(-14 24 34)">
+              <rect x="0" y="0" width="48" height="68" rx="8" fill="#FFFFFF" stroke="#0F172A" stroke-width="2.2" />
+              <text x="8" y="18" fill="#DC2626" font-family="sans-serif" font-size="12" font-weight="800">K</text>
+              <text x="24" y="45" text-anchor="middle" fill="#DC2626" font-size="24">♥</text>
+            </g>
+            <g transform="translate(86 16) rotate(14 24 34)">
+              <rect x="0" y="0" width="48" height="68" rx="8" fill="#FFFFFF" stroke="#0F172A" stroke-width="2.2" />
+              <text x="8" y="18" fill="#DC2626" font-family="sans-serif" font-size="12" font-weight="800">Q</text>
+              <text x="24" y="45" text-anchor="middle" fill="#DC2626" font-size="24">♦</text>
+            </g>
+            <g transform="translate(56 8)">
+              <rect x="0" y="0" width="48" height="68" rx="8" fill="#FFFFFF" stroke="#0F172A" stroke-width="2.4" />
+              <text x="8" y="18" fill="#0F172A" font-family="sans-serif" font-size="12" font-weight="800">A</text>
+              <text x="24" y="45" text-anchor="middle" fill="#0F172A" font-size="25">♠</text>
+            </g>
+          </svg>
+        </div>
+
+        <h1 class="truf-hero-title">Truf Remi</h1>
+
+        <div class="truf-meta-chips">
+          <span class="truf-meta-chip">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+              <circle cx="9" cy="7" r="4" />
+              <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+              <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+            </svg>
+            4 Pemain
+          </span>
+          <span class="truf-meta-chip">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="5" y="2" width="14" height="20" rx="2" />
+              <path d="M12 10v4M10 12h4" />
+            </svg>
+            13 Kartu
+          </span>
+        </div>
+
+        <div class="truf-player-inputs">
+          <div class="truf-input-wrap">
+            <span class="truf-input-pip" aria-hidden="true">♠</span>
+            <input id="p-name-0" class="truf-input truf-input-has-pip" type="text" maxlength="18" placeholder="Pemain 1" value="Pemain 1" aria-label="Pemain 1" />
+          </div>
+          <div class="truf-input-wrap">
+            <span class="truf-input-pip red" aria-hidden="true">♥</span>
+            <input id="p-name-1" class="truf-input truf-input-has-pip" type="text" maxlength="18" placeholder="Pemain 2" value="Pemain 2" aria-label="Pemain 2" />
+          </div>
+          <div class="truf-input-wrap">
+            <span class="truf-input-pip" aria-hidden="true">♣</span>
+            <input id="p-name-2" class="truf-input truf-input-has-pip" type="text" maxlength="18" placeholder="Pemain 3" value="Pemain 3" aria-label="Pemain 3" />
+          </div>
+          <div class="truf-input-wrap">
+            <span class="truf-input-pip red" aria-hidden="true">♦</span>
+            <input id="p-name-3" class="truf-input truf-input-has-pip" type="text" maxlength="18" placeholder="Pemain 4" value="Pemain 4" aria-label="Pemain 4" />
+          </div>
+        </div>
+
+        <button class="btn btn-primary btn-lg btn-full truf-btn-icon" onclick="startNewTrufGame()">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" stroke="none">
+            <polygon points="5 3 19 12 5 21 5 3" />
+          </svg>
+          Mulai
+        </button>
+
+        <div id="truf-resume-wrap" class="hidden" style="margin-top: 0.6rem;">
+          <button class="btn btn-outline btn-lg btn-full truf-btn-icon" onclick="resumeSavedTrufGame()">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="23 4 23 10 17 10" />
+              <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
+            </svg>
+            Lanjut · <span id="truf-resume-info">R1</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== GAME VIEW ===== -->
+    <div id="truf-game-view" class="hidden">
+      <!-- Compact Top Score Strip -->
+      <div id="truf-scoreboard" class="truf-scoreboard"></div>
+
+      <!-- Phase 1: Input Bid -->
+      <div id="truf-phase-bid" class="truf-card">
+        <div class="truf-card-header">
+          <div class="truf-title-group">
+            <div class="truf-card-title truf-title-with-icon">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="4" y="2" width="16" height="20" rx="3" />
+                <path d="M12 8c-2 2.1-3.5 3.5-3.5 5.2a2 2 0 0 0 3.5 1.3A2 2 0 0 0 15.5 13.2C15.5 11.5 14 10.1 12 8z" fill="currentColor" stroke="none" />
+              </svg>
+              R<span id="bid-round-num">1</span> · Bid
+            </div>
+            <span class="truf-suit-order" title="Urutan kekuatan kembang">
+              <span>♠</span><span class="sep">›</span><span class="red">♥</span><span class="sep">›</span><span>♣</span><span class="sep">›</span><span class="red">♦</span>
+            </span>
+          </div>
+          <span id="bid-total-pill" class="truf-badge truf-badge-pas13">0 / 13</span>
+        </div>
+
+        <div id="truf-bid-rows" class="truf-row-list"></div>
+
+        <!-- Compact Visual Summary Strip -->
+        <div id="truf-bid-summary" class="truf-summary-strip"></div>
+
+        <!-- Pas 13 Adjustment Panel -->
+        <div id="truf-pas13-box" class="truf-pas13-box hidden">
+          <div class="truf-pas13-title">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+              <line x1="12" y1="9" x2="12" y2="13" />
+              <line x1="12" y1="17" x2="12.01" y2="17" />
+            </svg>
+            Pas 13 · <span id="truf-pas13-desc"></span>
+          </div>
+          <div class="truf-pas13-actions">
+            <div class="truf-stepper" title="Jumlah penyesuaian">
+              <button class="truf-step-btn" type="button" onclick="changePas13Delta(-1)">−</button>
+              <span id="pas13-delta-val" class="truf-step-val">1</span>
+              <button class="truf-step-btn" type="button" onclick="changePas13Delta(1)">+</button>
+            </div>
+            <button class="btn btn-sm btn-outline" type="button" onclick="applyCustomPas13(-1)">
+              ▼ −<span class="pas13-delta-label">1</span>
+            </button>
+            <button class="btn btn-sm btn-outline" type="button" onclick="applyCustomPas13(1)">
+              ▲ +<span class="pas13-delta-label">1</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="truf-actions-row">
+          <button id="btn-lock-bid" class="btn btn-primary btn-lg btn-full truf-btn-icon" onclick="lockBidsAndPlay()">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="5 3 19 12 5 21 5 3" fill="currentColor" />
+            </svg>
+            Mulai Main
+          </button>
+        </div>
+      </div>
+
+      <!-- Phase 2: Play & Input Result -->
+      <div id="truf-phase-result" class="truf-card hidden">
+        <div class="truf-card-header">
+          <div class="truf-title-group">
+            <div class="truf-card-title truf-title-with-icon">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10" />
+                <circle cx="12" cy="12" r="6" />
+                <circle cx="12" cy="12" r="2" fill="currentColor" />
+              </svg>
+              R<span id="res-round-num">1</span> · Hasil
+            </div>
+            <div id="truf-active-banner" class="truf-banner-chips"></div>
+          </div>
+          <span id="res-total-pill" class="truf-badge truf-badge-bawah">0 / 13</span>
+        </div>
+
+        <div class="truf-progress-track">
+          <div id="res-progress-fill" class="truf-progress-fill"></div>
+        </div>
+
+        <div id="truf-result-rows" class="truf-row-list"></div>
+
+        <div class="truf-actions-row">
+          <button class="btn btn-outline btn-lg truf-btn-icon" style="flex: 1;" onclick="backToBidPhase()">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="19" y1="12" x2="5" y2="12" />
+              <polyline points="12 19 5 12 12 5" />
+            </svg>
+            Bid
+          </button>
+          <button id="btn-save-round" class="btn btn-primary btn-lg truf-btn-icon" style="flex: 2;" onclick="saveRoundResult()" disabled>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
+            Simpan
+          </button>
+        </div>
+      </div>
+
+      <!-- Bottom Side-by-Side: Riwayat & Klasemen -->
+      <div class="truf-bottom-grid">
+        <div class="truf-card" style="margin-bottom: 0;">
+          <div class="truf-card-header">
+            <div class="truf-card-title truf-title-with-icon">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10" />
+                <polyline points="12 6 12 12 16 14" />
+              </svg>
+              Riwayat
+            </div>
+            <div style="display: flex; gap: 0.35rem;">
+              <button id="btn-undo-round" class="truf-icon-btn hidden" onclick="undoLastRound()" title="Undo Ronde Terakhir" aria-label="Undo Ronde Terakhir">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="1 4 1 10 7 10" />
+                  <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
+                </svg>
+              </button>
+              <button class="truf-icon-btn" onclick="showWinnerModal()" title="Selesai & Pemenang" aria-label="Selesai & Pemenang">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6" />
+                  <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18" />
+                  <path d="M4 22h16" />
+                  <path d="M10 14.66V17c0 .55-.45 1-1 1H4v2h16v-2h-5c-.55 0-1-.45-1-1v-2.34" />
+                  <path d="M12 2a6 6 0 0 1 6 6v3a6 6 0 0 1-6 6 6 6 0 0 1-6-6V8a6 6 0 0 1 6-6z" />
+                </svg>
+              </button>
+            </div>
+          </div>
+          <div id="truf-history-list" class="truf-history-list">
+            <p style="font-size: 0.8rem; color: var(--t-muted); text-align: center; padding: 1rem 0;">
+              Belum ada ronde
+            </p>
+          </div>
+        </div>
+
+        <div class="truf-card" style="margin-bottom: 0;">
+          <div class="truf-card-header">
+            <div class="truf-card-title truf-title-with-icon">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6" />
+                <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18" />
+                <path d="M4 22h16" />
+                <path d="M10 14.66V17c0 .55-.45 1-1 1H4v2h16v-2h-5c-.55 0-1-.45-1-1v-2.34" />
+                <path d="M12 2a6 6 0 0 1 6 6v3a6 6 0 0 1-6 6 6 6 0 0 1-6-6V8a6 6 0 0 1 6-6z" />
+              </svg>
+              Klasemen
+            </div>
+            <span id="truf-total-rounds-badge" class="truf-badge truf-badge-neutral">0R</span>
+          </div>
+          <div class="truf-history-item">
+            <div id="truf-total-leaderboard" class="truf-lb-list"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Aturan Truf -->
+  <div id="modal-rules" class="modal-overlay hidden" onclick="if(event.target===this) closeRulesModal()">
+    <div class="modal-card modal-card-wide" style="text-align: left; max-height: 85vh; overflow-y: auto;">
+      <h3 style="margin-bottom: 0.85rem; color: #0F172A; font-size: 1rem; display: flex; align-items: center; gap: 0.45rem;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="4" y="2" width="16" height="20" rx="3" />
+          <path d="M12 8c-2 2.1-3.5 3.5-3.5 5.2a2 2 0 0 0 3.5 1.3A2 2 0 0 0 15.5 13.2C15.5 11.5 14 10.1 12 8z" fill="currentColor" stroke="none" />
+        </svg>
+        Aturan Truf
+      </h3>
+      <div class="truf-rules-grid">
+        <div class="truf-rule-row">
+          <span class="truf-rule-icon">🃏</span>
+          <div><strong>4 Pemain</strong> · 13 kartu / ronde</div>
+        </div>
+        <div class="truf-rule-row">
+          <span class="truf-rule-icon">👑</span>
+          <div><strong>Truf:</strong> Bid tertinggi · <span class="truf-suit-order"><span>♠</span><span class="sep">›</span><span class="red">♥</span><span class="sep">›</span><span>♣</span><span class="sep">›</span><span class="red">♦</span></span></div>
+        </div>
+        <div class="truf-rule-row">
+          <span class="truf-rule-icon">✓</span>
+          <div><strong>Pas Bid:</strong> poin <strong>+Bid</strong></div>
+        </div>
+        <div class="truf-rule-row">
+          <span class="truf-rule-icon">▲</span>
+          <div><strong>Atas (&gt;13):</strong> Kurang <strong>−2×</strong> · Lebih <strong>−1</strong></div>
+        </div>
+        <div class="truf-rule-row">
+          <span class="truf-rule-icon">▼</span>
+          <div><strong>Bawah (&lt;13):</strong> Lebih <strong>−2×</strong> · Kurang <strong>−1</strong></div>
+        </div>
+        <div class="truf-rule-row">
+          <span class="truf-rule-icon">⚠️</span>
+          <div><strong>Pas 13:</strong> Penentu Truf set Atas / Bawah</div>
+        </div>
+        <div class="truf-rule-row">
+          <span class="truf-rule-icon">🎖️</span>
+          <div><strong>Kocok 5× beruntun</strong> = <strong>JENDERAL</strong> (Selesai)</div>
+        </div>
+      </div>
+      <button class="btn btn-primary btn-full" style="margin-top: 1rem;" onclick="closeRulesModal()">Tutup</button>
+    </div>
+  </div>
+
+  <!-- Modal: Pemenang Akhir -->
+  <div id="modal-winner" class="modal-overlay hidden" onclick="if(event.target===this) closeWinnerModal()">
+    <div class="modal-card" style="text-align: center;">
+      <div style="font-size: 2.1rem; margin-bottom: 0.3rem;">🏆</div>
+      <h3 style="margin-bottom: 0.35rem; color: #0F172A; font-size: 1.05rem;">Hasil Akhir</h3>
+      <p id="winner-subtitle" style="font-size: 0.84rem; color: #475569; margin-bottom: 1rem;"></p>
+      <div id="winner-standings" style="display: flex; flex-direction: column; gap: 0.45rem; margin-bottom: 1rem; text-align: left;"></div>
+      <div style="display: flex; gap: 0.5rem;">
+        <button class="btn btn-outline" style="flex: 1;" onclick="closeWinnerModal()">Lanjut</button>
+        <button class="btn btn-primary" style="flex: 1;" onclick="resetSessionNow()">Baru</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="mode-transition.js?v=2.0"></script>
+  <script src="truf.js?v=6.0"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      if (typeof initModeTransitionArrival === 'function') {
+        initModeTransitionArrival('truf');
+      }
+    });
+  </script>
+</body>
+
+</html>
