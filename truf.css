@@ -8,6 +8,8 @@
 
 html {
   font-size: 18px;
+  color-scheme: light;
+  background-color: #FFFFFF !important;
 }
 
 @media (max-width: 420px) {
@@ -1367,11 +1369,16 @@ body.truf-theme .modal-card {
    UNIFIED CLEAN WHITE THEME FOR MODE GAPLE
    ============================================= */
 
-body {
+html,
+body,
+body.lite-mode,
+body.kemerdekaan-mode {
   font-family: 'Plus Jakarta Sans', 'Inter', system-ui, -apple-system, sans-serif;
   font-size: 1rem !important;
   line-height: 1.5;
+  color-scheme: light;
   background: #FFFFFF !important;
+  background-color: #FFFFFF !important;
   background-image: none !important;
   color: #0F172A;
 }
@@ -1438,12 +1445,30 @@ body {
   margin-bottom: 1.4rem !important;
 }
 
+.saved-banner {
+  margin: 1.35rem auto 0 !important;
+  width: 100% !important;
+  max-width: 340px !important;
+  padding: 0.95rem 1.15rem !important;
+  background: #F8FAFC !important;
+}
+
+.saved-banner-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.85rem;
+  text-align: left;
+}
+
 .saved-label {
   font-size: 0.78rem !important;
+  margin: 0 !important;
 }
 
 .saved-name {
   font-size: 1.18rem !important;
+  margin-top: 0.15rem !important;
 }
 
 .btn {

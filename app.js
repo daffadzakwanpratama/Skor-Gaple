@@ -715,8 +715,10 @@ function initKemerdekaanConfetti() {
 // INIT
 // ─────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
-  toggleLiteMode(true);
-  document.body.classList.remove('kemerdekaan-mode');
+  document.body.classList.remove('lite-mode', 'kemerdekaan-mode');
+  try {
+    localStorage.removeItem('lite-mode');
+  } catch (_) {}
   loadState();
   loadSetupPlayerData();
   renderAvatarSelectionGrid();
