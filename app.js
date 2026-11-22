@@ -1234,16 +1234,75 @@ function hexToRgba(hex, alpha) {
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 }
 
+let prevGapleLeaderboardState = { gameId: null, totals: null };
+let animateLatestGapleRound = false;
+
+function shouldAnimateGapleUI() {
+  if (typeof document === 'undefined' || !document.body) return false;
+  if (document.body.classList.contains('lite-mode')) return false;
+  if (typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    return false;
+  }
+  return true;
+}
+
+function animateGapleScoreNumber(el, from, to, duration = 420) {
+  if (!el || from === to) return;
+  if (typeof requestAnimationFrame !== 'function') {
+    el.textContent = String(to);
+    return;
+  }
+  const start = performance.now();
+  el.textContent = String(from);
+  el.classList.remove('score-pop');
+  void el.offsetWidth;
+  el.classList.add('score-pop');
+  function step(now) {
+    const t = Math.min(1, (now - start) / duration);
+    const eased = 1 - Math.pow(1 - t, 3);
+    const current = Math.round(from + (to - from) * eased);
+    el.textContent = String(current);
+    if (t < 1) {
+      requestAnimationFrame(step);
+    } else {
+      el.textContent = String(to);
+    }
+  }
+  requestAnimationFrame(step);
+}
+
+function spawnGapleDeltaFloat(anchorEl, delta) {
+  if (!anchorEl || !delta) return;
+  const badge = document.createElement('span');
+  // In Gaple lower score wins: negative change is good, positive points are bad
+  const cls = delta < 0 ? 'good' : 'bad';
+  badge.className = `score-delta-float ${cls}`;
+  badge.textContent = delta > 0 ? `+${delta}` : String(delta);
+  anchorEl.appendChild(badge);
+  setTimeout(() => badge.remove(), 900);
+}
+
 function renderLeaderboard() {
   const g = state.currentGame;
   if (!g) return;
+
+  const animate = shouldAnimateGapleUI();
+  const sameGame = prevGapleLeaderboardState.gameId === g.id && Array.isArray(prevGapleLeaderboardState.totals);
+  const prevTotals = sameGame ? prevGapleLeaderboardState.totals : null;
+  const container = document.getElementById('leaderboard-list');
+
+  const firstRects = {};
+  if (animate && sameGame) {
+    container.querySelectorAll('.lb-item[data-player-idx]').forEach(el => {
+      firstRects[el.dataset.playerIdx] = el.getBoundingClientRect().top;
+    });
+  }
 
   const sorted = [...g.players]
     .map((p, i) => ({ ...p, idx: i }))
     .sort((a, b) => a.total - b.total);
 
   const maxScore = Math.max(...g.players.map(p => p.total), 1);
-  const container = document.getElementById('leaderboard-list');
   container.innerHTML = '';
 
   // Dealer: Pemain dengan skor tertinggi saat ini
@@ -1270,7 +1329,13 @@ function renderLeaderboard() {
     const item = document.createElement('div');
     const onFire = isPlayerOnFire(p.idx);
     item.className = `lb-item${onFire ? ' fire-border' : ''}`;
-    item.style.animationDelay = `${rank * 0.05}s`;
+    item.dataset.playerIdx = String(p.idx);
+    item.style.opacity = '1';
+    if (sameGame) {
+      item.style.animation = 'none';
+    } else {
+      item.style.animationDelay = `${rank * 0.05}s`;
+    }
 
     // Clean flat accent strip on the left instead of glowing floating shadows
     const playerColor = p.color || '#FF5252';
@@ -1278,6 +1343,8 @@ function renderLeaderboard() {
 
     // Logika Bar Darah: Mulai dari 100% saat skor 0, berkurang ke 0% saat skor 100
     const barPct = Math.max(0, Math.min(100, 100 - p.total));
+    const oldTotalVal = (sameGame && prevTotals && typeof prevTotals[p.idx] === 'number') ? prevTotals[p.idx] : p.total;
+    const initBarPct = (animate && sameGame) ? Math.max(0, Math.min(100, 100 - oldTotalVal)) : barPct;
 
     // Tentukan warna progress bar berdasarkan tingkat bahaya (skor mendekati 100 / darah menipis)
     let barColorClass = 'bar-success';
@@ -1300,13 +1367,59 @@ function renderLeaderboard() {
           ${firstBadge}
         </div>
         <div class="lb-bar-wrap">
-          <div class="lb-bar ${barColorClass}" style="width: ${Math.min(barPct, 100)}%"></div>
+          <div class="lb-bar ${barColorClass}" style="width: ${Math.min(initBarPct, 100)}%"></div>
         </div>
       </div>
-      <div class="lb-score ${p.total >= 100 ? 'lb-score-danger' : ''}">${p.total}</div>
+      <div class="lb-score ${p.total >= 100 ? 'lb-score-danger' : ''}"><span class="lb-score-val">${p.total}</span></div>
     `;
     container.appendChild(item);
+
+    if (animate && sameGame) {
+      if (initBarPct !== barPct && typeof requestAnimationFrame === 'function') {
+        const barEl = item.querySelector('.lb-bar');
+        if (barEl) {
+          requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+              barEl.style.width = `${Math.min(barPct, 100)}%`;
+            });
+          });
+        }
+      }
+
+      const oldTop = firstRects[String(p.idx)];
+      if (typeof oldTop === 'number') {
+        const newTop = item.getBoundingClientRect().top;
+        const dy = oldTop - newTop;
+        if (Math.abs(dy) >= 2 && typeof requestAnimationFrame === 'function') {
+          item.style.transition = 'none';
+          item.style.transform = `translateY(${dy}px)`;
+          requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+              item.style.transition = 'transform 380ms cubic-bezier(0.22, 1, 0.36, 1)';
+              item.style.transform = '';
+            });
+          });
+        }
+      }
+
+      const oldTotal = prevTotals[p.idx];
+      const scoreEl = item.querySelector('.lb-score');
+      const scoreValEl = item.querySelector('.lb-score-val');
+      if (typeof oldTotal === 'number' && oldTotal !== p.total) {
+        animateGapleScoreNumber(scoreValEl, oldTotal, p.total, 420);
+        spawnGapleDeltaFloat(scoreEl, p.total - oldTotal);
+      } else if (animateLatestGapleRound && scoreValEl) {
+        scoreValEl.classList.remove('score-pop');
+        void scoreValEl.offsetWidth;
+        scoreValEl.classList.add('score-pop');
+      }
+    }
   });
+
+  prevGapleLeaderboardState = {
+    gameId: g.id,
+    totals: g.players.map(p => p.total)
+  };
 }
 
 function renderScoreInputs(containerId) {
@@ -1436,12 +1549,17 @@ function renderRoundHistory() {
   }
 
   // Render reversed (latest first)
+  const shouldAnimLatestRound = animateLatestGapleRound && shouldAnimateGapleUI();
+  animateLatestGapleRound = false;
   const rounds = [...g.rounds].reverse();
   rounds.forEach((round, revIdx) => {
     const realIdx = g.rounds.length - 1 - revIdx;
     const card = document.createElement('div');
-    card.className = 'round-card';
-    card.style.animationDelay = `${Math.min(revIdx, 5) * 0.05}s`;
+    const animNewest = revIdx === 0 && shouldAnimLatestRound;
+    card.className = animNewest ? 'round-card history-card-enter' : 'round-card';
+    if (!animNewest) {
+      card.style.animationDelay = `${Math.min(revIdx, 5) * 0.05}s`;
+    }
 
     const isDone = g.status === 'done';
     const actionsHtml = isDone ? '' : `
@@ -1530,6 +1648,7 @@ function finalizeSaveRound(scores) {
   if (g.isTournamentMatch) {
     syncTournamentOngoingGame(g);
   }
+  animateLatestGapleRound = true;
   renderDashboard();
 
   if (scores) {
@@ -1763,6 +1882,7 @@ function undoLastDelete() {
   if (g.isTournamentMatch) {
     syncTournamentOngoingGame(g);
   }
+  animateLatestGapleRound = true;
   renderDashboard();
   showToast('Penghapusan dibatalkan ✓');
 }

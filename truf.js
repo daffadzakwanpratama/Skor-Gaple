@@ -24,6 +24,59 @@ const ICONS = {
 };
 
 let trufState = null;
+let prevTrufScoreSnapshot = null;
+let animateLatestTrufRound = false;
+
+function shouldAnimateTrufUI() {
+  if (typeof document === 'undefined' || !document.body) return false;
+  if (document.body.classList.contains('lite-mode')) return false;
+  if (typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    return false;
+  }
+  return true;
+}
+
+function animateTrufScoreNumber(el, from, to, duration = 420) {
+  if (!el || from === to) return;
+  if (typeof requestAnimationFrame !== 'function') {
+    el.textContent = String(to);
+    return;
+  }
+  const start = performance.now();
+  el.textContent = String(from);
+  el.classList.remove('score-pop');
+  void el.offsetWidth;
+  el.classList.add('score-pop');
+  function step(now) {
+    const t = Math.min(1, (now - start) / duration);
+    const eased = 1 - Math.pow(1 - t, 3);
+    const current = Math.round(from + (to - from) * eased);
+    el.textContent = String(current);
+    if (t < 1) {
+      requestAnimationFrame(step);
+    } else {
+      el.textContent = String(to);
+    }
+  }
+  requestAnimationFrame(step);
+}
+
+function spawnTrufDeltaFloat(anchorEl, delta) {
+  if (!anchorEl || !delta) return;
+  const badge = document.createElement('span');
+  const cls = delta > 0 ? 'good' : 'bad';
+  badge.className = `score-delta-float ${cls}`;
+  badge.textContent = delta > 0 ? `+${delta}` : String(delta);
+  anchorEl.appendChild(badge);
+  setTimeout(() => badge.remove(), 900);
+}
+
+function bumpTrufStepVal(el) {
+  if (!el || !shouldAnimateTrufUI()) return;
+  el.classList.remove('step-val-bump');
+  void el.offsetWidth;
+  el.classList.add('step-val-bump');
+}
 
 function getDefaultState(names) {
   return {
@@ -250,18 +303,42 @@ function renderScoreboard() {
       ? (kocok.isJenderal ? 'JENDERAL (5/5)' : `Kocok ${kocok.streak}/5`)
       : (p.lastDelta === null ? '—' : (p.lastDelta > 0 ? `▲ +${p.lastDelta}` : (p.lastDelta < 0 ? `▼ ${p.lastDelta}` : '• 0')));
     const rankIcon = (rank === 1 && hasRounds) ? `${ICONS.crown} ` : '';
+    const pBid = trufState.bids[idx] || { value: 0, suit: 'sekop' };
+    const pSuit = getSuitObj(pBid.suit);
+    const bidPill = `<span class="truf-tile-bid-pill" title="Bid ronde ini">${pBid.value} <strong style="${pSuit.isRed ? 'color:#DC2626;' : 'color:#0F172A;'}">${pSuit.symbol}</strong></span>`;
 
     return `
-      <div class="truf-score-tile ${rank === 1 ? 'rank-1' : ''} ${isShuffler ? 'is-shuffler' : ''}">
-        <div class="truf-tile-top">
-          <span class="truf-tile-rank">${rankIcon}#${rank}</span>
+      <div class="truf-score-tile ${rank === 1 ? 'rank-1' : ''} ${isShuffler ? 'is-shuffler' : ''}" data-player-idx="${idx}">
+        <div class="truf-tile-main">
+          <div class="truf-tile-top">
+            <span class="truf-tile-rank">${rankIcon}#${rank}</span>
+            <span class="truf-tile-name" title="${escapeHtml(p.name)}">${escapeHtml(p.name)}</span>
+          </div>
+          <div class="truf-tile-sub">
+            <span class="truf-tile-foot ${isShuffler ? 'shuffler' : ''}">${footText}</span>
+            ${bidPill}
+          </div>
         </div>
-        <div class="truf-tile-name" title="${escapeHtml(p.name)}">${escapeHtml(p.name)}</div>
-        <div class="truf-tile-score ${scoreCls}">${p.score}</div>
-        <div class="truf-tile-foot ${isShuffler ? 'shuffler' : ''}">${footText}</div>
+        <div class="truf-tile-score ${scoreCls}"><span class="truf-score-val">${p.score}</span></div>
       </div>
     `;
   }).join('');
+
+  if (Array.isArray(prevTrufScoreSnapshot) && shouldAnimateTrufUI()) {
+    trufState.players.forEach((p, idx) => {
+      const prevScore = prevTrufScoreSnapshot[idx];
+      if (typeof prevScore === 'number' && prevScore !== p.score) {
+        const tileEl = container.querySelector(`.truf-score-tile[data-player-idx="${idx}"]`);
+        if (tileEl) {
+          const scoreEl = tileEl.querySelector('.truf-score-val');
+          const scoreWrapEl = tileEl.querySelector('.truf-tile-score');
+          animateTrufScoreNumber(scoreEl, prevScore, p.score, 420);
+          spawnTrufDeltaFloat(scoreWrapEl, p.score - prevScore);
+        }
+      }
+    });
+  }
+  prevTrufScoreSnapshot = null;
 }
 
 function renderBidPhase() {
@@ -353,6 +430,7 @@ function changeBidValue(playerIdx, delta) {
   saveState();
   renderScoreboard();
   renderBidPhase();
+  bumpTrufStepVal(document.querySelector(`#truf-bid-rows .truf-player-row:nth-child(${playerIdx + 1}) .truf-step-val`));
 }
 
 function setPlayerSuit(playerIdx, suitId) {
@@ -370,7 +448,10 @@ let pas13CustomDelta = 1;
 function changePas13Delta(step) {
   pas13CustomDelta = Math.max(1, Math.min(13, pas13CustomDelta + step));
   const valEl = document.getElementById('pas13-delta-val');
-  if (valEl) valEl.textContent = pas13CustomDelta;
+  if (valEl) {
+    valEl.textContent = pas13CustomDelta;
+    bumpTrufStepVal(valEl);
+  }
   document.querySelectorAll('.pas13-delta-label').forEach(el => {
     el.textContent = pas13CustomDelta;
   });
@@ -488,11 +569,14 @@ function changeResultValue(playerIdx, delta) {
   trufState.results[playerIdx] = next;
   saveState();
   renderResultPhase();
+  bumpTrufStepVal(document.querySelector(`#truf-result-rows .truf-player-row:nth-child(${playerIdx + 1}) .truf-step-val`));
 }
 
 function saveRoundResult() {
   const totalResult = trufState.results.reduce((sum, v) => sum + v, 0);
   if (totalResult !== 13) return;
+
+  prevTrufScoreSnapshot = trufState.players.map(p => p.score);
 
   const totalBid = trufState.bids.reduce((sum, b) => sum + b.value, 0);
   const mode = getRoundMode(totalBid);
@@ -530,6 +614,7 @@ function saveRoundResult() {
   trufState.pas13Snapshot = null;
   trufState.results = [0, 0, 0, 0];
   saveState();
+  animateLatestTrufRound = true;
   renderAll();
 
   const kocok = getKocokStatus(trufState.history);
@@ -540,6 +625,7 @@ function saveRoundResult() {
 
 function undoLastRound() {
   if (!trufState.history.length) return;
+  prevTrufScoreSnapshot = trufState.players.map(p => p.score);
   const last = trufState.history.shift();
   last.entries.forEach((entry, idx) => {
     trufState.players[idx].score -= entry.points;
@@ -557,12 +643,16 @@ function renderHistory() {
   const undoBtn = document.getElementById('btn-undo-round');
   if (!trufState.history.length) {
     undoBtn.classList.add('hidden');
+    animateLatestTrufRound = false;
     listEl.innerHTML = `<p style="font-size: 0.8rem; color: #64748B; text-align: center; padding: 1rem 0;">Belum ada ronde</p>`;
     return;
   }
   undoBtn.classList.remove('hidden');
 
-  listEl.innerHTML = trufState.history.map(item => {
+  const shouldAnimNewCard = animateLatestTrufRound && shouldAnimateTrufUI();
+  animateLatestTrufRound = false;
+
+  listEl.innerHTML = trufState.history.map((item, idx) => {
     const suit = getSuitObj(item.trufSuit);
     const modeLabel = item.mode === 'ATAS' ? 'Atas' : 'Bawah';
     const modeCls = item.mode === 'ATAS' ? 'truf-badge-atas' : 'truf-badge-bawah';
@@ -601,7 +691,7 @@ function renderHistory() {
     }).join('');
 
     return `
-      <div class="truf-history-item">
+      <div class="truf-history-item ${(idx === 0 && shouldAnimNewCard) ? 'history-card-enter' : ''}">
         <div class="truf-history-head">
           <span>R${item.round} · <strong style="font-size:1.15rem;line-height:1;${suit.isRed ? 'color:#DC2626;' : 'color:#0F172A;'}">${suit.symbol}</strong></span>
           <span class="truf-badge ${modeCls}" style="font-size:0.74rem;padding:0.16rem 0.55rem;">${modeLabel} · ${item.totalBid}</span>
@@ -616,6 +706,14 @@ function renderTotalLeaderboard() {
   const lbEl = document.getElementById('truf-total-leaderboard');
   const badgeEl = document.getElementById('truf-total-rounds-badge');
   if (!lbEl) return;
+
+  const animate = shouldAnimateTrufUI();
+  const firstRects = {};
+  if (animate) {
+    lbEl.querySelectorAll('.truf-lb-row[data-player-id]').forEach(el => {
+      firstRects[el.dataset.playerId] = el.getBoundingClientRect().top;
+    });
+  }
 
   const totalRounds = trufState.history.length;
   if (badgeEl) badgeEl.textContent = `${totalRounds}R`;
@@ -642,7 +740,7 @@ function renderTotalLeaderboard() {
     const pasMeta = pasCount > 0 ? ` · ${ICONS.check} ${pasCount}` : '';
 
     return `
-      <div class="truf-lb-row ${rank === 1 ? 'rank-1' : ''} ${isShuffler ? 'is-shuffler' : ''}">
+      <div class="truf-lb-row ${rank === 1 ? 'rank-1' : ''} ${isShuffler ? 'is-shuffler' : ''}" data-player-id="${p.id}">
         <div class="truf-lb-left">
           <span class="truf-lb-rank">#${rank}</span>
           <div>
@@ -656,6 +754,26 @@ function renderTotalLeaderboard() {
       </div>
     `;
   }).join('');
+
+  if (animate && typeof requestAnimationFrame === 'function') {
+    lbEl.querySelectorAll('.truf-lb-row[data-player-id]').forEach(row => {
+      const oldTop = firstRects[row.dataset.playerId];
+      if (typeof oldTop === 'number') {
+        const newTop = row.getBoundingClientRect().top;
+        const dy = oldTop - newTop;
+        if (Math.abs(dy) >= 2) {
+          row.style.transition = 'none';
+          row.style.transform = `translateY(${dy}px)`;
+          requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+              row.style.transition = 'transform 380ms cubic-bezier(0.22, 1, 0.36, 1)';
+              row.style.transform = '';
+            });
+          });
+        }
+      }
+    });
+  }
 }
 
 function showWinnerModal(jenderalName) {
