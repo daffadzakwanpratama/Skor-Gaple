@@ -3343,6 +3343,7 @@ body.truf-theme .truf-card {
   .slam-domino-wrap,
   .slam-shockwave,
   .slam-chip,
+  .slam-suit-confetti,
   .slam-comic-headline,
   .slam-megaphone-wrap,
   .slam-ribbon-wrap,
@@ -3352,6 +3353,92 @@ body.truf-theme .truf-card {
   .domino-table-shake-30 {
     animation-duration: 1ms !important;
     animation-delay: 0ms !important;
+  }
+}
+
+/* =============================================
+   TRUF REMI BID-0 CARD SLAM ADDITIONS
+   ============================================= */
+
+.slam-domino-cluster.is-fan-4 {
+  gap: 0;
+  margin-left: -6px;
+  margin-right: -6px;
+}
+
+.slam-domino-cluster.is-fan-4 .slam-domino-wrap {
+  margin: 0 -11px;
+}
+
+.slam-playing-card-svg {
+  width: 62px;
+  height: auto;
+  display: block;
+}
+
+.slam-domino-cluster.is-fan-4 .slam-playing-card-svg {
+  width: 54px;
+}
+
+.slam-suit-confetti {
+  position: absolute;
+  top: -8px;
+  left: -8px;
+  font-size: 1.15rem;
+  font-weight: 900;
+  line-height: 1;
+  text-shadow: 0 2px 4px rgba(15, 23, 42, 0.45);
+  opacity: 0;
+  animation: slamChipBurst 720ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.truf-slam-player-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.58rem 1.15rem;
+  border-radius: 16px;
+  background: var(--slam-accent, #3B82F6);
+  color: #FFFFFF;
+  font-size: 1.22rem;
+  font-weight: 800;
+  box-shadow: 0 4px 0 rgba(15, 23, 42, 0.24);
+  white-space: nowrap;
+}
+
+.slam-score-pill.is-plus-5 {
+  background: #D1FAE5;
+}
+
+.slam-score-pill.is-plus-5 .slam-score-big {
+  color: #059669;
+}
+
+.slam-shockwave.ring-emerald {
+  border-color: #10B981;
+}
+
+.truf-score-tile.lb-item-slam-25,
+.truf-lb-row.lb-item-slam-25 {
+  border-color: #10B981 !important;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.24) !important;
+  transition: box-shadow 0.25s ease, border-color 0.25s ease;
+}
+
+.truf-score-tile.lb-item-slam-30,
+.truf-lb-row.lb-item-slam-30 {
+  border-color: #F59E0B !important;
+  background: linear-gradient(90deg, #FFFBEB 0%, #FEF2F2 100%) !important;
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.34), 0 6px 18px rgba(220, 38, 38, 0.14) !important;
+  transition: box-shadow 0.25s ease, border-color 0.25s ease;
+}
+
+@media (max-width: 440px) {
+  .slam-domino-cluster.is-fan-4 .slam-playing-card-svg {
+    width: 46px;
+  }
+  .slam-domino-cluster.is-fan-4 .slam-domino-wrap {
+    margin: 0 -10px;
   }
 }
 

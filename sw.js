@@ -1,14 +1,14 @@
-const CACHE_NAME = 'gaple-tracker-v17';
+const CACHE_NAME = 'gaple-tracker-v19';
 
 const ASSETS = [
   './',
   './index.html',
   './truf.html',
   './style.css?v=11.0',
-  './truf.css?v=35.0',
+  './truf.css?v=36.0',
   './mode-transition.js?v=2.0',
   './app.js?v=13.0',
-  './truf.js?v=14.0',
+  './truf.js?v=16.0',
   './manifest.json',
   './assets/icon.svg',
   './assets/icon-192.png',

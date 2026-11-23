@@ -616,10 +616,16 @@ function saveRoundResult() {
   saveState();
   animateLatestTrufRound = true;
   renderAll();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  const hasBidZeroCelebration = triggerTrufZeroCelebrationIfNeeded(roundEntries, mode);
 
   const kocok = getKocokStatus(trufState.history);
   if (kocok && kocok.isJenderal) {
-    showWinnerModal(kocok.shufflerName);
+    if (hasBidZeroCelebration) {
+      setTimeout(() => showWinnerModal(kocok.shufflerName), 2400);
+    } else {
+      showWinnerModal(kocok.shufflerName);
+    }
   }
 }
 
@@ -828,6 +834,366 @@ function resetSessionNow() {
   document.getElementById('truf-resume-wrap').classList.add('hidden');
   const topSuitEl = document.getElementById('truf-topbar-suit');
   if (topSuitEl) topSuitEl.classList.add('hidden');
+}
+
+const TRUF_PLAYER_PALETTES = ['#3B82F6', '#EF4444', '#10B981', '#F59E0B'];
+
+function buildTrufSlamColorVars(hexColor) {
+  const baseHex = /^#[0-9a-f]{6}$/i.test(hexColor) ? hexColor : '#3B82F6';
+  const r = parseInt(baseHex.slice(1, 3), 16);
+  const g = parseInt(baseHex.slice(3, 5), 16);
+  const b = parseInt(baseHex.slice(5, 7), 16);
+
+  const mix = (c1, c2, weight) => {
+    const mr = Math.round(c1[0] * (1 - weight) + c2[0] * weight);
+    const mg = Math.round(c1[1] * (1 - weight) + c2[1] * weight);
+    const mb = Math.round(c1[2] * (1 - weight) + c2[2] * weight);
+    return `#${[mr, mg, mb].map(v => Math.max(0, Math.min(255, v)).toString(16).padStart(2, '0')).join('')}`;
+  };
+
+  const darkHex = mix([r, g, b], [15, 23, 42], 0.28);
+  const deepHex = mix([r, g, b], [15, 23, 42], 0.52);
+  const lightHex = mix([r, g, b], [255, 255, 255], 0.72);
+
+  return `--slam-accent: ${baseHex}; --slam-accent-dark: ${darkHex}; --slam-accent-deep: ${deepHex}; --slam-accent-light: ${lightHex}; --slam-accent-rgb: ${r}, ${g}, ${b};`;
+}
+
+function buildSlamPlayingCardSVG(rank, suitSymbol, isRed) {
+  const color = isRed ? '#DC2626' : '#172554';
+  return `
+    <svg class="slam-playing-card-svg" viewBox="0 0 78 118" width="78" height="118" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <rect x="4" y="6" width="70" height="108" rx="12" fill="#172554" />
+      <rect x="2" y="2" width="70" height="108" rx="11" fill="#FFFFFF" stroke="#172554" stroke-width="3.2" />
+      <rect x="6" y="6" width="62" height="100" rx="8" fill="none" stroke="#F1F5F9" stroke-width="1.6" />
+      <text x="12" y="24" fill="${color}" font-family="Plus Jakarta Sans, sans-serif" font-size="16" font-weight="900">${rank}</text>
+      <text x="12.5" y="38" fill="${color}" font-size="13">${suitSymbol}</text>
+      <text x="37" y="68" text-anchor="middle" fill="${color}" font-size="38">${suitSymbol}</text>
+      <g transform="rotate(180 37 56)">
+        <text x="12" y="24" fill="${color}" font-family="Plus Jakarta Sans, sans-serif" font-size="16" font-weight="900">${rank}</text>
+        <text x="12.5" y="38" fill="${color}" font-size="13">${suitSymbol}</text>
+      </g>
+    </svg>
+  `;
+}
+
+function buildTrufMegaphoneSVG() {
+  return `
+    <svg class="slam-megaphone-svg" viewBox="0 0 92 84" width="84" height="76" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <path d="M53 6 L68 18 L60 22 L73 36 L54 27 L60 22 L47 11 Z" fill="#FACC15" stroke="#172554" stroke-width="2" stroke-linejoin="round" />
+      <path d="M27 49 L35 72 C36 75 41 75 43 72 L38 46 Z" fill="#B91C1C" stroke="#172554" stroke-width="2.6" stroke-linejoin="round" />
+      <ellipse cx="17" cy="48" rx="6.5" ry="9.5" transform="rotate(-18 17 48)" fill="#F59E0B" stroke="#172554" stroke-width="2.5" />
+      <path d="M17 39 L56 17 L68 55 L22 57 Z" fill="#EF4444" stroke="#172554" stroke-width="2.8" stroke-linejoin="round" />
+      <path d="M29 32.5 L39 27 L46 56 L34 56.5 Z" fill="#FFFFFF" stroke="#172554" stroke-width="2.2" stroke-linejoin="round" />
+      <ellipse cx="62" cy="36" rx="13" ry="22" transform="rotate(-18 62 36)" fill="#FFFFFF" stroke="#172554" stroke-width="2.8" />
+      <ellipse cx="63" cy="36" rx="8.5" ry="16" transform="rotate(-18 63 36)" fill="#991B1B" stroke="#172554" stroke-width="2" />
+      <ellipse cx="60" cy="37" rx="4.5" ry="9" transform="rotate(-18 60 37)" fill="#DC2626" />
+    </svg>
+  `;
+}
+
+function buildTrufCrownSVG() {
+  return `
+    <svg class="slam-crown-svg" viewBox="0 0 60 40" width="50" height="34" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <path d="M7 33 L4 11 L19 21 L30 5 L41 21 L56 11 L53 33 Z" fill="#FACC15" stroke="#172554" stroke-width="2.8" stroke-linejoin="round" />
+      <rect x="8" y="31" width="44" height="6" rx="2.5" fill="#F59E0B" stroke="#172554" stroke-width="2.4" />
+      <circle cx="30" cy="21" r="3" fill="#DC2626" stroke="#172554" stroke-width="1.5" />
+    </svg>
+  `;
+}
+
+function playTrufCardSlamSound(isBawah10) {
+  try {
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    if (!AudioCtx) return;
+    const ctx = new AudioCtx();
+    const now = ctx.currentTime;
+
+    function playCardSnap(delaySec, pitch = 1) {
+      const start = now + delaySec;
+      const osc = ctx.createOscillator();
+      const oscGain = ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(170 * pitch, start);
+      osc.frequency.exponentialRampToValueAtTime(48, start + 0.085);
+      oscGain.gain.setValueAtTime(0.28, start);
+      oscGain.gain.exponentialRampToValueAtTime(0.001, start + 0.095);
+      osc.connect(oscGain);
+      oscGain.connect(ctx.destination);
+      osc.start(start);
+      osc.stop(start + 0.1);
+
+      const bufferSize = Math.floor(ctx.sampleRate * 0.04);
+      const noiseBuffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+      const data = noiseBuffer.getChannelData(0);
+      for (let i = 0; i < bufferSize; i++) {
+        data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (bufferSize * 0.35));
+      }
+      const noise = ctx.createBufferSource();
+      noise.buffer = noiseBuffer;
+      const filter = ctx.createBiquadFilter();
+      filter.type = 'bandpass';
+      filter.frequency.setValueAtTime(1250 * pitch, start);
+      filter.Q.setValueAtTime(1.5, start);
+      const noiseGain = ctx.createGain();
+      noiseGain.gain.setValueAtTime(0.24, start);
+      noiseGain.gain.exponentialRampToValueAtTime(0.001, start + 0.04);
+      noise.connect(filter);
+      filter.connect(noiseGain);
+      noiseGain.connect(ctx.destination);
+      noise.start(start);
+      noise.stop(start + 0.045);
+    }
+
+    if (isBawah10) {
+      [0.08, 0.13, 0.18, 0.23].forEach((d, idx) => {
+        playCardSnap(d, 0.94 + idx * 0.06);
+      });
+      [523.25, 659.25, 783.99, 1046.50].forEach((freq, i) => {
+        const start = now + 0.24 + i * 0.055;
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, start);
+        gain.gain.setValueAtTime(0.08, start);
+        gain.gain.exponentialRampToValueAtTime(0.001, start + 0.3);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(start);
+        osc.stop(start + 0.32);
+      });
+    } else {
+      playCardSnap(0.12, 1.0);
+      [587.33, 880].forEach((freq, i) => {
+        const start = now + 0.15 + i * 0.065;
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, start);
+        gain.gain.setValueAtTime(0.065, start);
+        gain.gain.exponentialRampToValueAtTime(0.001, start + 0.22);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(start);
+        osc.stop(start + 0.24);
+      });
+    }
+
+    setTimeout(() => {
+      if (ctx.state !== 'closed') ctx.close().catch(() => {});
+    }, 1100);
+  } catch (_) {}
+}
+
+function triggerTrufZeroCelebrationIfNeeded(roundEntries, mode) {
+  if (!Array.isArray(roundEntries)) return false;
+  const winners = [];
+  roundEntries.forEach((entry, idx) => {
+    if (entry.bid === 0 && entry.result === 0) {
+      winners.push({
+        playerIdx: idx,
+        name: entry.name,
+        suit: entry.suit,
+        points: entry.points,
+        mode
+      });
+    }
+  });
+
+  if (winners.length === 0) return false;
+
+  winners.forEach((item, index) => {
+    setTimeout(() => {
+      showTrufZeroCelebrationOverlay(item);
+    }, index * 2600);
+  });
+  return true;
+}
+
+function showTrufZeroCelebrationOverlay(item) {
+  const existing = document.getElementById('truf-appreciation-overlay');
+  if (existing) existing.remove();
+
+  const isBawah = (item.mode === 'BAWAH' || item.points === 10);
+  const playerColor = TRUF_PLAYER_PALETTES[item.playerIdx % TRUF_PLAYER_PALETTES.length];
+  const colorVars = buildTrufSlamColorVars(playerColor);
+  const pSuit = getSuitObj(item.suit);
+
+  const shellEl = document.querySelector('.truf-shell');
+  if (shellEl) {
+    shellEl.classList.remove('domino-table-shake-25', 'domino-table-shake-30');
+    setTimeout(() => {
+      shellEl.classList.add(isBawah ? 'domino-table-shake-30' : 'domino-table-shake-25');
+      setTimeout(() => {
+        shellEl.classList.remove('domino-table-shake-25', 'domino-table-shake-30');
+      }, 420);
+    }, 110);
+  }
+
+  const targetTiles = document.querySelectorAll(
+    `.truf-score-tile[data-player-idx="${item.playerIdx}"], .truf-lb-row[data-player-idx="${item.playerIdx}"]`
+  );
+  targetTiles.forEach(el => {
+    el.classList.remove('lb-item-slam-25', 'lb-item-slam-30');
+    void el.offsetWidth;
+    el.classList.add(isBawah ? 'lb-item-slam-30' : 'lb-item-slam-25');
+    setTimeout(() => {
+      el.classList.remove('lb-item-slam-25', 'lb-item-slam-30');
+    }, 2800);
+  });
+
+  const chipCount = isBawah ? 16 : 10;
+  const suitSymbols = ['♠', '♥', '♣', '♦'];
+  let chipsHTML = '';
+  for (let i = 0; i < chipCount; i++) {
+    const angle = (Math.PI * 2 * i) / chipCount + (i % 2 === 0 ? 0.14 : -0.14);
+    const dist = (isBawah ? 112 : 82) + (i % 3) * 24;
+    const tx = Math.round(Math.cos(angle) * dist);
+    const ty = Math.round(Math.sin(angle) * dist);
+    const rot = ((i * 53) % 240) - 120;
+    const delayMs = isBawah ? (110 + (i % 4) * 45) : 120;
+
+    if (isBawah && i % 2 === 0) {
+      const sym = suitSymbols[(i / 2) % 4];
+      const symColor = (sym === '♥' || sym === '♦') ? '#EF4444' : '#FACC15';
+      chipsHTML += `<span class="slam-suit-confetti" style="--tx:${tx}px;--ty:${ty}px;--rot:${rot}deg;color:${symColor};animation-delay:${delayMs}ms;">${sym}</span>`;
+    } else {
+      const chipColor = isBawah
+        ? (i % 3 === 0 ? '#FACC15' : i % 3 === 1 ? '#DC2626' : playerColor)
+        : (i % 2 === 0 ? '#10B981' : '#FACC15');
+      chipsHTML += `<span class="slam-chip ${i % 2 === 0 ? 'circle' : ''}" style="--tx:${tx}px;--ty:${ty}px;--rot:${rot}deg;background:${chipColor};animation-delay:${delayMs}ms;"></span>`;
+    }
+  }
+
+  const cardsHTML = isBawah
+    ? `
+      <div class="slam-domino-wrap" style="--start-rot:-35deg;--end-rot:-21deg;animation-delay:0ms;z-index:1;">
+        <div class="slam-domino-card">${buildSlamPlayingCardSVG('A', '♠', false)}</div>
+      </div>
+      <div class="slam-domino-wrap" style="--start-rot:-15deg;--end-rot:-7deg;animation-delay:50ms;z-index:2;margin-top:-10px;">
+        <div class="slam-domino-card">${buildSlamPlayingCardSVG('A', '♥', true)}</div>
+      </div>
+      <div class="slam-domino-wrap" style="--start-rot:15deg;--end-rot:7deg;animation-delay:100ms;z-index:3;margin-top:-10px;">
+        <div class="slam-domino-card">${buildSlamPlayingCardSVG('A', '♣', false)}</div>
+      </div>
+      <div class="slam-domino-wrap" style="--start-rot:35deg;--end-rot:21deg;animation-delay:150ms;z-index:4;">
+        <div class="slam-domino-card">${buildSlamPlayingCardSVG('A', '♦', true)}</div>
+      </div>
+    `
+    : `
+      <div class="slam-domino-wrap slam-domino-left" style="--start-rot:-24deg;--end-rot:-11deg;animation-delay:0ms;">
+        <div class="slam-domino-card">${buildSlamPlayingCardSVG('A', '♠', false)}</div>
+      </div>
+      <div class="slam-domino-wrap slam-domino-right" style="--start-rot:20deg;--end-rot:8deg;animation-delay:90ms;">
+        <div class="slam-domino-card">${buildSlamPlayingCardSVG('A', '♥', true)}</div>
+      </div>
+    `;
+
+  const shockwavesHTML = isBawah
+    ? `
+      <span class="slam-shockwave ring-gold" style="animation-delay:110ms;"></span>
+      <span class="slam-shockwave ring-crimson" style="animation-delay:220ms;"></span>
+    `
+    : `
+      <span class="slam-shockwave ring-emerald" style="animation-delay:120ms;"></span>
+    `;
+
+  const headlineHTML = isBawah
+    ? `
+      <span class="slam-hl-line slam-hl-white">RAJA NOL!</span>
+      <span class="slam-hl-line slam-hl-gold">GILA BOS!</span>
+    `
+    : `
+      <span class="slam-hl-line slam-hl-white">LOLOS</span>
+      <span class="slam-hl-line slam-hl-gold">BERSIH!</span>
+    `;
+
+  const heroClusterHTML = isBawah
+    ? `
+      <div class="slam-megaphone-wrap left">${buildTrufMegaphoneSVG()}</div>
+      <div class="slam-domino-cluster is-fan-4">${cardsHTML}</div>
+      <div class="slam-megaphone-wrap right">${buildTrufMegaphoneSVG()}</div>
+    `
+    : `
+      <div class="slam-domino-cluster is-double">${cardsHTML}</div>
+    `;
+
+  const overlay = document.createElement('div');
+  overlay.id = 'truf-appreciation-overlay';
+  overlay.className = `domino-slam-overlay ${isBawah ? 'tier-30' : 'tier-25'}`;
+  overlay.onclick = () => window.dismissTrufZeroOverlay && window.dismissTrufZeroOverlay();
+
+  overlay.innerHTML = `
+    <div class="domino-slam-stage ${isBawah ? 'tier-30' : 'tier-25'}" style="${colorVars}">
+      <div class="slam-burst-backdrop">
+        <div class="slam-golden-glow"></div>
+        <span class="slam-sparkle-star s1">&#10022;</span>
+        <span class="slam-sparkle-star s2">&#10022;</span>
+        <span class="slam-sparkle-star s3">&#10022;</span>
+        <span class="slam-sparkle-star s4">&#10022;</span>
+        <span class="slam-confetti-ribbon r1"></span>
+        <span class="slam-confetti-ribbon r2"></span>
+        <span class="slam-confetti-ribbon r3"></span>
+        <span class="slam-comic-ray ray-l1"></span>
+        <span class="slam-comic-ray ray-l2"></span>
+        <span class="slam-comic-ray ray-r1"></span>
+        <span class="slam-comic-ray ray-r2"></span>
+      </div>
+
+      <div class="slam-impact-fx">
+        ${shockwavesHTML}
+        ${chipsHTML}
+      </div>
+
+      <div class="slam-comic-headline">${headlineHTML}</div>
+
+      <div class="slam-hero-cluster">${heroClusterHTML}</div>
+
+      <div class="slam-ribbon-wrap">
+        ${isBawah ? `<div class="slam-crown-badge">${buildTrufCrownSVG()}</div>` : ''}
+        <div class="slam-red-ribbon">
+          <span class="slam-ribbon-text">${isBawah ? 'JAGO BENER!' : 'AMAN BOS!'}</span>
+        </div>
+      </div>
+
+      <div class="slam-score-panel-outer ${isBawah ? 'tier-30' : 'tier-25'}">
+        <div class="slam-score-panel-inner">
+          <div class="slam-player-pill-wrap">
+            <span class="slam-accent-ticks bottom-left" aria-hidden="true"></span>
+            <span class="truf-slam-player-badge">
+              <span>${pSuit.symbol}</span>
+              <span>${escapeHtml(item.name)}</span>
+            </span>
+          </div>
+          <div class="slam-score-pill-wrap">
+            <span class="slam-accent-ticks top-right" aria-hidden="true"></span>
+            <div class="slam-score-pill ${isBawah ? '' : 'is-plus-5'}">
+              <span class="slam-score-big ${isBawah ? 'tier-30' : ''}">+${item.points}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="slam-floor-halo" aria-hidden="true"></div>
+    </div>
+  `;
+
+  document.body.appendChild(overlay);
+  playTrufCardSlamSound(isBawah);
+
+  let dismissed = false;
+  window.dismissTrufZeroOverlay = () => {
+    if (dismissed) return;
+    dismissed = true;
+    clearTimeout(autoDismissTimer);
+    overlay.classList.add('slam-exit');
+    setTimeout(() => {
+      overlay.remove();
+    }, 340);
+  };
+
+  const autoDismissTimer = setTimeout(() => {
+    window.dismissTrufZeroOverlay();
+  }, isBawah ? 2800 : 2250);
 }
 
 function escapeHtml(str) {
