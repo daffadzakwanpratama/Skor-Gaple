@@ -12,7 +12,7 @@
     href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
     rel="stylesheet" />
   <link rel="stylesheet" href="style.css?v=11.0" />
-  <link rel="stylesheet" href="truf.css?v=36.0" />
+  <link rel="stylesheet" href="truf.css?v=37.0" />
   <link rel="manifest" href="manifest.json" />
   <link rel="icon" type="image/svg+xml" href="assets/icon.svg" />
   <meta name="theme-color" content="#FFFFFF" />
@@ -25,15 +25,6 @@
     try {
       localStorage.removeItem('lite-mode');
     } catch (_) {}
-    try {
-      if (sessionStorage.getItem('mode-transition') === 'truf') {
-        document.documentElement.classList.add('mode-arriving');
-        const hold = document.createElement('div');
-        hold.id = 'mode-transition-curtain';
-        hold.className = 'mode-transition-curtain curtain-truf curtain-holding';
-        document.body.appendChild(hold);
-      }
-    } catch (_) {}
   </script>
 
   <div class="truf-shell">
@@ -41,7 +32,7 @@
     <div class="truf-topbar">
       <div id="truf-topbar-suit" class="truf-topbar-suit hidden" aria-label="Kembang Truf Aktif"></div>
       <div class="mode-switcher" role="navigation" aria-label="Pilih Mode Permainan">
-        <a href="index.html" class="mode-pill" onclick="switchGameMode(event, 'gaple', 'index.html')">
+        <a href="index.html" class="mode-pill">
           <span class="mode-icon" aria-hidden="true">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <rect x="6" y="2" width="12" height="20" rx="3" />
@@ -53,7 +44,7 @@
           </span>
           Mode Gaple
         </a>
-        <a href="truf.html" class="mode-pill active-truf" onclick="switchGameMode(event, 'truf', 'truf.html')">
+        <a href="truf.html" class="mode-pill active-truf">
           <span class="mode-icon" aria-hidden="true">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <rect x="4" y="2" width="16" height="20" rx="3" />
@@ -377,15 +368,7 @@
     </div>
   </div>
 
-  <script src="mode-transition.js?v=2.0"></script>
   <script src="truf.js?v=16.0"></script>
-  <script>
-    document.addEventListener('DOMContentLoaded', function () {
-      if (typeof initModeTransitionArrival === 'function') {
-        initModeTransitionArrival('truf');
-      }
-    });
-  </script>
 </body>
 
 </html>

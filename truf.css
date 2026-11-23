@@ -18,11 +18,6 @@ html {
   }
 }
 
-/* ---------- ZERO-FLASH ARRIVAL GUARD ---------- */
-html.mode-arriving body > *:not(#mode-transition-curtain) {
-  opacity: 0;
-}
-
 /* ---------- SHARED MODE SWITCHER (Unified Clean White Segmented Control) ---------- */
 .mode-switcher {
   display: inline-flex;
@@ -79,128 +74,7 @@ html.mode-arriving body > *:not(#mode-transition-curtain) {
   box-shadow: 0 1px 3px rgba(15, 23, 42, 0.12);
 }
 
-/* ---------- PAGE TRANSITION CURTAIN ---------- */
-.mode-transition-curtain {
-  position: fixed;
-  inset: 0;
-  z-index: 99999;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  pointer-events: all;
-  clip-path: circle(0% at var(--origin-x, 50%) var(--origin-y, 50%));
-  opacity: 1;
-  will-change: clip-path, opacity, transform;
-}
 
-.mode-transition-curtain.curtain-truf,
-.mode-transition-curtain.curtain-gaple {
-  background: radial-gradient(circle at 50% 42%, #FFFFFF 0%, #F8FAFC 65%, #E2E8F0 100%);
-}
-
-.mode-transition-curtain.curtain-holding {
-  clip-path: circle(150% at 50% 50%);
-  opacity: 1;
-}
-
-.mode-transition-curtain.curtain-enter {
-  animation: curtainIrisIn 440ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
-}
-
-.mode-transition-curtain.curtain-exit {
-  clip-path: circle(150% at 50% 50%);
-  animation: curtainFadeLift 400ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
-}
-
-.mode-transition-curtain.curtain-enter-lite {
-  clip-path: none;
-  opacity: 0;
-  animation: curtainLiteIn 180ms ease forwards;
-}
-
-.mode-transition-curtain.curtain-exit-lite {
-  clip-path: none;
-  opacity: 1;
-  animation: curtainLiteOut 180ms ease forwards;
-}
-
-.curtain-inner {
-  text-align: center;
-  padding: 1.5rem;
-}
-
-.curtain-svg-wrap {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 0.85rem;
-}
-
-.curtain-truf-fan,
-.curtain-gaple-pop {
-  filter: drop-shadow(0 10px 20px rgba(15, 23, 42, 0.12));
-  animation: trufFanOpen 460ms cubic-bezier(0.22, 1, 0.36, 1) both;
-}
-
-.curtain-title {
-  font-size: 1rem;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  margin-bottom: 0.3rem;
-  font-family: 'Plus Jakarta Sans', sans-serif;
-  color: #0F172A;
-}
-
-.curtain-subtitle {
-  font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
-  font-size: 0.82rem;
-  color: #64748B;
-}
-
-.mode-content-reveal {
-  animation: modeContentReveal 360ms cubic-bezier(0.22, 1, 0.36, 1) both;
-}
-
-@keyframes curtainIrisIn {
-  0% { clip-path: circle(0% at var(--origin-x, 50%) var(--origin-y, 50%)); }
-  100% { clip-path: circle(155% at var(--origin-x, 50%) var(--origin-y, 50%)); }
-}
-
-@keyframes curtainFadeLift {
-  0% { opacity: 1; transform: scale(1); }
-  100% { opacity: 0; transform: scale(1.02); }
-}
-
-@keyframes curtainLiteIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-@keyframes curtainLiteOut {
-  from { opacity: 1; }
-  to { opacity: 0; }
-}
-
-@keyframes trufFanOpen {
-  0% { opacity: 0; transform: translateY(12px) scale(0.9); }
-  100% { opacity: 1; transform: translateY(0) scale(1); }
-}
-
-@keyframes gapleDominoPop {
-  0% { opacity: 0; transform: scale(0.85); }
-  100% { opacity: 1; transform: scale(1); }
-}
-
-@keyframes modeContentReveal {
-  0% { opacity: 0; transform: translateY(8px); }
-  100% { opacity: 1; transform: translateY(0); }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .mode-transition-curtain.curtain-enter { clip-path: none; animation: curtainLiteIn 180ms ease forwards; }
-  .mode-transition-curtain.curtain-exit { animation: curtainLiteOut 180ms ease forwards; }
-  .mode-content-reveal { animation: none; }
-}
 
 /* =============================================
    CLEAN WHITE & ELEGANT TRUF REMI UI

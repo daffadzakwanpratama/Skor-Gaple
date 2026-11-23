@@ -13,7 +13,7 @@
     href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
     rel="stylesheet" />
   <link rel="stylesheet" href="style.css?v=11.0" />
-  <link rel="stylesheet" href="truf.css?v=36.0" />
+  <link rel="stylesheet" href="truf.css?v=37.0" />
   <link rel="manifest" href="manifest.json" />
   <link rel="icon" type="image/svg+xml" href="assets/icon.svg" />
   <meta name="theme-color" content="#FFFFFF" />
@@ -28,16 +28,6 @@
     try {
       localStorage.removeItem('lite-mode');
     } catch (_) {}
-
-    try {
-      if (sessionStorage.getItem('mode-transition') === 'gaple') {
-        document.documentElement.classList.add('mode-arriving');
-        const hold = document.createElement('div');
-        hold.id = 'mode-transition-curtain';
-        hold.className = 'mode-transition-curtain curtain-gaple curtain-holding';
-        document.body.appendChild(hold);
-      }
-    } catch (_) {}
   </script>
 
   <div id="kemerdekaan-confetti-container" class="kemerdekaan-confetti-container"></div>
@@ -46,7 +36,7 @@
   <div id="page-home" class="page active">
     <div class="home-container">
       <div class="mode-switcher" role="navigation" aria-label="Pilih Mode Permainan">
-        <a href="index.html" class="mode-pill active" onclick="switchGameMode(event, 'gaple', 'index.html')">
+        <a href="index.html" class="mode-pill active">
           <span class="mode-icon" aria-hidden="true">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <rect x="6" y="2" width="12" height="20" rx="3" />
@@ -58,7 +48,7 @@
           </span>
           Mode Gaple
         </a>
-        <a href="truf.html" class="mode-pill" onclick="switchGameMode(event, 'truf', 'truf.html')">
+        <a href="truf.html" class="mode-pill">
           <span class="mode-icon" aria-hidden="true">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <rect x="4" y="2" width="16" height="20" rx="3" />
@@ -1259,14 +1249,8 @@
 
   <div id="toast" class="toast hidden"></div>
   <canvas id="confetti-canvas" class="confetti-canvas"></canvas>
-  <script src="mode-transition.js?v=2.0"></script>
   <script src="app.js?v=13.0"></script>
   <script>
-    document.addEventListener('DOMContentLoaded', function () {
-      if (typeof initModeTransitionArrival === 'function') {
-        initModeTransitionArrival('gaple');
-      }
-    });
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('./sw.js')
