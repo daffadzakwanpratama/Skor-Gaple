@@ -2939,7 +2939,7 @@ function startLocalSetup() {
 }
 
 // ─────────────────────────────────────────────
-// APPRECIATION CELEBRATION FUNCTIONS
+// APPRECIATION CELEBRATION FUNCTIONS (Domino Slam)
 // ─────────────────────────────────────────────
 function triggerAppreciationIfNeeded(scores) {
   const g = state.currentGame;
@@ -2950,6 +2950,7 @@ function triggerAppreciationIfNeeded(scores) {
     if (score === -25 || score === -30) {
       celebratedPlayers.push({
         player: g.players[idx],
+        playerIndex: idx,
         score: score
       });
     }
@@ -2959,74 +2960,314 @@ function triggerAppreciationIfNeeded(scores) {
 
   celebratedPlayers.forEach((item, index) => {
     setTimeout(() => {
-      showAppreciationOverlay(item.player, item.score);
-    }, index * 4500);
+      showAppreciationOverlay(item.player, item.score, item.playerIndex);
+    }, index * 2500);
   });
 }
 
-function showAppreciationOverlay(player, score) {
+function playDominoSlamSound(isThirty) {
+  try {
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    if (!AudioCtx) return;
+    const ctx = new AudioCtx();
+    const now = ctx.currentTime;
+
+    function playThock(delaySec, pitchMultiplier = 1) {
+      const start = now + delaySec;
+      const osc = ctx.createOscillator();
+      const oscGain = ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(155 * pitchMultiplier, start);
+      osc.frequency.exponentialRampToValueAtTime(42, start + 0.095);
+      oscGain.gain.setValueAtTime(0.32, start);
+      oscGain.gain.exponentialRampToValueAtTime(0.001, start + 0.11);
+      osc.connect(oscGain);
+      oscGain.connect(ctx.destination);
+      osc.start(start);
+      osc.stop(start + 0.12);
+
+      const bufferSize = Math.floor(ctx.sampleRate * 0.045);
+      const noiseBuffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+      const data = noiseBuffer.getChannelData(0);
+      for (let i = 0; i < bufferSize; i++) {
+        data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (bufferSize * 0.35));
+      }
+      const noise = ctx.createBufferSource();
+      noise.buffer = noiseBuffer;
+      const filter = ctx.createBiquadFilter();
+      filter.type = 'bandpass';
+      filter.frequency.setValueAtTime(900 * pitchMultiplier, start);
+      filter.Q.setValueAtTime(1.4, start);
+      const noiseGain = ctx.createGain();
+      noiseGain.gain.setValueAtTime(0.24, start);
+      noiseGain.gain.exponentialRampToValueAtTime(0.001, start + 0.045);
+      noise.connect(filter);
+      filter.connect(noiseGain);
+      noiseGain.connect(ctx.destination);
+      noise.start(start);
+      noise.stop(start + 0.05);
+    }
+
+    if (isThirty) {
+      playThock(0.11, 1.08);
+      playThock(0.22, 0.94);
+
+      const notes = [523.25, 659.25, 783.99];
+      notes.forEach((freq, i) => {
+        const start = now + 0.24 + i * 0.055;
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, start);
+        gain.gain.setValueAtTime(0.075, start);
+        gain.gain.exponentialRampToValueAtTime(0.001, start + 0.28);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(start);
+        osc.stop(start + 0.3);
+      });
+    } else {
+      playThock(0.12, 1.0);
+    }
+
+    setTimeout(() => {
+      if (ctx.state !== 'closed') {
+        ctx.close().catch(() => {});
+      }
+    }, 1000);
+  } catch (_) {}
+}
+
+function buildSlamDominoSVG(topDots, bottomDots, accentRed = true) {
+  const pipPositions = {
+    0: [],
+    1: [[37, 34]],
+    2: [[22, 20], [52, 48]],
+    3: [[22, 20], [37, 34], [52, 48]],
+    4: [[22, 20], [52, 20], [22, 48], [52, 48]],
+    5: [[22, 20], [52, 20], [37, 34], [22, 48], [52, 48]],
+    6: [[22, 18], [52, 18], [22, 34], [52, 34], [22, 50], [52, 50]]
+  };
+
+  const renderHalf = (count, offsetY) => {
+    const color = accentRed && (count === 1 || count === 6) ? '#DC2626' : '#172554';
+    const coords = pipPositions[count] || [];
+    return coords.map(([cx, cy]) => `<circle cx="${cx}" cy="${cy + offsetY}" r="5.2" fill="${color}" />`).join('');
+  };
+
+  return `
+    <svg class="slam-domino-svg" viewBox="0 0 74 134" width="74" height="134" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <rect x="4" y="6" width="66" height="124" rx="13" fill="#172554" />
+      <rect x="2" y="2" width="66" height="124" rx="12" fill="#FFFFFF" stroke="#172554" stroke-width="3.2" />
+      <rect x="6" y="6" width="58" height="116" rx="8.5" fill="none" stroke="#F1F5F9" stroke-width="1.8" />
+      <rect x="13" y="62.5" width="44" height="4.5" rx="2.2" fill="#991B1B" />
+      <rect x="13" y="61" width="44" height="4.2" rx="2" fill="#DC2626" />
+      ${renderHalf(topDots, 0)}
+      ${renderHalf(bottomDots, 62)}
+    </svg>
+  `;
+}
+
+function buildMegaphoneSVG() {
+  return `
+    <svg class="slam-megaphone-svg" viewBox="0 0 92 84" width="84" height="76" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <!-- Golden lightning bolt -->
+      <path d="M53 6 L68 18 L60 22 L73 36 L54 27 L60 22 L47 11 Z" fill="#FACC15" stroke="#172554" stroke-width="2" stroke-linejoin="round" />
+      <!-- Handle -->
+      <path d="M27 49 L35 72 C36 75 41 75 43 72 L38 46 Z" fill="#B91C1C" stroke="#172554" stroke-width="2.6" stroke-linejoin="round" />
+      <!-- Rear golden cap -->
+      <ellipse cx="17" cy="48" rx="6.5" ry="9.5" transform="rotate(-18 17 48)" fill="#F59E0B" stroke="#172554" stroke-width="2.5" />
+      <!-- Main cone body -->
+      <path d="M17 39 L56 17 L68 55 L22 57 Z" fill="#EF4444" stroke="#172554" stroke-width="2.8" stroke-linejoin="round" />
+      <!-- White band -->
+      <path d="M29 32.5 L39 27 L46 56 L34 56.5 Z" fill="#FFFFFF" stroke="#172554" stroke-width="2.2" stroke-linejoin="round" />
+      <!-- Horn outer flare -->
+      <ellipse cx="62" cy="36" rx="13" ry="22" transform="rotate(-18 62 36)" fill="#FFFFFF" stroke="#172554" stroke-width="2.8" />
+      <!-- Horn deep crimson cone inside -->
+      <ellipse cx="63" cy="36" rx="8.5" ry="16" transform="rotate(-18 63 36)" fill="#991B1B" stroke="#172554" stroke-width="2" />
+      <ellipse cx="60" cy="37" rx="4.5" ry="9" transform="rotate(-18 60 37)" fill="#DC2626" />
+    </svg>
+  `;
+}
+
+function buildCrownSVG() {
+  return `
+    <svg class="slam-crown-svg" viewBox="0 0 60 40" width="50" height="34" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <path d="M7 33 L4 11 L19 21 L30 5 L41 21 L56 11 L53 33 Z" fill="#FACC15" stroke="#172554" stroke-width="2.8" stroke-linejoin="round" />
+      <rect x="8" y="31" width="44" height="6" rx="2.5" fill="#F59E0B" stroke="#172554" stroke-width="2.4" />
+      <circle cx="30" cy="21" r="3" fill="#DC2626" stroke="#172554" stroke-width="1.5" />
+    </svg>
+  `;
+}
+
+function buildSlamPlayerColorVars(hexColor) {
+  const baseHex = /^#[0-9a-f]{6}$/i.test(hexColor) ? hexColor : '#448AFF';
+  const r = parseInt(baseHex.slice(1, 3), 16);
+  const g = parseInt(baseHex.slice(3, 5), 16);
+  const b = parseInt(baseHex.slice(5, 7), 16);
+
+  const mix = (c1, c2, weight) => {
+    const mr = Math.round(c1[0] * (1 - weight) + c2[0] * weight);
+    const mg = Math.round(c1[1] * (1 - weight) + c2[1] * weight);
+    const mb = Math.round(c1[2] * (1 - weight) + c2[2] * weight);
+    return `#${[mr, mg, mb].map(v => Math.max(0, Math.min(255, v)).toString(16).padStart(2, '0')).join('')}`;
+  };
+
+  const darkHex = mix([r, g, b], [15, 23, 42], 0.28);
+  const deepHex = mix([r, g, b], [15, 23, 42], 0.52);
+  const lightHex = mix([r, g, b], [255, 255, 255], 0.72);
+
+  return `--slam-accent: ${baseHex}; --slam-accent-dark: ${darkHex}; --slam-accent-deep: ${deepHex}; --slam-accent-light: ${lightHex}; --slam-accent-rgb: ${r}, ${g}, ${b};`;
+}
+
+function showAppreciationOverlay(player, score, playerIndex) {
   const existing = document.getElementById('appreciation-overlay');
   if (existing) existing.remove();
 
-  const overlay = document.createElement('div');
-  overlay.id = 'appreciation-overlay';
-  overlay.className = 'appreciation-overlay';
-
+  const isThirty = (score === -30);
+  const playerColor = (player && player.color) ? player.color : '#448AFF';
+  const colorVars = buildSlamPlayerColorVars(playerColor);
   const playerNameHtml = renderPlayerBadgeHTML(player, 'lg');
 
-  let message = 'TANGGUH SEKALI! ';
-  if (score === -30) {
-    message = 'DUNG TAK DUNG DUNG WAWWWW! ';
-  } else if (score === -25) {
-    message = 'GACORRRR KINGGGG GAPLE! ';
+  const dashboardEl = document.getElementById('page-dashboard');
+  if (dashboardEl) {
+    dashboardEl.classList.remove('domino-table-shake-25', 'domino-table-shake-30');
+    setTimeout(() => {
+      dashboardEl.classList.add(isThirty ? 'domino-table-shake-30' : 'domino-table-shake-25');
+      setTimeout(() => {
+        dashboardEl.classList.remove('domino-table-shake-25', 'domino-table-shake-30');
+      }, 420);
+    }, 110);
   }
 
+  if (typeof playerIndex === 'number') {
+    const targetRow = document.querySelector(`#leaderboard-list .lb-item[data-player-idx="${playerIndex}"]`);
+    if (targetRow) {
+      targetRow.classList.remove('lb-item-slam-25', 'lb-item-slam-30');
+      void targetRow.offsetWidth;
+      targetRow.classList.add(isThirty ? 'lb-item-slam-30' : 'lb-item-slam-25');
+      setTimeout(() => {
+        targetRow.classList.remove('lb-item-slam-25', 'lb-item-slam-30');
+      }, 2600);
+    }
+  }
+
+  const chipCount = isThirty ? 16 : 10;
+  let chipsHTML = '';
+  for (let i = 0; i < chipCount; i++) {
+    const angle = (Math.PI * 2 * i) / chipCount + (i % 2 === 0 ? 0.14 : -0.14);
+    const dist = (isThirty ? 105 : 82) + (i % 3) * 24;
+    const tx = Math.round(Math.cos(angle) * dist);
+    const ty = Math.round(Math.sin(angle) * dist);
+    const rot = ((i * 53) % 240) - 120;
+    const chipColor = isThirty
+      ? (i % 3 === 0 ? '#FACC15' : i % 3 === 1 ? '#DC2626' : playerColor)
+      : (i % 3 === 0 ? '#FACC15' : i % 3 === 1 ? '#EF4444' : playerColor);
+    const delayMs = isThirty ? (120 + (i % 2) * 80) : 120;
+    chipsHTML += `<span class="slam-chip ${i % 2 === 0 ? 'circle' : ''}" style="--tx:${tx}px;--ty:${ty}px;--rot:${rot}deg;background:${chipColor};animation-delay:${delayMs}ms;"></span>`;
+  }
+
+  const balakDots = isThirty ? 6 : 0;
+  const dominoesHTML = `
+    <div class="slam-domino-wrap slam-domino-left" style="--start-rot:-26deg;--end-rot:-12deg;animation-delay:0ms;">
+      <div class="slam-domino-card">${buildSlamDominoSVG(balakDots, balakDots, false)}</div>
+    </div>
+    <div class="slam-domino-wrap slam-domino-right" style="--start-rot:22deg;--end-rot:7deg;animation-delay:95ms;">
+      <div class="slam-domino-card">${buildSlamDominoSVG(balakDots, balakDots, false)}</div>
+    </div>
+  `;
+
+  const shockwavesHTML = isThirty
+    ? `
+      <span class="slam-shockwave ring-gold" style="animation-delay:110ms;"></span>
+      <span class="slam-shockwave ring-crimson" style="animation-delay:220ms;"></span>
+    `
+    : `
+      <span class="slam-shockwave ring-gold" style="animation-delay:120ms;"></span>
+    `;
+
+  const overlay = document.createElement('div');
+  overlay.id = 'appreciation-overlay';
+  overlay.className = `domino-slam-overlay ${isThirty ? 'tier-30' : 'tier-25'}`;
+  overlay.onclick = () => window.dismissAppreciationOverlay && window.dismissAppreciationOverlay();
+
   overlay.innerHTML = `
-    <div class="appreciation-sunburst"></div>
-    <div class="appreciation-container">
-      <h2 class="appreciation-title">HEBAT!</h2>
-      <p class="appreciation-subtitle">${message}</p>
-      
-      <div class="appreciation-card">
-        <div class="appreciation-player-showcase">
-          ${playerNameHtml}
-        </div>
-        <div class="appreciation-score-badge">${score} POIN</div>
-        <div class="appreciation-sparkles" id="appreciation-sparkles-container"></div>
+    <div class="domino-slam-stage ${isThirty ? 'tier-30' : 'tier-25'}" style="${colorVars}">
+      <div class="slam-burst-backdrop">
+        <div class="slam-golden-glow"></div>
+        <span class="slam-sparkle-star s1">&#10022;</span>
+        <span class="slam-sparkle-star s2">&#10022;</span>
+        <span class="slam-sparkle-star s3">&#10022;</span>
+        <span class="slam-sparkle-star s4">&#10022;</span>
+        <span class="slam-confetti-ribbon r1"></span>
+        <span class="slam-confetti-ribbon r2"></span>
+        <span class="slam-confetti-ribbon r3"></span>
+        <span class="slam-comic-ray ray-l1"></span>
+        <span class="slam-comic-ray ray-l2"></span>
+        <span class="slam-comic-ray ray-r1"></span>
+        <span class="slam-comic-ray ray-r2"></span>
       </div>
-      
-      <button class="btn btn-primary btn-lg" style="min-width: 160px;" onclick="dismissAppreciationOverlay()">
-        LANJUT 
-      </button>
+
+      <div class="slam-impact-fx">
+        ${shockwavesHTML}
+        ${chipsHTML}
+      </div>
+
+      <div class="slam-comic-headline" aria-label="Dungtak Dung Dung Waw!">
+        <span class="slam-hl-line slam-hl-white">Dungtak</span>
+        <span class="slam-hl-line slam-hl-white">Dung Dung</span>
+        <span class="slam-hl-line slam-hl-gold">Waw!</span>
+      </div>
+
+      <div class="slam-hero-cluster">
+        <div class="slam-megaphone-wrap left">${buildMegaphoneSVG()}</div>
+        <div class="slam-domino-cluster is-double">${dominoesHTML}</div>
+        <div class="slam-megaphone-wrap right">${buildMegaphoneSVG()}</div>
+      </div>
+
+      <div class="slam-ribbon-wrap">
+        <div class="slam-crown-badge">${buildCrownSVG()}</div>
+        <div class="slam-red-ribbon">
+          <span class="slam-ribbon-text">Mahal Bos!</span>
+        </div>
+      </div>
+
+      <div class="slam-score-panel-outer ${isThirty ? 'tier-30' : 'tier-25'}">
+        <div class="slam-score-panel-inner">
+          <div class="slam-player-pill-wrap">
+            <span class="slam-accent-ticks bottom-left" aria-hidden="true"></span>
+            ${playerNameHtml}
+          </div>
+          <div class="slam-score-pill-wrap">
+            <span class="slam-accent-ticks top-right" aria-hidden="true"></span>
+            <div class="slam-score-pill">
+              <span class="slam-score-big ${isThirty ? 'tier-30' : 'tier-25'}">${score}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="slam-floor-halo" aria-hidden="true"></div>
     </div>
   `;
 
   document.body.appendChild(overlay);
+  playDominoSlamSound(isThirty);
 
-  const sparklesContainer = overlay.querySelector('#appreciation-sparkles-container');
-  if (sparklesContainer && !document.body.classList.contains('lite-mode')) {
-    for (let i = 0; i < 35; i++) {
-      createSparkle(sparklesContainer);
-    }
-  }
-
-  const showcaseBadge = overlay.querySelector('.appreciation-player-showcase .player-badge');
-  if (showcaseBadge) {
-    showcaseBadge.style.animation = 'pixelAvatarJump 0.5s steps(4) infinite alternate';
-  }
-
-  const autoDismissTimer = setTimeout(() => {
-    dismissAppreciationOverlay();
-  }, 4000);
-
+  let dismissed = false;
   window.dismissAppreciationOverlay = () => {
+    if (dismissed) return;
+    dismissed = true;
     clearTimeout(autoDismissTimer);
-    overlay.style.transition = 'opacity 0.2s ease-out';
-    overlay.style.opacity = '0';
+    overlay.classList.add('slam-exit');
     setTimeout(() => {
       overlay.remove();
-    }, 200);
+    }, 340);
   };
+
+  const autoDismissTimer = setTimeout(() => {
+    window.dismissAppreciationOverlay();
+  }, isThirty ? 2650 : 2150);
 }
 
 function createSparkle(container) {

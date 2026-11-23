@@ -2725,3 +2725,634 @@ body.truf-theme .truf-card {
   }
 }
 
+/* =============================================
+   DOMINO SLAM CELEBRATION (-25 & -30)
+   Comic Artwork Style ("Dungtak Dung Dung Waw! / Mahal Bos!")
+   ============================================= */
+
+.domino-slam-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  background: radial-gradient(circle at 50% 48%, rgba(15, 23, 42, 0.14) 0%, rgba(15, 23, 42, 0.32) 100%) !important;
+  backdrop-filter: blur(3px) !important;
+  -webkit-backdrop-filter: blur(3px) !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.25rem;
+  cursor: pointer;
+  animation: dominoOverlayIn 220ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.domino-slam-overlay.slam-exit {
+  pointer-events: none;
+  animation: dominoOverlayOut 320ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.domino-slam-overlay.slam-exit .domino-slam-stage {
+  animation: dominoStageOut 280ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+@keyframes dominoOverlayIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes dominoOverlayOut {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+@keyframes dominoStageOut {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.92);
+  }
+}
+
+.domino-slam-stage {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  max-width: 440px;
+  width: 100%;
+  pointer-events: none;
+}
+
+/* Ambient Golden Glow, Sparkles, Ribbons & Comic Rays */
+.slam-burst-backdrop {
+  position: absolute;
+  inset: -40px -20px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.slam-golden-glow {
+  position: absolute;
+  top: 42%;
+  left: 50%;
+  width: 310px;
+  height: 290px;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(253, 224, 71, 0.92) 0%, rgba(245, 158, 11, 0.48) 45%, transparent 72%);
+  filter: blur(8px);
+  animation: slamGlowPulse 1.4s ease-in-out infinite alternate;
+}
+
+@keyframes slamGlowPulse {
+  0% { transform: translate(-50%, -50%) scale(0.95); opacity: 0.85; }
+  100% { transform: translate(-50%, -50%) scale(1.06); opacity: 1; }
+}
+
+.slam-sparkle-star {
+  position: absolute;
+  color: #FDE047;
+  font-size: 1.35rem;
+  line-height: 1;
+  text-shadow: 0 2px 6px rgba(245, 158, 11, 0.7);
+  animation: slamStarTwinkle 900ms ease-in-out infinite alternate;
+}
+
+.slam-sparkle-star.s1 { top: 10%; left: 20%; font-size: 1.15rem; animation-delay: 0ms; }
+.slam-sparkle-star.s2 { top: 8%; right: 20%; font-size: 1.45rem; animation-delay: 220ms; }
+.slam-sparkle-star.s3 { top: 44%; left: 11%; font-size: 1.1rem; animation-delay: 140ms; }
+.slam-sparkle-star.s4 { top: 44%; right: 11%; font-size: 1.25rem; animation-delay: 340ms; }
+
+@keyframes slamStarTwinkle {
+  0% { transform: scale(0.85) rotate(-8deg); opacity: 0.75; }
+  100% { transform: scale(1.18) rotate(8deg); opacity: 1; }
+}
+
+.slam-confetti-ribbon {
+  position: absolute;
+  width: 18px;
+  height: 8px;
+  border-radius: 3px;
+  opacity: 0;
+  animation: slamRibbonPop 520ms cubic-bezier(0.22, 1, 0.36, 1) 140ms forwards;
+}
+
+.slam-confetti-ribbon.r1 {
+  top: 19%;
+  left: 14%;
+  background: #EF4444;
+  transform: rotate(-28deg);
+}
+
+.slam-confetti-ribbon.r2 {
+  top: 34%;
+  left: 10%;
+  width: 20px;
+  background: var(--slam-accent, #3B82F6);
+  transform: rotate(22deg);
+}
+
+.slam-confetti-ribbon.r3 {
+  top: 36%;
+  right: 11%;
+  background: #EF4444;
+  transform: rotate(-24deg);
+}
+
+@keyframes slamRibbonPop {
+  0% { opacity: 0; transform: scale(0.3) translateY(18px); }
+  100% { opacity: 0.95; }
+}
+
+.slam-comic-ray {
+  position: absolute;
+  width: 0;
+  height: 0;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-bottom: 24px solid #F59E0B;
+  opacity: 0.9;
+}
+
+.slam-comic-ray.ray-l1 { top: 26%; left: 22%; transform: rotate(-42deg); }
+.slam-comic-ray.ray-l2 { top: 31%; left: 19%; border-bottom-color: #FACC15; transform: rotate(-64deg); }
+.slam-comic-ray.ray-r1 { top: 26%; right: 22%; transform: rotate(42deg); }
+.slam-comic-ray.ray-r2 { top: 31%; right: 19%; border-bottom-color: #FACC15; transform: rotate(64deg); }
+
+.slam-impact-fx {
+  position: absolute;
+  top: 150px;
+  left: 50%;
+  width: 0;
+  height: 0;
+  z-index: 2;
+}
+
+.slam-shockwave {
+  position: absolute;
+  top: -36px;
+  left: -36px;
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  border: 3px solid #FACC15;
+  opacity: 0;
+  animation: slamShockwaveExpand 620ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.slam-shockwave.ring-gold {
+  border-color: #FACC15;
+}
+
+.slam-shockwave.ring-crimson {
+  border-color: #DC2626;
+}
+
+@keyframes slamShockwaveExpand {
+  0% {
+    opacity: 0.95;
+    transform: scale(0.2);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(2.8);
+  }
+}
+
+.slam-chip {
+  position: absolute;
+  top: -4px;
+  left: -5px;
+  width: 10px;
+  height: 6px;
+  border-radius: 2px;
+  opacity: 0;
+  animation: slamChipBurst 650ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.slam-chip.circle {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+@keyframes slamChipBurst {
+  0% {
+    opacity: 1;
+    transform: translate(0, 0) scale(1) rotate(0deg);
+  }
+  70% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(var(--tx, 60px), var(--ty, -60px)) scale(0.4) rotate(var(--rot, 90deg));
+  }
+}
+
+/* 3D Stacked Comic Headline */
+.slam-comic-headline {
+  position: relative;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 0.94;
+  transform: rotate(-3deg) skewX(-6deg);
+  margin-bottom: -4px;
+  animation: slamHeadlinePop 340ms cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+@keyframes slamHeadlinePop {
+  0% {
+    opacity: 0;
+    transform: scale(0.55) rotate(-6deg) skewX(-6deg);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) rotate(-3deg) skewX(-6deg);
+  }
+}
+
+.slam-hl-line {
+  display: block;
+  font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+}
+
+.slam-hl-white {
+  font-size: 2rem;
+  color: #FFFFFF;
+  -webkit-text-stroke: 7px #172554;
+  paint-order: stroke fill;
+  text-shadow: 0 5px 0 #0F172A, 0 8px 18px rgba(0, 0, 0, 0.45);
+}
+
+.slam-hl-gold {
+  font-size: 2.85rem;
+  color: #FACC15;
+  -webkit-text-stroke: 8px #172554;
+  paint-order: stroke fill;
+  text-shadow: 0 6px 0 #0F172A, 0 10px 20px rgba(0, 0, 0, 0.5);
+  margin-top: -2px;
+}
+
+/* Hero Cluster: Megaphones + Overlapping Slammed Dominoes */
+.slam-hero-cluster {
+  position: relative;
+  z-index: 4;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  width: 100%;
+  height: 118px;
+  margin-bottom: -16px;
+}
+
+.slam-domino-cluster {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 116px;
+  z-index: 3;
+}
+
+.slam-domino-wrap {
+  opacity: 0;
+  animation: dominoDropSlam 340ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  will-change: transform, opacity;
+}
+
+.slam-domino-cluster.is-double .slam-domino-left {
+  margin-right: -14px;
+  z-index: 3;
+}
+
+.slam-domino-cluster.is-double .slam-domino-right {
+  margin-left: -14px;
+  z-index: 4;
+}
+
+.slam-domino-card {
+  filter: drop-shadow(0 12px 20px rgba(15, 23, 42, 0.35));
+}
+
+.slam-domino-svg {
+  width: 62px;
+  height: auto;
+  display: block;
+}
+
+@keyframes dominoDropSlam {
+  0% {
+    opacity: 0;
+    transform: translateY(-140px) scale(2.1) rotate(var(--start-rot, -18deg));
+  }
+  55% {
+    opacity: 1;
+    transform: translateY(4px) scale(0.94) rotate(var(--end-rot, -5deg));
+  }
+  75% {
+    transform: translateY(-4px) scale(1.03) rotate(var(--end-rot, -5deg));
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1) rotate(var(--end-rot, -5deg));
+  }
+}
+
+.slam-megaphone-wrap {
+  position: relative;
+  z-index: 5;
+  margin-bottom: 6px;
+  opacity: 0;
+}
+
+.slam-megaphone-wrap.left {
+  margin-right: -10px;
+  animation: slamMegaphoneLeft 320ms cubic-bezier(0.22, 1, 0.36, 1) 90ms forwards;
+}
+
+.slam-megaphone-wrap.right {
+  margin-left: -10px;
+  animation: slamMegaphoneRight 320ms cubic-bezier(0.22, 1, 0.36, 1) 130ms forwards;
+}
+
+.slam-megaphone-wrap.right .slam-megaphone-svg {
+  transform: scaleX(-1);
+}
+
+.slam-megaphone-svg {
+  width: 74px;
+  height: auto;
+  display: block;
+  filter: drop-shadow(0 6px 12px rgba(15, 23, 42, 0.38));
+}
+
+@keyframes slamMegaphoneLeft {
+  0% { opacity: 0; transform: translateX(-28px) scale(0.65) rotate(-14deg); }
+  100% { opacity: 1; transform: translateX(0) scale(1) rotate(0deg); }
+}
+
+@keyframes slamMegaphoneRight {
+  0% { opacity: 0; transform: translateX(28px) scale(0.65) rotate(14deg); }
+  100% { opacity: 1; transform: translateX(0) scale(1) rotate(0deg); }
+}
+
+/* Crown & Red Curved Ribbon Banner ("Mahal Bos!") */
+.slam-ribbon-wrap {
+  position: relative;
+  z-index: 6;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: -14px;
+  opacity: 0;
+  animation: slamBannerPop 280ms cubic-bezier(0.22, 1, 0.36, 1) 110ms forwards;
+}
+
+.slam-crown-badge {
+  position: relative;
+  z-index: 7;
+  margin-bottom: -10px;
+  filter: drop-shadow(0 4px 8px rgba(15, 23, 42, 0.35));
+}
+
+.slam-red-ribbon {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 244px;
+  padding: 0.42rem 2rem;
+  background: linear-gradient(180deg, #EF4444 0%, #DC2626 55%, #B91C1C 100%);
+  border: 2.5px solid #450A0A;
+  border-radius: 14px;
+  box-shadow: inset 0 2px 0 rgba(254, 240, 138, 0.65), inset 0 -2px 0 rgba(127, 29, 29, 0.8), 0 6px 14px rgba(15, 23, 42, 0.35);
+}
+
+.slam-red-ribbon::before,
+.slam-red-ribbon::after {
+  content: '';
+  position: absolute;
+  top: 7px;
+  width: 28px;
+  height: calc(100% - 6px);
+  background: linear-gradient(180deg, #B91C1C 0%, #7F1D1D 100%);
+  border: 2px solid #450A0A;
+  z-index: -1;
+}
+
+.slam-red-ribbon::before {
+  left: -18px;
+  border-radius: 6px 0 0 6px;
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%, 28% 50%);
+}
+
+.slam-red-ribbon::after {
+  right: -18px;
+  border-radius: 0 6px 6px 0;
+  clip-path: polygon(0 0, 100% 0, 72% 50%, 100% 100%, 0 100%);
+}
+
+.slam-ribbon-text {
+  font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+  font-size: 1.65rem;
+  font-weight: 900;
+  font-style: italic;
+  color: #FFFFFF;
+  -webkit-text-stroke: 4px #7F1D1D;
+  paint-order: stroke fill;
+  text-shadow: 0 3px 0 #450A0A;
+  letter-spacing: -0.01em;
+  line-height: 1.1;
+}
+
+/* 3D Player-Themed Framed Cream Score Panel */
+.slam-score-panel-outer {
+  position: relative;
+  z-index: 4;
+  width: 100%;
+  background: linear-gradient(180deg, var(--slam-accent, #3B82F6) 0%, var(--slam-accent-dark, #1D4ED8) 100%);
+  border: 2.5px solid var(--slam-accent-light, #E0F2FE);
+  border-radius: 28px;
+  padding: 7px;
+  box-shadow: 0 7px 0 var(--slam-accent-deep, #1E3A8A), 0 18px 36px rgba(15, 23, 42, 0.45);
+  opacity: 0;
+  animation: slamBannerPop 280ms cubic-bezier(0.22, 1, 0.36, 1) 125ms forwards;
+}
+
+.slam-score-panel-outer.tier-30 {
+  box-shadow: 0 7px 0 var(--slam-accent-deep, #1E3A8A), 0 0 28px rgba(var(--slam-accent-rgb, 250, 204, 21), 0.5), 0 18px 36px rgba(15, 23, 42, 0.48);
+}
+
+.slam-score-panel-inner {
+  position: relative;
+  background: #FFFBEB;
+  border: 2px solid var(--slam-accent-deep, #1E3A8A);
+  border-radius: 21px;
+  padding: 1.4rem 1.15rem 1.1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.95rem;
+  flex-wrap: wrap;
+}
+
+.slam-player-pill-wrap,
+.slam-score-pill-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.slam-player-pill-wrap .player-badge {
+  border-radius: 16px !important;
+  box-shadow: 0 4px 0 rgba(15, 23, 42, 0.22) !important;
+  padding: 0.62rem 1.2rem !important;
+}
+
+.slam-score-pill {
+  background: #FAD1D0;
+  border-radius: 999px;
+  padding: 0.4rem 1.25rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.slam-score-big {
+  font-size: 2.35rem;
+  font-weight: 900;
+  font-style: italic;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  color: #B91C1C;
+}
+
+.slam-score-big.tier-30 {
+  color: #DC2626;
+}
+
+/* Comic Burst Accent Ticks */
+.slam-accent-ticks {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  pointer-events: none;
+}
+
+.slam-accent-ticks.bottom-left {
+  left: -14px;
+  bottom: -8px;
+  background:
+    linear-gradient(155deg, transparent 42%, #F59E0B 44%, #F59E0B 58%, transparent 60%),
+    linear-gradient(115deg, transparent 42%, #F59E0B 44%, #F59E0B 58%, transparent 60%);
+}
+
+.slam-accent-ticks.top-right {
+  right: -14px;
+  top: -10px;
+  background:
+    linear-gradient(35deg, transparent 42%, #F59E0B 44%, #F59E0B 58%, transparent 60%),
+    linear-gradient(75deg, transparent 42%, #F59E0B 44%, #F59E0B 58%, transparent 60%);
+}
+
+/* Glowing Player-Themed Floor Halo Ring */
+.slam-floor-halo {
+  width: 84%;
+  height: 22px;
+  margin-top: 2px;
+  border-radius: 50%;
+  border: 2px solid var(--slam-accent-light, rgba(125, 211, 252, 0.85));
+  background: radial-gradient(ellipse at center, rgba(var(--slam-accent-rgb, 56, 189, 248), 0.58) 0%, rgba(var(--slam-accent-rgb, 37, 99, 235), 0.22) 55%, transparent 75%);
+  box-shadow: 0 0 22px rgba(var(--slam-accent-rgb, 56, 189, 248), 0.68);
+  opacity: 0;
+  animation: slamHaloIn 320ms ease-out 160ms forwards;
+}
+
+@keyframes slamHaloIn {
+  from { opacity: 0; transform: scaleX(0.6); }
+  to { opacity: 1; transform: scaleX(1); }
+}
+
+@keyframes slamBannerPop {
+  0% {
+    opacity: 0;
+    transform: translateY(14px) scale(0.92);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Table micro-shake & Leaderboard row spotlight */
+@keyframes tableSlamShake25 {
+  0%, 100% { transform: translate3d(0, 0, 0); }
+  25% { transform: translate3d(-2px, 3px, 0); }
+  55% { transform: translate3d(2px, -2px, 0); }
+  80% { transform: translate3d(-1px, 1px, 0); }
+}
+
+@keyframes tableSlamShake30 {
+  0%, 100% { transform: translate3d(0, 0, 0); }
+  15% { transform: translate3d(-4px, 4px, 0); }
+  35% { transform: translate3d(4px, -3px, 0); }
+  55% { transform: translate3d(-3px, 3px, 0); }
+  75% { transform: translate3d(2px, -2px, 0); }
+}
+
+.domino-table-shake-25 {
+  animation: tableSlamShake25 220ms cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+
+.domino-table-shake-30 {
+  animation: tableSlamShake30 360ms cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+
+.lb-item.lb-item-slam-25 {
+  border-color: #10B981 !important;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.24) !important;
+  transition: box-shadow 0.25s ease, border-color 0.25s ease;
+}
+
+.lb-item.lb-item-slam-30 {
+  border-color: #F59E0B !important;
+  background: linear-gradient(90deg, #FFFBEB 0%, #FEF2F2 100%) !important;
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.34), 0 6px 18px rgba(220, 38, 38, 0.14) !important;
+  transition: box-shadow 0.25s ease, border-color 0.25s ease;
+}
+
+@media (max-width: 440px) {
+  .slam-hl-white { font-size: 1.65rem; -webkit-text-stroke: 6px #172554; }
+  .slam-hl-gold { font-size: 2.35rem; -webkit-text-stroke: 7px #172554; }
+  .slam-domino-svg { width: 54px; }
+  .slam-megaphone-svg { width: 62px; }
+  .slam-ribbon-text { font-size: 1.4rem; }
+  .slam-score-big { font-size: 2rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .slam-domino-wrap,
+  .slam-shockwave,
+  .slam-chip,
+  .slam-comic-headline,
+  .slam-megaphone-wrap,
+  .slam-ribbon-wrap,
+  .slam-score-panel-outer,
+  .slam-floor-halo,
+  .domino-table-shake-25,
+  .domino-table-shake-30 {
+    animation-duration: 1ms !important;
+    animation-delay: 0ms !important;
+  }
+}
+
+
