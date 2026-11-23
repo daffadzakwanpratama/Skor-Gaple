@@ -1676,14 +1676,26 @@ function finalizeSaveRound(scores) {
     showToast(`Ronde ${g.rounds.length} disimpan ✓`);
   }
 
-  // Auto-focus first input field for the next round
-  setTimeout(() => {
-    const firstInput = document.getElementById('score-score-inputs-0');
-    if (firstInput) {
-      firstInput.focus();
-      try { firstInput.select(); } catch (err) { }
-    }
-  }, 50);
+  // Tutup keyboard virtual di perangkat sentuh & arahkan tampilan ke posisi Leaderboard paling atas
+  const isTouchDevice = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
+  if (isTouchDevice && document.activeElement && typeof document.activeElement.blur === 'function') {
+    document.activeElement.blur();
+  }
+
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+
+  // Auto-focus hanya untuk desktop (tanpa menggeser posisi scroll)
+  if (!isTouchDevice) {
+    setTimeout(() => {
+      const firstInput = document.getElementById('score-score-inputs-0');
+      if (firstInput) {
+        try {
+          firstInput.focus({ preventScroll: true });
+          firstInput.select();
+        } catch (err) { }
+      }
+    }, 50);
+  }
 }
 
 function recalcTotals() {
