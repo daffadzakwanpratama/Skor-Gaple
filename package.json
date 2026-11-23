@@ -1,0 +1,23 @@
+{
+  "name": "skor-gaple",
+  "version": "1.0.0",
+  "description": "",
+  "main": "sw.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/daffadzakwanpratama/Skor-Gaple.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/daffadzakwanpratama/Skor-Gaple/issues"
+  },
+  "homepage": "https://github.com/daffadzakwanpratama/Skor-Gaple#readme",
+  "dependencies": {
+    "falling-leaves": "^0.1.0"
+  }
+}
