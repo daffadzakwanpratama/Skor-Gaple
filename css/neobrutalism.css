@@ -1,0 +1,930 @@
+/* =============================================
+   CLASSIC NEO-BRUTALISM UI THEME
+   Palette: Krem, Kuning, Merah, Biru, Hijau
+   Applies across Mode Gaple & Mode Truf Remi
+   ============================================= */
+
+:root {
+  --nb-bg: #FFF9EB;
+  --nb-surface: #FFFFFF;
+  --nb-surface-cream: #FFF3D1;
+  --nb-ink: #111111;
+  --nb-muted: #3F3F46;
+
+  --nb-yellow: #FFD60A;
+  --nb-yellow-soft: #FFF3B0;
+
+  --nb-red: #FF4D4D;
+  --nb-red-hover: #E63939;
+  --nb-red-soft: #FFE0E0;
+
+  --nb-blue: #3B82F6;
+  --nb-blue-hover: #2563EB;
+  --nb-blue-soft: #DBEAFE;
+
+  --nb-green: #22C55E;
+  --nb-green-hover: #16A34A;
+  --nb-green-soft: #DCFCE7;
+
+  --nb-border: 2.5px solid var(--nb-ink);
+  --nb-border-sm: 2px solid var(--nb-ink);
+  --nb-shadow: 4px 4px 0 var(--nb-ink);
+  --nb-shadow-lg: 6px 6px 0 var(--nb-ink);
+  --nb-shadow-sm: 2.5px 2.5px 0 var(--nb-ink);
+  --nb-shadow-xs: 2px 2px 0 var(--nb-ink);
+
+  --nb-radius-lg: 12px;
+  --nb-radius-md: 8px;
+  --nb-radius-sm: 6px;
+}
+
+/* =============================================
+   1. GLOBAL CANVAS & TYPOGRAPHY
+   ============================================= */
+
+html,
+body,
+body.truf-theme,
+body.lite-mode,
+body.kemerdekaan-mode {
+  background-color: var(--nb-bg) !important;
+  background-image: radial-gradient(rgba(17, 17, 17, 0.12) 1.2px, transparent 1.2px) !important;
+  background-size: 22px 22px !important;
+  color: var(--nb-ink) !important;
+}
+
+.home-title,
+.truf-hero-title,
+.page-title,
+.dash-game-name,
+.section-title,
+.truf-card-title,
+.gameover-title,
+.modal-title,
+.stage-title,
+.tourney-header-title,
+.history-game-name,
+.table-card-title,
+.mode-card-title,
+.podium-name,
+.truf-rules-heading {
+  font-weight: 800 !important;
+  color: var(--nb-ink) !important;
+  -webkit-text-fill-color: var(--nb-ink) !important;
+  letter-spacing: -0.02em !important;
+}
+
+.home-subtitle,
+.truf-card-sub,
+.gameover-subtitle,
+.mode-card-desc,
+.mode-feature-item,
+.stage-sub,
+.form-hint,
+.truf-row-sub,
+.truf-lb-meta,
+.saved-label,
+.modal-body,
+.modal-card p {
+  color: var(--nb-muted) !important;
+  font-weight: 600;
+}
+
+.home-logo svg,
+.truf-hero-card > div:first-child svg {
+  filter: drop-shadow(4px 4px 0 var(--nb-ink)) !important;
+}
+
+/* =============================================
+   2. MODE SWITCHER (Segmented Pill Bar)
+   ============================================= */
+
+.mode-switcher {
+  background: var(--nb-surface) !important;
+  border: var(--nb-border) !important;
+  border-radius: var(--nb-radius-lg) !important;
+  box-shadow: 3px 3px 0 var(--nb-ink) !important;
+  padding: 0.3rem !important;
+  gap: 0.3rem !important;
+}
+
+.mode-pill {
+  color: var(--nb-ink) !important;
+  font-weight: 700 !important;
+  border-radius: var(--nb-radius-md) !important;
+  border: 2px solid transparent !important;
+  transition: transform 0.1s ease, background-color 0.15s ease, box-shadow 0.1s ease !important;
+}
+
+.mode-pill:hover:not(.active):not(.active-truf) {
+  background: var(--nb-surface-cream) !important;
+  color: var(--nb-ink) !important;
+}
+
+.mode-pill.active {
+  background: var(--nb-yellow) !important;
+  color: var(--nb-ink) !important;
+  border: var(--nb-border-sm) !important;
+  box-shadow: var(--nb-shadow-xs) !important;
+  font-weight: 800 !important;
+}
+
+.mode-pill.active-truf {
+  background: var(--nb-blue) !important;
+  color: #FFFFFF !important;
+  border: var(--nb-border-sm) !important;
+  box-shadow: var(--nb-shadow-xs) !important;
+  font-weight: 800 !important;
+}
+
+/* =============================================
+   3. BUTTONS & TACTILE CONTROLS
+   ============================================= */
+
+.btn,
+body.truf-theme .btn,
+body:not(.truf-theme) .btn {
+  border: var(--nb-border) !important;
+  border-radius: var(--nb-radius-md) !important;
+  font-weight: 800 !important;
+  box-shadow: 3px 3px 0 var(--nb-ink) !important;
+  transition: transform 0.1s ease, box-shadow 0.1s ease, background-color 0.15s ease !important;
+}
+
+.btn:hover:not(:disabled),
+body.truf-theme .btn:hover:not(:disabled),
+body:not(.truf-theme) .btn:hover:not(:disabled) {
+  transform: translate(-1px, -1px) !important;
+  box-shadow: 4px 4px 0 var(--nb-ink) !important;
+}
+
+.btn:active:not(:disabled),
+body.truf-theme .btn:active:not(:disabled),
+body:not(.truf-theme) .btn:active:not(:disabled) {
+  transform: translate(2px, 2px) !important;
+  box-shadow: 0 0 0 var(--nb-ink) !important;
+}
+
+/* Mode Gaple Primary (Coral Red) */
+body:not(.truf-theme) .btn-primary {
+  background: var(--nb-red) !important;
+  color: #FFFFFF !important;
+  border: var(--nb-border) !important;
+}
+
+body:not(.truf-theme) .btn-primary:hover:not(:disabled) {
+  background: var(--nb-red-hover) !important;
+}
+
+/* Mode Truf Primary (Electric Blue) */
+body.truf-theme .btn-primary {
+  background: var(--nb-blue) !important;
+  color: #FFFFFF !important;
+  border: var(--nb-border) !important;
+}
+
+body.truf-theme .btn-primary:hover:not(:disabled) {
+  background: var(--nb-blue-hover) !important;
+}
+
+/* Mode Truf Save Round CTA (Punchy Green when enabled) */
+#truf-phase-result #btn-save-round:not(:disabled) {
+  background: var(--nb-green-hover) !important;
+  color: #FFFFFF !important;
+  border: var(--nb-border) !important;
+}
+
+#truf-phase-result #btn-save-round:hover:not(:disabled) {
+  background: #15803D !important;
+}
+
+/* Outline / Secondary Buttons */
+.btn-outline,
+body.truf-theme .btn-outline,
+.btn-ghost,
+body.truf-theme .btn-ghost {
+  background: var(--nb-surface) !important;
+  color: var(--nb-ink) !important;
+  border: var(--nb-border) !important;
+}
+
+.btn-outline:hover:not(:disabled),
+body.truf-theme .btn-outline:hover:not(:disabled),
+.btn-ghost:hover:not(:disabled),
+body.truf-theme .btn-ghost:hover:not(:disabled) {
+  background: var(--nb-yellow-soft) !important;
+  color: var(--nb-ink) !important;
+}
+
+/* Home Action Accent Hovers (5-color harmony) */
+#btn-start-tournament:hover:not(:disabled) {
+  background: var(--nb-yellow) !important;
+}
+
+#btn-history:hover:not(:disabled) {
+  background: var(--nb-blue-soft) !important;
+}
+
+#btn-stats:hover:not(:disabled) {
+  background: var(--nb-green-soft) !important;
+}
+
+/* Disabled State */
+.btn:disabled,
+body.truf-theme .btn:disabled,
+.btn-primary:disabled,
+body.truf-theme .btn-primary:disabled {
+  background: #E5E0D5 !important;
+  color: #71717A !important;
+  border: 2px solid #71717A !important;
+  box-shadow: none !important;
+  transform: none !important;
+  cursor: not-allowed !important;
+}
+
+/* Inline-styled Special Buttons in index.html */
+#btn-reset-all {
+  background: var(--nb-red-soft) !important;
+  color: #991B1B !important;
+  border: var(--nb-border) !important;
+  border-radius: var(--nb-radius-md) !important;
+  box-shadow: 3px 3px 0 var(--nb-ink) !important;
+}
+
+#btn-reset-all:hover:not(:disabled) {
+  background: var(--nb-red) !important;
+  color: #FFFFFF !important;
+}
+
+.btn-wa-share,
+#btn-finish-tourney-match,
+#btn-back-tournament {
+  border: var(--nb-border) !important;
+  border-radius: var(--nb-radius-md) !important;
+  box-shadow: 3px 3px 0 var(--nb-ink) !important;
+}
+
+/* Compact Icon, Back, Action & Toggle Buttons */
+.btn-back,
+.icon-btn,
+.truf-icon-btn,
+.btn-round-action,
+.btn-minus-toggle,
+.minus-opt-btn,
+.count-btn {
+  background: var(--nb-surface) !important;
+  color: var(--nb-ink) !important;
+  border: var(--nb-border-sm) !important;
+  border-radius: var(--nb-radius-md) !important;
+  box-shadow: var(--nb-shadow-xs) !important;
+  font-weight: 800 !important;
+  transition: transform 0.1s ease, box-shadow 0.1s ease, background-color 0.15s ease !important;
+}
+
+.btn-back:hover,
+.icon-btn:hover,
+.truf-icon-btn:hover,
+.btn-round-action:hover,
+.btn-minus-toggle:hover,
+.count-btn:hover {
+  background: var(--nb-yellow) !important;
+  color: var(--nb-ink) !important;
+  border-color: var(--nb-ink) !important;
+  transform: translate(-1px, -1px) !important;
+  box-shadow: 3px 3px 0 var(--nb-ink) !important;
+}
+
+.btn-back:active,
+.icon-btn:active,
+.truf-icon-btn:active,
+.btn-round-action:active,
+.btn-minus-toggle:active,
+.minus-opt-btn:active,
+.count-btn:active {
+  transform: translate(2px, 2px) !important;
+  box-shadow: 0 0 0 var(--nb-ink) !important;
+}
+
+.btn-round-action.danger {
+  background: var(--nb-red-soft) !important;
+  color: #991B1B !important;
+  border: var(--nb-border-sm) !important;
+}
+
+.btn-round-action.danger:hover {
+  background: var(--nb-red) !important;
+  color: #FFFFFF !important;
+}
+
+.minus-opt-btn:hover {
+  background: var(--nb-green) !important;
+  color: var(--nb-ink) !important;
+}
+
+/* =============================================
+   4. CARDS, HEADERS, SECTIONS & CONTAINERS
+   ============================================= */
+
+.home-card-shell,
+.truf-hero-card {
+  background: var(--nb-surface) !important;
+  border: var(--nb-border) !important;
+  border-radius: var(--nb-radius-lg) !important;
+  box-shadow: var(--nb-shadow-lg) !important;
+}
+
+.section,
+.section-card,
+body.truf-theme .truf-card,
+.round-card,
+.history-item,
+.history-game-card,
+.stats-row,
+.stats-detail-card,
+.bracket-table-card,
+.tourney-mode-card,
+.rr-standings-card,
+.rr-round-section,
+.podium-card,
+.table-card {
+  background: var(--nb-surface) !important;
+  border: var(--nb-border) !important;
+  border-radius: var(--nb-radius-lg) !important;
+  box-shadow: var(--nb-shadow) !important;
+  color: var(--nb-ink) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+.saved-banner {
+  background: var(--nb-yellow-soft) !important;
+  border: var(--nb-border) !important;
+  border-radius: var(--nb-radius-lg) !important;
+  box-shadow: var(--nb-shadow) !important;
+  color: var(--nb-ink) !important;
+}
+
+.page-header {
+  background: var(--nb-surface-cream) !important;
+  border-bottom: var(--nb-border) !important;
+  box-shadow: 0 3px 0 var(--nb-ink) !important;
+  color: var(--nb-ink) !important;
+}
+
+.section-header,
+.truf-card-header {
+  border-bottom: 2px solid var(--nb-ink) !important;
+  padding-bottom: 0.7rem !important;
+}
+
+.round-card-header,
+.truf-history-head,
+.history-game-card-header,
+.table-card-header,
+.rr-round-header,
+.mode-card-features {
+  background: var(--nb-surface-cream) !important;
+  border-bottom: 2px solid var(--nb-ink) !important;
+  color: var(--nb-ink) !important;
+}
+
+.no-history {
+  background: var(--nb-surface-cream) !important;
+  border: 2px dashed var(--nb-ink) !important;
+  border-radius: var(--nb-radius-lg) !important;
+  color: var(--nb-ink) !important;
+  font-weight: 700 !important;
+}
+
+/* =============================================
+   5. INPUTS, SELECTORS, TABS & POPOVERS
+   ============================================= */
+
+.form-input,
+.score-input-field,
+.truf-input,
+.player-count-selector {
+  background: var(--nb-surface) !important;
+  border: var(--nb-border-sm) !important;
+  border-radius: var(--nb-radius-md) !important;
+  color: var(--nb-ink) !important;
+  box-shadow: var(--nb-shadow-xs) !important;
+  font-weight: 700 !important;
+}
+
+.form-input:focus,
+.score-input-field:focus,
+.truf-input:focus {
+  background: var(--nb-surface) !important;
+  border-color: var(--nb-ink) !important;
+  box-shadow: 3px 3px 0 var(--nb-blue) !important;
+  outline: none !important;
+}
+
+.form-label {
+  color: var(--nb-ink) !important;
+  font-weight: 800 !important;
+}
+
+.balak-select-btn,
+.btn-tourney-change-mode,
+.tourney-preset-btn,
+.rr-round-count-btn,
+.ig-format-btn {
+  background: var(--nb-surface) !important;
+  border: var(--nb-border-sm) !important;
+  border-radius: var(--nb-radius-md) !important;
+  color: var(--nb-ink) !important;
+  box-shadow: var(--nb-shadow-xs) !important;
+  font-weight: 700 !important;
+}
+
+.balak-select-btn:hover,
+.tourney-preset-btn:hover,
+.rr-round-count-btn:hover,
+.ig-format-btn:hover {
+  background: var(--nb-surface-cream) !important;
+}
+
+.balak-select-btn.active,
+.tourney-preset-btn.active,
+.rr-round-count-btn.active,
+.ig-format-btn.active {
+  background: var(--nb-yellow) !important;
+  border-color: var(--nb-ink) !important;
+  color: var(--nb-ink) !important;
+  box-shadow: var(--nb-shadow-xs) !important;
+  font-weight: 800 !important;
+}
+
+.minus-options-popover {
+  background: var(--nb-surface) !important;
+  border: var(--nb-border) !important;
+  border-radius: var(--nb-radius-md) !important;
+  box-shadow: var(--nb-shadow) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+.rr-tabs-nav {
+  background: var(--nb-surface-cream) !important;
+  border: var(--nb-border-sm) !important;
+  border-radius: var(--nb-radius-lg) !important;
+  box-shadow: var(--nb-shadow-xs) !important;
+}
+
+.rr-tab-btn {
+  color: var(--nb-ink) !important;
+  font-weight: 700 !important;
+  border-radius: var(--nb-radius-md) !important;
+}
+
+.rr-tab-btn.active {
+  background: var(--nb-blue) !important;
+  color: #FFFFFF !important;
+  border: var(--nb-border-sm) !important;
+  box-shadow: var(--nb-shadow-xs) !important;
+  font-weight: 800 !important;
+}
+
+/* =============================================
+   6. MODE GAPLE: LEADERBOARD, BADGES & TOURNAMENT
+   ============================================= */
+
+.lb-item,
+.go-lb-item,
+.score-input-row,
+.player-input-card {
+  background: var(--nb-surface) !important;
+  border: var(--nb-border-sm) !important;
+  border-radius: var(--nb-radius-md) !important;
+  box-shadow: 3px 3px 0 var(--nb-ink) !important;
+  color: var(--nb-ink) !important;
+}
+
+.score-input-row {
+  background: #FFFDF7 !important;
+}
+
+.score-input-row:focus-within {
+  background: var(--nb-surface) !important;
+  border-color: var(--nb-ink) !important;
+  box-shadow: 3px 3px 0 var(--nb-blue) !important;
+}
+
+.lb-item:hover {
+  border-color: var(--nb-ink) !important;
+  box-shadow: 4px 4px 0 var(--nb-ink) !important;
+}
+
+.lb-item:nth-child(1),
+.lb-item.rank-1,
+.go-lb-item.rank-1,
+.bracket-player-slot.champion-1,
+.podium-1 {
+  background: var(--nb-yellow-soft) !important;
+  border: var(--nb-border) !important;
+  box-shadow: 3px 3px 0 var(--nb-ink) !important;
+  color: var(--nb-ink) !important;
+}
+
+.lb-item:nth-child(2),
+.lb-item:nth-child(3) {
+  background: var(--nb-surface) !important;
+  border: var(--nb-border-sm) !important;
+  box-shadow: 3px 3px 0 var(--nb-ink) !important;
+}
+
+.lb-rank {
+  color: var(--nb-ink) !important;
+  font-weight: 800 !important;
+}
+
+.lb-rank-1 {
+  color: #B45309 !important;
+}
+
+.lb-bar-wrap {
+  background: var(--nb-surface-cream) !important;
+  border: 1.5px solid var(--nb-ink) !important;
+  height: 10px !important;
+  border-radius: var(--nb-radius-sm) !important;
+  overflow: hidden !important;
+}
+
+.lb-score {
+  color: var(--nb-ink) !important;
+  font-weight: 800 !important;
+}
+
+/* Preserve dynamic inline player colors while adding crisp Neo-Brutalist border */
+.player-badge {
+  border: var(--nb-border-sm) !important;
+  border-radius: var(--nb-radius-md) !important;
+  box-shadow: var(--nb-shadow-xs) !important;
+  font-weight: 800 !important;
+}
+
+.round-badge,
+.btn-undo,
+.connector-badge,
+#dash-start-balak {
+  background: var(--nb-yellow) !important;
+  color: var(--nb-ink) !important;
+  border: var(--nb-border-sm) !important;
+  border-radius: var(--nb-radius-sm) !important;
+  box-shadow: var(--nb-shadow-xs) !important;
+  font-weight: 800 !important;
+}
+
+.btn-undo:hover {
+  background: var(--nb-yellow-soft) !important;
+  transform: translate(-1px, -1px) !important;
+}
+
+/* Tournament Brackets & Round Robin */
+.bracket-player-slot {
+  background: var(--nb-surface) !important;
+  border: var(--nb-border-sm) !important;
+  border-radius: var(--nb-radius-sm) !important;
+  color: var(--nb-ink) !important;
+  font-weight: 700 !important;
+}
+
+.bracket-table-card.completed,
+.bracket-player-slot.qualified,
+.table-status-done {
+  background: var(--nb-green-soft) !important;
+  border: var(--nb-border-sm) !important;
+  color: #14532D !important;
+}
+
+.bracket-table-card.active-stage,
+.table-status-active {
+  background: var(--nb-red-soft) !important;
+  border: 2px solid var(--nb-red) !important;
+  color: #991B1B !important;
+}
+
+.table-status-pending,
+.rr-rank-badge-normal {
+  background: var(--nb-surface-cream) !important;
+  border: 1.5px solid var(--nb-ink) !important;
+  color: var(--nb-ink) !important;
+}
+
+.bracket-player-slot.champion-2,
+.podium-2 {
+  background: var(--nb-blue-soft) !important;
+  border: var(--nb-border-sm) !important;
+  color: #1E3A8A !important;
+}
+
+.bracket-player-slot.champion-3,
+.podium-3 {
+  background: var(--nb-green-soft) !important;
+  border: var(--nb-border-sm) !important;
+  color: #14532D !important;
+}
+
+.rr-standings-table th {
+  background: var(--nb-surface-cream) !important;
+  color: var(--nb-ink) !important;
+  border-bottom: 2px solid var(--nb-ink) !important;
+  font-weight: 800 !important;
+}
+
+.rr-standings-table td {
+  color: var(--nb-ink) !important;
+  border-bottom: 1.5px solid #E5E0D5 !important;
+}
+
+/* =============================================
+   7. MODE TRUF REMI SPECIFICS
+   ============================================= */
+
+.truf-topbar-suit {
+  background: var(--nb-yellow) !important;
+  border: var(--nb-border) !important;
+  border-radius: var(--nb-radius-md) !important;
+  box-shadow: 3px 3px 0 var(--nb-ink) !important;
+}
+
+.truf-score-tile {
+  background: var(--nb-surface) !important;
+  border: var(--nb-border-sm) !important;
+  border-radius: var(--nb-radius-md) !important;
+  box-shadow: 3px 3px 0 var(--nb-ink) !important;
+}
+
+.truf-score-tile.rank-1 {
+  background: var(--nb-yellow-soft) !important;
+  border: var(--nb-border) !important;
+}
+
+.truf-score-tile.is-shuffler {
+  background: var(--nb-red-soft) !important;
+  border: var(--nb-border-sm) !important;
+}
+
+.truf-tile-bid-pill,
+.truf-meta-chip,
+.truf-suit-order {
+  background: var(--nb-surface-cream) !important;
+  border: 1.5px solid var(--nb-ink) !important;
+  border-radius: var(--nb-radius-sm) !important;
+  color: var(--nb-ink) !important;
+  font-weight: 700 !important;
+}
+
+.truf-score-tile.rank-1 .truf-tile-bid-pill {
+  background: var(--nb-yellow) !important;
+  border-color: var(--nb-ink) !important;
+  color: var(--nb-ink) !important;
+}
+
+/* Truf Badges */
+.truf-badge {
+  border: var(--nb-border-sm) !important;
+  border-radius: var(--nb-radius-sm) !important;
+  box-shadow: 1.5px 1.5px 0 var(--nb-ink) !important;
+  font-weight: 800 !important;
+}
+
+.truf-badge-atas {
+  background: var(--nb-green-soft) !important;
+  color: #14532D !important;
+}
+
+.truf-badge-bawah {
+  background: var(--nb-blue-soft) !important;
+  color: #1E3A8A !important;
+}
+
+.truf-badge-pas13 {
+  background: var(--nb-yellow) !important;
+  color: var(--nb-ink) !important;
+}
+
+.truf-badge-neutral {
+  background: var(--nb-surface) !important;
+  color: var(--nb-ink) !important;
+}
+
+/* Bid & Result Player Rows */
+.truf-row-list {
+  border: var(--nb-border-sm) !important;
+  border-radius: var(--nb-radius-md) !important;
+  background: var(--nb-surface) !important;
+}
+
+.truf-player-row {
+  border-bottom: 1.5px solid var(--nb-ink) !important;
+}
+
+.truf-player-row:last-child {
+  border-bottom: none !important;
+}
+
+.truf-player-row.winner-bid {
+  background: var(--nb-yellow-soft) !important;
+}
+
+.truf-truf-tag {
+  background: var(--nb-yellow) !important;
+  color: var(--nb-ink) !important;
+  border: 1.5px solid var(--nb-ink) !important;
+  border-radius: var(--nb-radius-sm) !important;
+  font-weight: 800 !important;
+}
+
+/* Mini Playing Card (respecting iPad landscape media query sizing) */
+.truf-mini-card {
+  background: var(--nb-surface) !important;
+  border: var(--nb-border-sm) !important;
+  border-radius: var(--nb-radius-sm) !important;
+  box-shadow: var(--nb-shadow-xs) !important;
+}
+
+.truf-mini-card.red {
+  border-color: var(--nb-ink) !important;
+  color: #DC2626 !important;
+}
+
+/* Truf Steppers & Suit Selector Buttons */
+.truf-stepper {
+  background: var(--nb-surface) !important;
+  border: var(--nb-border-sm) !important;
+  border-radius: var(--nb-radius-md) !important;
+  box-shadow: var(--nb-shadow-xs) !important;
+}
+
+.truf-step-btn {
+  color: var(--nb-ink) !important;
+}
+
+.truf-step-btn:hover {
+  background: var(--nb-yellow) !important;
+}
+
+.truf-step-btn:active {
+  background: var(--nb-red) !important;
+  color: #FFFFFF !important;
+}
+
+.truf-suit-btn {
+  background: var(--nb-surface) !important;
+  border: var(--nb-border-sm) !important;
+  border-radius: var(--nb-radius-md) !important;
+  box-shadow: var(--nb-shadow-xs) !important;
+}
+
+.truf-suit-btn:hover:not(.active) {
+  background: var(--nb-surface-cream) !important;
+}
+
+.truf-suit-btn.active {
+  background: var(--nb-blue) !important;
+  border-color: var(--nb-ink) !important;
+  color: #FFFFFF !important;
+  box-shadow: 1px 1px 0 var(--nb-ink) !important;
+}
+
+.truf-suit-btn.red.active {
+  background: var(--nb-red) !important;
+  border-color: var(--nb-ink) !important;
+  color: #FFFFFF !important;
+}
+
+/* Summary Strip & Pas 13 Box */
+.truf-summary-strip {
+  background: var(--nb-blue-soft) !important;
+  border: var(--nb-border-sm) !important;
+  border-radius: var(--nb-radius-md) !important;
+  color: var(--nb-ink) !important;
+  font-weight: 700 !important;
+}
+
+.truf-pas13-box {
+  background: var(--nb-yellow-soft) !important;
+  border: var(--nb-border) !important;
+  border-radius: var(--nb-radius-md) !important;
+  box-shadow: 3px 3px 0 var(--nb-ink) !important;
+}
+
+.truf-pas13-title,
+.truf-pas13-desc {
+  color: var(--nb-ink) !important;
+}
+
+/* Progress Bar */
+.truf-progress-track {
+  background: var(--nb-surface-cream) !important;
+  border: 1.5px solid var(--nb-ink) !important;
+  height: 10px !important;
+  border-radius: var(--nb-radius-sm) !important;
+}
+
+.truf-progress-fill {
+  background: var(--nb-blue) !important;
+  border-radius: 4px !important;
+}
+
+.truf-progress-fill.exact {
+  background: var(--nb-green) !important;
+}
+
+.truf-progress-fill.over {
+  background: var(--nb-red) !important;
+}
+
+/* Preview Pills */
+.truf-preview-pill {
+  border: 1.5px solid var(--nb-ink) !important;
+  border-radius: var(--nb-radius-sm) !important;
+  font-weight: 800 !important;
+}
+
+.truf-preview-pill.pos {
+  background: var(--nb-green-soft) !important;
+  color: #14532D !important;
+}
+
+.truf-preview-pill.neg {
+  background: var(--nb-red-soft) !important;
+  color: #991B1B !important;
+}
+
+/* Truf History & Klasemen */
+.truf-history-item {
+  background: var(--nb-surface) !important;
+  border: var(--nb-border-sm) !important;
+  border-radius: var(--nb-radius-md) !important;
+  box-shadow: 3px 3px 0 var(--nb-ink) !important;
+}
+
+.truf-lb-row {
+  border-bottom: 1.5px solid var(--nb-ink) !important;
+}
+
+.truf-lb-row:last-child {
+  border-bottom: none !important;
+}
+
+.truf-lb-row.rank-1 {
+  background: var(--nb-yellow-soft) !important;
+}
+
+.truf-lb-row.is-shuffler {
+  background: var(--nb-red-soft) !important;
+}
+
+.truf-kocok-tag {
+  background: var(--nb-red-soft) !important;
+  color: #991B1B !important;
+  border: 1.5px solid var(--nb-ink) !important;
+  border-radius: var(--nb-radius-sm) !important;
+  font-weight: 800 !important;
+}
+
+.truf-kocok-tag.jenderal {
+  background: var(--nb-red) !important;
+  color: #FFFFFF !important;
+}
+
+/* =============================================
+   8. MODALS & TOAST
+   ============================================= */
+
+.modal-overlay,
+body.truf-theme .modal-overlay {
+  background: rgba(17, 17, 17, 0.55) !important;
+  backdrop-filter: blur(2px) !important;
+  -webkit-backdrop-filter: blur(2px) !important;
+}
+
+.modal-card,
+body.truf-theme .modal-card {
+  background: var(--nb-bg) !important;
+  border: 3px solid var(--nb-ink) !important;
+  border-radius: var(--nb-radius-lg) !important;
+  box-shadow: var(--nb-shadow-lg) !important;
+  color: var(--nb-ink) !important;
+}
+
+.truf-rules-heading {
+  border-bottom: 2px solid var(--nb-ink) !important;
+}
+
+.truf-rule-item {
+  border-bottom: 1.5px solid #E5E0D5 !important;
+}
+
+.toast {
+  background: var(--nb-yellow) !important;
+  color: var(--nb-ink) !important;
+  border: var(--nb-border) !important;
+  border-radius: var(--nb-radius-md) !important;
+  box-shadow: var(--nb-shadow) !important;
+  font-weight: 800 !important;
+}

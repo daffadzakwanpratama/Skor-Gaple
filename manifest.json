@@ -4,8 +4,8 @@
   "description": "Catat skor permainan Gaple secara real-time, otomatis, dan mudah digunakan.",
   "start_url": "./index.html",
   "display": "standalone",
-  "background_color": "#1A1C1E",
-  "theme_color": "#FF5252",
+  "background_color": "#FFF9EB",
+  "theme_color": "#FFD60A",
   "orientation": "portrait",
   "icons": [
     {
