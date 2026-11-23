@@ -457,6 +457,23 @@ body.truf-theme .truf-card,
   font-weight: 800 !important;
 }
 
+.balak-select-btn svg rect[fill="#FFFFFF"] {
+  fill: #FFFFFF !important;
+  stroke: var(--nb-ink) !important;
+  stroke-width: 2px !important;
+  rx: 4px;
+}
+
+.balak-select-btn svg line {
+  stroke: var(--nb-ink) !important;
+  stroke-width: 2px !important;
+}
+
+.balak-select-btn svg rect[fill="#FF5252"] {
+  fill: var(--nb-red) !important;
+  stroke: none !important;
+}
+
 .minus-options-popover {
   background: var(--nb-surface) !important;
   border: var(--nb-border) !important;
