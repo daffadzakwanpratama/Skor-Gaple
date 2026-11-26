@@ -220,6 +220,16 @@ function saveState() {
   }
 }
 
+function getSavedTrufSession() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(TRUF_STORAGE_KEY) || 'null');
+    if (saved && Array.isArray(saved.players) && saved.players.length === 4) {
+      return saved;
+    }
+  } catch (_) {}
+  return null;
+}
+
 function initSetupScreen() {
   try {
     const savedNames = JSON.parse(localStorage.getItem(TRUF_NAMES_KEY) || 'null');
@@ -231,13 +241,55 @@ function initSetupScreen() {
     }
   } catch (_) {}
 
-  try {
-    const saved = JSON.parse(localStorage.getItem(TRUF_STORAGE_KEY) || 'null');
-    if (saved && Array.isArray(saved.players) && saved.players.length === 4) {
-      document.getElementById('truf-resume-wrap').classList.remove('hidden');
-      document.getElementById('truf-resume-info').textContent = `R${saved.round}`;
-    }
-  } catch (_) {}
+  const resumeWrap = document.getElementById('truf-resume-wrap');
+  const saved = getSavedTrufSession();
+  if (saved && resumeWrap) {
+    resumeWrap.classList.remove('hidden');
+    document.getElementById('truf-resume-info').textContent = `R${saved.round}`;
+  } else if (resumeWrap) {
+    resumeWrap.classList.add('hidden');
+  }
+}
+
+function showSetupView() {
+  document.getElementById('truf-game-view').classList.add('hidden');
+  document.getElementById('truf-setup-view').classList.remove('hidden');
+  document.getElementById('btn-truf-reset').classList.add('hidden');
+  const setScoreBtn = document.getElementById('btn-truf-set-score');
+  if (setScoreBtn) setScoreBtn.classList.add('hidden');
+  const topSuitEl = document.getElementById('truf-topbar-suit');
+  if (topSuitEl) topSuitEl.classList.add('hidden');
+  initSetupScreen();
+}
+
+function handleStartTrufClick() {
+  const saved = getSavedTrufSession();
+  if (!saved) {
+    startNewTrufGame();
+    return;
+  }
+  const phaseLabel = saved.phase === 'result' ? 'Hasil' : 'Bid';
+  const summary = saved.players.map(p => `${p.name} (${p.score})`).join(' · ');
+  const infoEl = document.getElementById('truf-resume-choice-info');
+  if (infoEl) {
+    infoEl.textContent = `Ronde ${saved.round} (${phaseLabel}) — ${summary}`;
+  }
+  document.getElementById('modal-truf-resume-choice').classList.remove('hidden');
+}
+
+function closeTrufResumeChoiceModal() {
+  const modal = document.getElementById('modal-truf-resume-choice');
+  if (modal) modal.classList.add('hidden');
+}
+
+function confirmResumeSavedTrufGame() {
+  closeTrufResumeChoiceModal();
+  resumeSavedTrufGame();
+}
+
+function confirmStartFreshTrufGame() {
+  closeTrufResumeChoiceModal();
+  startNewTrufGame();
 }
 
 function startNewTrufGame() {
@@ -252,18 +304,19 @@ function startNewTrufGame() {
 }
 
 function resumeSavedTrufGame() {
-  try {
-    const saved = JSON.parse(localStorage.getItem(TRUF_STORAGE_KEY) || 'null');
-    if (saved) {
-      trufState = saved;
-      showGameView();
-    }
-  } catch (_) {
+  const saved = getSavedTrufSession();
+  if (saved) {
+    trufState = saved;
+    showGameView();
+  } else {
     startNewTrufGame();
   }
 }
 
 function showGameView() {
+  if (window.history && window.history.pushState && (!window.history.state || window.history.state.trufView !== 'game')) {
+    window.history.pushState({ trufView: 'game' }, '', '#play');
+  }
   document.getElementById('truf-setup-view').classList.add('hidden');
   document.getElementById('truf-game-view').classList.remove('hidden');
   document.getElementById('btn-truf-reset').classList.remove('hidden');
@@ -271,6 +324,13 @@ function showGameView() {
   if (setScoreBtn) setScoreBtn.classList.remove('hidden');
   renderAll();
 }
+
+window.addEventListener('popstate', () => {
+  const gameView = document.getElementById('truf-game-view');
+  if (gameView && !gameView.classList.contains('hidden')) {
+    showSetupView();
+  }
+});
 
 function renderAll() {
   renderScoreboard();
@@ -683,6 +743,10 @@ document.addEventListener('keydown', event => {
     const setScoreModal = document.getElementById('modal-set-score');
     if (setScoreModal && !setScoreModal.classList.contains('hidden')) {
       closeSetScoreModal();
+    }
+    const resumeChoiceModal = document.getElementById('modal-truf-resume-choice');
+    if (resumeChoiceModal && !resumeChoiceModal.classList.contains('hidden')) {
+      closeTrufResumeChoiceModal();
     }
   }
 });
