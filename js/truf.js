@@ -257,6 +257,8 @@ function showSetupView() {
   document.getElementById('btn-truf-reset').classList.add('hidden');
   const setScoreBtn = document.getElementById('btn-truf-set-score');
   if (setScoreBtn) setScoreBtn.classList.add('hidden');
+  const editNamesBtn = document.getElementById('btn-truf-edit-names');
+  if (editNamesBtn) editNamesBtn.classList.add('hidden');
   const topSuitEl = document.getElementById('truf-topbar-suit');
   if (topSuitEl) topSuitEl.classList.add('hidden');
   initSetupScreen();
@@ -322,6 +324,8 @@ function showGameView() {
   document.getElementById('btn-truf-reset').classList.remove('hidden');
   const setScoreBtn = document.getElementById('btn-truf-set-score');
   if (setScoreBtn) setScoreBtn.classList.remove('hidden');
+  const editNamesBtn = document.getElementById('btn-truf-edit-names');
+  if (editNamesBtn) editNamesBtn.classList.remove('hidden');
   renderAll();
 }
 
@@ -744,12 +748,83 @@ document.addEventListener('keydown', event => {
     if (setScoreModal && !setScoreModal.classList.contains('hidden')) {
       closeSetScoreModal();
     }
+    const editNamesModal = document.getElementById('modal-edit-names');
+    if (editNamesModal && !editNamesModal.classList.contains('hidden')) {
+      closeEditNamesModal();
+    }
     const resumeChoiceModal = document.getElementById('modal-truf-resume-choice');
     if (resumeChoiceModal && !resumeChoiceModal.classList.contains('hidden')) {
       closeTrufResumeChoiceModal();
     }
   }
 });
+
+function openEditNamesModal() {
+  if (!trufState || !Array.isArray(trufState.players)) return;
+  const rowsEl = document.getElementById('truf-edit-names-rows');
+  const modalEl = document.getElementById('modal-edit-names');
+  if (!rowsEl || !modalEl) return;
+
+  rowsEl.innerHTML = trufState.players.map((p, idx) => {
+    const pSuit = SUITS[idx] || SUITS[0];
+    return `
+      <div class="truf-input-wrap">
+        <span class="truf-input-pip ${pSuit.isRed ? 'red' : ''}" aria-hidden="true">${pSuit.symbol}</span>
+        <input
+          id="edit-name-input-${idx}"
+          type="text"
+          maxlength="18"
+          class="truf-input truf-input-has-pip"
+          placeholder="Pemain ${idx + 1}"
+          value="${escapeHtml(p.name)}"
+          aria-label="Nama Pemain ${idx + 1}"
+        />
+      </div>
+    `;
+  }).join('');
+
+  modalEl.classList.remove('hidden');
+}
+
+function closeEditNamesModal() {
+  const modalEl = document.getElementById('modal-edit-names');
+  if (modalEl) modalEl.classList.add('hidden');
+}
+
+function applyEditedNames() {
+  if (!trufState || !Array.isArray(trufState.players)) return;
+  const newNames = trufState.players.map((p, idx) => {
+    const input = document.getElementById(`edit-name-input-${idx}`);
+    const val = input ? input.value.trim() : p.name;
+    return val || `Pemain ${idx + 1}`;
+  });
+
+  trufState.players.forEach((p, idx) => {
+    p.name = newNames[idx];
+    const setupInput = document.getElementById(`p-name-${idx}`);
+    if (setupInput) setupInput.value = newNames[idx];
+  });
+
+  if (Array.isArray(trufState.history)) {
+    trufState.history.forEach(round => {
+      if (Array.isArray(round.entries)) {
+        round.entries.forEach((entry, idx) => {
+          if (newNames[idx]) {
+            entry.name = newNames[idx];
+            if (entry.isTrufMaker) {
+              round.trufMaker = newNames[idx];
+            }
+          }
+        });
+      }
+    });
+  }
+
+  localStorage.setItem(TRUF_NAMES_KEY, JSON.stringify(newNames));
+  saveState();
+  renderAll();
+  closeEditNamesModal();
+}
 
 function openSetScoreModal() {
   if (!trufState || !Array.isArray(trufState.players)) return;
@@ -1074,6 +1149,8 @@ function resetSessionNow() {
   document.getElementById('btn-truf-reset').classList.add('hidden');
   const setScoreBtn = document.getElementById('btn-truf-set-score');
   if (setScoreBtn) setScoreBtn.classList.add('hidden');
+  const editNamesBtn = document.getElementById('btn-truf-edit-names');
+  if (editNamesBtn) editNamesBtn.classList.add('hidden');
   document.getElementById('truf-resume-wrap').classList.add('hidden');
   const topSuitEl = document.getElementById('truf-topbar-suit');
   if (topSuitEl) topSuitEl.classList.add('hidden');

@@ -57,6 +57,14 @@
         </a>
       </div>
       <div class="truf-topbar-actions">
+        <button id="btn-truf-edit-names" class="truf-icon-btn hidden" onclick="openEditNamesModal()" title="Edit Nama Pemain" aria-label="Edit Nama Pemain">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+            <circle cx="9" cy="7" r="4" />
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+            <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+          </svg>
+        </button>
         <button id="btn-truf-set-score" class="truf-icon-btn hidden" onclick="openSetScoreModal()" title="Set Skor Manual (dari Buku)" aria-label="Set Skor Manual">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M12 20h9" />
@@ -428,7 +436,25 @@
     </div>
   </div>
 
-  <script src="js/truf.js?v=22.0"></script>
+  <!-- Modal: Edit Nama Pemain -->
+  <div id="modal-edit-names" class="modal-overlay hidden" onclick="if(event.target===this) closeEditNamesModal()">
+    <div class="modal-card truf-numpad-card" style="max-width: 390px !important;">
+      <div class="truf-numpad-header">
+        <div>
+          <div class="truf-numpad-title">Edit Nama Pemain</div>
+          <div class="truf-numpad-sub">Ubah nama pemain tanpa mengulang ronde</div>
+        </div>
+        <button type="button" class="truf-icon-btn" onclick="closeEditNamesModal()" aria-label="Tutup">✕</button>
+      </div>
+      <div id="truf-edit-names-rows" class="truf-set-score-list"></div>
+      <div style="display: flex; gap: 0.55rem; margin-top: 1rem;">
+        <button type="button" class="btn btn-outline" style="flex: 1;" onclick="closeEditNamesModal()">Batal</button>
+        <button type="button" class="btn btn-primary" style="flex: 1.4;" onclick="applyEditedNames()">Simpan Nama</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/truf.js?v=23.0"></script>
   <script type="module" src="js/leaves-init.js?v=1.0"></script>
 </body>
 
