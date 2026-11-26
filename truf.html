@@ -13,7 +13,7 @@
     rel="stylesheet" />
   <link rel="stylesheet" href="css/style.css?v=11.0" />
   <link rel="stylesheet" href="css/truf.css?v=37.0" />
-  <link rel="stylesheet" href="css/neobrutalism.css?v=1.0" />
+  <link rel="stylesheet" href="css/neobrutalism.css?v=1.3" />
   <link rel="manifest" href="manifest.json" />
   <link rel="icon" type="image/svg+xml" href="assets/icon.svg" />
   <meta name="theme-color" content="#FFF9EB" />
@@ -335,6 +335,10 @@
           <div class="truf-rule-desc">Poin <strong>+Bid</strong> · Bid 0: Bawah <strong>+10</strong>, Atas <strong>+5</strong></div>
         </div>
         <div class="truf-rule-item">
+          <div class="truf-rule-label">Gagal Bid 0</div>
+          <div class="truf-rule-desc">Bawah <strong>−10</strong> (−2/trik) · Atas <strong>−5</strong> (−1/trik)</div>
+        </div>
+        <div class="truf-rule-item">
           <div class="truf-rule-label">Atas (&gt;13)</div>
           <div class="truf-rule-desc">Kurang <strong>−2×</strong> · Lebih <strong>−1</strong></div>
         </div>
@@ -369,7 +373,21 @@
     </div>
   </div>
 
-  <script src="js/truf.js?v=16.0"></script>
+  <!-- Modal: Kalkulator Pilih Angka Cepat (0-13) -->
+  <div id="modal-truf-numpad" class="modal-overlay hidden" onclick="if(event.target===this) closeTrufNumpad()">
+    <div class="modal-card truf-numpad-card">
+      <div class="truf-numpad-header">
+        <div>
+          <div id="truf-numpad-title" class="truf-numpad-title">Pilih Angka</div>
+          <div id="truf-numpad-sub" class="truf-numpad-sub"></div>
+        </div>
+        <button type="button" class="truf-icon-btn" onclick="closeTrufNumpad()" aria-label="Tutup">✕</button>
+      </div>
+      <div id="truf-numpad-grid" class="truf-numpad-grid"></div>
+    </div>
+  </div>
+
+  <script src="js/truf.js?v=19.0"></script>
   <script type="module" src="js/leaves-init.js?v=1.0"></script>
 </body>
 

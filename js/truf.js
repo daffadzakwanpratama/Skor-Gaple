@@ -172,6 +172,9 @@ function getKocokStatus(history) {
 /**
  * Calculate score for one player in a round.
  * - hasil === bid -> +bid (khusus bid 0: BAWAH -> +10, ATAS -> +5)
+ * - gagal bid 0 (hasil > 0):
+ *   - BAWAH: -10 - (hasil - 1) * 2 (1 -> -10, 2 -> -12, dst.)
+ *   - ATAS: -5 - (hasil - 1) (1 -> -5, 2 -> -6, dst.)
  * - ATAS (totalBid > 13): kurang -> -2 * (bid - hasil), lebih -> -1
  * - BAWAH (totalBid < 13): lebih -> -2 * (hasil - bid), kurang -> -1
  */
@@ -182,6 +185,15 @@ function calculatePlayerRoundScore(bidVal, resultVal, mode) {
       return { points: bonus, label: `✓ +${bonus}`, cls: 'pos' };
     }
     return { points: bidVal, label: `✓ +${bidVal}`, cls: 'pos' };
+  }
+  if (bidVal === 0) {
+    if (mode === 'BAWAH') {
+      const pts = -10 - (resultVal - 1) * 2;
+      return { points: pts, label: `▲${resultVal} · ${pts}`, cls: 'neg' };
+    }
+    // mode === 'ATAS'
+    const pts = -5 - (resultVal - 1);
+    return { points: pts, label: `▲${resultVal} · ${pts}`, cls: 'neg' };
   }
   if (mode === 'ATAS') {
     if (resultVal < bidVal) {
@@ -347,6 +359,7 @@ function renderBidPhase() {
   const mode = getRoundMode(totalBid);
   const highestIdx = getHighestBidderIndex(trufState.bids);
   const highestSuit = getSuitObj(trufState.bids[highestIdx].suit);
+  const maxBid = Math.max(...trufState.bids.map(b => b.value));
 
   const totalPill = document.getElementById('bid-total-pill');
   const pillLabel = mode === 'ATAS' ? 'Atas' : (mode === 'BAWAH' ? 'Bawah' : 'Pas 13');
@@ -361,13 +374,16 @@ function renderBidPhase() {
     const b = trufState.bids[idx];
     const suitObj = getSuitObj(b.suit);
     const isHighest = idx === highestIdx;
-    const suitBtns = SUITS.map(s => `
-      <button
-        class="truf-suit-btn ${s.isRed ? 'red' : ''} ${b.suit === s.id ? 'active' : ''}"
-        title="${s.name}"
-        onclick="setPlayerSuit(${idx}, '${s.id}')"
-      >${s.symbol}</button>
-    `).join('');
+    const isTopBid = b.value === maxBid;
+    const suitBtns = isTopBid
+      ? SUITS.map(s => `
+          <button
+            class="truf-suit-btn ${s.isRed ? 'red' : ''} ${b.suit === s.id ? 'active' : ''}"
+            title="${s.name}"
+            onclick="setPlayerSuit(${idx}, '${s.id}')"
+          >${s.symbol}</button>
+        `).join('')
+      : '';
 
     return `
       <div class="truf-player-row ${isHighest ? 'winner-bid' : ''}">
@@ -379,12 +395,8 @@ function renderBidPhase() {
           </div>
         </div>
         <div class="truf-controls">
-          <div class="truf-stepper">
-            <button class="truf-step-btn" onclick="changeBidValue(${idx}, -1)">−</button>
-            <span class="truf-step-val">${b.value}</span>
-            <button class="truf-step-btn" onclick="changeBidValue(${idx}, 1)">+</button>
-          </div>
-          <div class="truf-suit-group">${suitBtns}</div>
+          <button type="button" class="truf-step-val truf-step-val-btn" onclick="openTrufNumpad('bid', ${idx})" title="Pilih angka cepat (0–13)">${b.value}</button>
+          ${isTopBid ? `<div class="truf-suit-group">${suitBtns}</div>` : ''}
         </div>
       </div>
     `;
@@ -550,11 +562,13 @@ function renderResultPhase() {
           </div>
         </div>
         <div class="truf-controls">
-          <div class="truf-stepper">
-            <button class="truf-step-btn" onclick="changeResultValue(${idx}, -1)">−</button>
-            <span class="truf-step-val">${res}</span>
-            <button class="truf-step-btn" onclick="changeResultValue(${idx}, 1)">+</button>
-          </div>
+          <button type="button" class="truf-step-val truf-step-val-btn" onclick="openTrufNumpad('result', ${idx})" title="Pilih angka cepat (0–13)">${res}</button>
+          <button
+            type="button"
+            class="truf-book-btn ${res === bid.value ? 'is-booked' : ''}"
+            onclick="bookResultValue(${idx})"
+            title="Isi hasil pas sesuai bid (${bid.value})"
+          >Book</button>
           <span class="truf-preview-pill ${preview.cls}">${preview.label}</span>
         </div>
       </div>
@@ -571,6 +585,87 @@ function changeResultValue(playerIdx, delta) {
   renderResultPhase();
   bumpTrufStepVal(document.querySelector(`#truf-result-rows .truf-player-row:nth-child(${playerIdx + 1}) .truf-step-val`));
 }
+
+function bookResultValue(playerIdx) {
+  const bidVal = trufState.bids[playerIdx].value;
+  trufState.results[playerIdx] = bidVal;
+  saveState();
+  renderResultPhase();
+  bumpTrufStepVal(document.querySelector(`#truf-result-rows .truf-player-row:nth-child(${playerIdx + 1}) .truf-step-val`));
+}
+
+let activeTrufNumpad = null;
+
+function openTrufNumpad(target, playerIdx) {
+  if (!trufState || !trufState.players[playerIdx]) return;
+  activeTrufNumpad = { target, playerIdx };
+
+  const player = trufState.players[playerIdx];
+  const bidVal = trufState.bids[playerIdx].value;
+  const currentVal = target === 'bid' ? bidVal : trufState.results[playerIdx];
+
+  const titleEl = document.getElementById('truf-numpad-title');
+  const subEl = document.getElementById('truf-numpad-sub');
+  const gridEl = document.getElementById('truf-numpad-grid');
+  const modalEl = document.getElementById('modal-truf-numpad');
+  if (!titleEl || !subEl || !gridEl || !modalEl) return;
+
+  titleEl.textContent = `${target === 'bid' ? 'Bid' : 'Hasil'} · ${player.name}`;
+  subEl.textContent = target === 'bid'
+    ? 'Ketuk angka 0 – 13'
+    : `Bid: ${bidVal} · Ketuk hasil 0 – 13`;
+
+  const numberBtns = [];
+  for (let n = 0; n <= 13; n++) {
+    const classes = ['truf-numpad-btn'];
+    if (n === currentVal) classes.push('is-current');
+    if (target === 'result' && n === bidVal) classes.push('is-target-bid');
+    numberBtns.push(
+      `<button type="button" class="${classes.join(' ')}" onclick="selectTrufNumpadValue(${n})">${n}</button>`
+    );
+  }
+
+  const actionBtn = target === 'result'
+    ? `<button type="button" class="truf-numpad-btn truf-numpad-span2 is-book" onclick="selectTrufNumpadValue(${bidVal})">Book (${bidVal})</button>`
+    : `<button type="button" class="truf-numpad-btn truf-numpad-span2 is-close" onclick="closeTrufNumpad()">Tutup</button>`;
+
+  gridEl.innerHTML = numberBtns.join('') + actionBtn;
+  modalEl.classList.remove('hidden');
+}
+
+function closeTrufNumpad() {
+  const modalEl = document.getElementById('modal-truf-numpad');
+  if (modalEl) modalEl.classList.add('hidden');
+  activeTrufNumpad = null;
+}
+
+function selectTrufNumpadValue(val) {
+  if (!activeTrufNumpad || !trufState) return;
+  const { target, playerIdx } = activeTrufNumpad;
+  const clamped = Math.max(0, Math.min(13, Number(val) || 0));
+
+  if (target === 'bid') {
+    trufState.bids[playerIdx].value = clamped;
+    trufState.pas13Snapshot = null;
+    saveState();
+    renderScoreboard();
+    renderBidPhase();
+    closeTrufNumpad();
+    bumpTrufStepVal(document.querySelector(`#truf-bid-rows .truf-player-row:nth-child(${playerIdx + 1}) .truf-step-val`));
+  } else {
+    trufState.results[playerIdx] = clamped;
+    saveState();
+    renderResultPhase();
+    closeTrufNumpad();
+    bumpTrufStepVal(document.querySelector(`#truf-result-rows .truf-player-row:nth-child(${playerIdx + 1}) .truf-step-val`));
+  }
+}
+
+document.addEventListener('keydown', event => {
+  if (event.key === 'Escape' && activeTrufNumpad) {
+    closeTrufNumpad();
+  }
+});
 
 function saveRoundResult() {
   const totalResult = trufState.results.reduce((sum, v) => sum + v, 0);

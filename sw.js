@@ -1,4 +1,4 @@
-const CACHE_NAME = 'gaple-tracker-v23';
+const CACHE_NAME = 'gaple-tracker-v26';
 
 const ASSETS = [
   './',
@@ -6,9 +6,9 @@ const ASSETS = [
   './truf.html',
   './css/style.css?v=11.0',
   './css/truf.css?v=37.0',
-  './css/neobrutalism.css?v=1.0',
+  './css/neobrutalism.css?v=1.3',
   './js/app.js?v=13.0',
-  './js/truf.js?v=16.0',
+  './js/truf.js?v=19.0',
   './js/leaves-init.js?v=1.0',
   './js/vendor/falling-leaves/index.js',
   './js/vendor/falling-leaves/chunk-QW2AVYVP.js',

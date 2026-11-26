@@ -945,3 +945,185 @@ body.truf-theme .modal-card {
   box-shadow: var(--nb-shadow) !important;
   font-weight: 800 !important;
 }
+
+/* Quick Book Button (Result Phase) */
+.truf-book-btn {
+  height: 46px;
+  padding: 0 0.7rem;
+  background: var(--nb-yellow);
+  color: var(--nb-ink);
+  border: var(--nb-border-sm);
+  border-radius: var(--nb-radius-md);
+  box-shadow: var(--nb-shadow-xs);
+  font-family: inherit;
+  font-size: 0.84rem;
+  font-weight: 800;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.1s ease, box-shadow 0.1s ease, background-color 0.15s ease;
+}
+
+.truf-book-btn:hover {
+  background: var(--nb-yellow-soft);
+  transform: translate(-1px, -1px);
+  box-shadow: 3px 3px 0 var(--nb-ink);
+}
+
+.truf-book-btn:active {
+  transform: translate(2px, 2px);
+  box-shadow: 0 0 0 var(--nb-ink);
+}
+
+.truf-book-btn.is-booked {
+  background: var(--nb-green-soft);
+  color: #14532D;
+  border-color: var(--nb-ink);
+  box-shadow: 1px 1px 0 var(--nb-ink);
+}
+
+@media (min-width: 1024px) and (max-width: 1240px) {
+  .truf-book-btn {
+    height: 40px;
+    padding: 0 0.55rem;
+    font-size: 0.78rem;
+  }
+
+  .truf-step-val-btn {
+    height: 40px;
+    min-width: 48px;
+    font-size: 1.12rem;
+  }
+}
+
+/* Interactive Standalone Number Button & Calculator Numpad Modal */
+.truf-step-val-btn {
+  border: var(--nb-border-sm);
+  border-radius: var(--nb-radius-md);
+  box-shadow: var(--nb-shadow-xs);
+  background: var(--nb-surface);
+  color: var(--nb-ink);
+  height: 46px;
+  min-width: 56px;
+  padding: 0 0.65rem;
+  font-family: inherit;
+  font-size: 1.25rem;
+  font-weight: 800;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.1s ease, box-shadow 0.1s ease, background-color 0.12s ease, color 0.12s ease;
+}
+
+.truf-step-val-btn:hover {
+  background: var(--nb-yellow);
+  transform: translate(-1px, -1px);
+  box-shadow: 3px 3px 0 var(--nb-ink);
+}
+
+.truf-step-val-btn:active {
+  transform: translate(2px, 2px);
+  box-shadow: 0 0 0 var(--nb-ink);
+}
+
+.truf-numpad-card {
+  max-width: 340px !important;
+  width: 100%;
+  padding: 1.1rem !important;
+  text-align: left;
+}
+
+.truf-numpad-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.85rem;
+  padding-bottom: 0.65rem;
+  border-bottom: 2px solid var(--nb-ink);
+}
+
+.truf-numpad-title {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--nb-ink);
+  line-height: 1.25;
+}
+
+.truf-numpad-sub {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--nb-muted);
+  margin-top: 0.15rem;
+}
+
+.truf-numpad-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.55rem;
+}
+
+.truf-numpad-btn {
+  height: 52px;
+  background: var(--nb-surface);
+  color: var(--nb-ink);
+  border: var(--nb-border-sm);
+  border-radius: var(--nb-radius-md);
+  box-shadow: 3px 3px 0 var(--nb-ink);
+  font-family: inherit;
+  font-size: 1.15rem;
+  font-weight: 800;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.1s ease, box-shadow 0.1s ease, background-color 0.12s ease;
+}
+
+.truf-numpad-btn:hover {
+  background: var(--nb-surface-cream);
+  transform: translate(-1px, -1px);
+  box-shadow: 4px 4px 0 var(--nb-ink);
+}
+
+.truf-numpad-btn:active {
+  transform: translate(2px, 2px);
+  box-shadow: 0 0 0 var(--nb-ink);
+}
+
+.truf-numpad-btn.is-target-bid {
+  background: var(--nb-green-soft);
+  color: #14532D;
+}
+
+.truf-numpad-btn.is-current {
+  background: var(--nb-yellow);
+  color: var(--nb-ink);
+}
+
+.truf-numpad-span2 {
+  grid-column: span 2;
+  font-size: 0.96rem;
+}
+
+.truf-numpad-btn.is-book {
+  background: var(--nb-green);
+  color: #FFFFFF;
+}
+
+.truf-numpad-btn.is-book:hover {
+  background: var(--nb-green-hover);
+}
+
+.truf-numpad-btn.is-close {
+  background: var(--nb-surface-cream);
+  color: var(--nb-ink);
+}
