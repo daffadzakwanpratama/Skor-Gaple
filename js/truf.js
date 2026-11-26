@@ -267,6 +267,8 @@ function showGameView() {
   document.getElementById('truf-setup-view').classList.add('hidden');
   document.getElementById('truf-game-view').classList.remove('hidden');
   document.getElementById('btn-truf-reset').classList.remove('hidden');
+  const setScoreBtn = document.getElementById('btn-truf-set-score');
+  if (setScoreBtn) setScoreBtn.classList.remove('hidden');
   renderAll();
 }
 
@@ -497,6 +499,7 @@ function lockBidsAndPlay() {
   if (totalBid === 13) return;
   trufState.phase = 'result';
   trufState.results = [0, 0, 0, 0];
+  lastBookedPlayerIdx = null;
   saveState();
   renderAll();
 }
@@ -551,6 +554,7 @@ function renderResultPhase() {
     const res = trufState.results[idx];
     const preview = calculatePlayerRoundScore(bid.value, res, mode);
     const isHighest = idx === highestIdx;
+    const isBooked = res === bid.value;
 
     return `
       <div class="truf-player-row ${isHighest ? 'winner-bid' : ''}">
@@ -565,7 +569,7 @@ function renderResultPhase() {
           <button type="button" class="truf-step-val truf-step-val-btn" onclick="openTrufNumpad('result', ${idx})" title="Pilih angka cepat (0–13)">${res}</button>
           <button
             type="button"
-            class="truf-book-btn ${res === bid.value ? 'is-booked' : ''}"
+            class="truf-book-btn ${isBooked ? 'is-booked' : ''}"
             onclick="bookResultValue(${idx})"
             title="Isi hasil pas sesuai bid (${bid.value})"
           >Book</button>
@@ -578,9 +582,12 @@ function renderResultPhase() {
   document.getElementById('btn-save-round').disabled = totalResult !== 13;
 }
 
+let lastBookedPlayerIdx = null;
+
 function changeResultValue(playerIdx, delta) {
   const next = Math.max(0, Math.min(13, trufState.results[playerIdx] + delta));
   trufState.results[playerIdx] = next;
+  lastBookedPlayerIdx = null;
   saveState();
   renderResultPhase();
   bumpTrufStepVal(document.querySelector(`#truf-result-rows .truf-player-row:nth-child(${playerIdx + 1}) .truf-step-val`));
@@ -589,6 +596,7 @@ function changeResultValue(playerIdx, delta) {
 function bookResultValue(playerIdx) {
   const bidVal = trufState.bids[playerIdx].value;
   trufState.results[playerIdx] = bidVal;
+  lastBookedPlayerIdx = playerIdx;
   saveState();
   renderResultPhase();
   bumpTrufStepVal(document.querySelector(`#truf-result-rows .truf-player-row:nth-child(${playerIdx + 1}) .truf-step-val`));
@@ -625,8 +633,15 @@ function openTrufNumpad(target, playerIdx) {
     );
   }
 
+  const otherSum = target === 'result'
+    ? trufState.results.reduce((sum, val, i) => (i === playerIdx ? sum : sum + val), 0)
+    : 0;
+  const remaining = 13 - otherSum;
+
   const actionBtn = target === 'result'
-    ? `<button type="button" class="truf-numpad-btn truf-numpad-span2 is-book" onclick="selectTrufNumpadValue(${bidVal})">Book (${bidVal})</button>`
+    ? (remaining >= 0 && remaining <= 13
+        ? `<button type="button" class="truf-numpad-btn truf-numpad-span2 is-book" onclick="selectTrufNumpadValue(${remaining})">Sisa (${remaining})</button>`
+        : `<button type="button" class="truf-numpad-btn truf-numpad-span2 is-book" onclick="selectTrufNumpadValue(${bidVal})">Pas Bid (${bidVal})</button>`)
     : `<button type="button" class="truf-numpad-btn truf-numpad-span2 is-close" onclick="closeTrufNumpad()">Tutup</button>`;
 
   gridEl.innerHTML = numberBtns.join('') + actionBtn;
@@ -654,6 +669,7 @@ function selectTrufNumpadValue(val) {
     bumpTrufStepVal(document.querySelector(`#truf-bid-rows .truf-player-row:nth-child(${playerIdx + 1}) .truf-step-val`));
   } else {
     trufState.results[playerIdx] = clamped;
+    lastBookedPlayerIdx = null;
     saveState();
     renderResultPhase();
     closeTrufNumpad();
@@ -662,10 +678,75 @@ function selectTrufNumpadValue(val) {
 }
 
 document.addEventListener('keydown', event => {
-  if (event.key === 'Escape' && activeTrufNumpad) {
-    closeTrufNumpad();
+  if (event.key === 'Escape') {
+    if (activeTrufNumpad) closeTrufNumpad();
+    const setScoreModal = document.getElementById('modal-set-score');
+    if (setScoreModal && !setScoreModal.classList.contains('hidden')) {
+      closeSetScoreModal();
+    }
   }
 });
+
+function openSetScoreModal() {
+  if (!trufState || !Array.isArray(trufState.players)) return;
+  const rowsEl = document.getElementById('truf-set-score-rows');
+  const modalEl = document.getElementById('modal-set-score');
+  if (!rowsEl || !modalEl) return;
+
+  rowsEl.innerHTML = trufState.players.map((p, idx) => `
+    <div class="truf-set-score-row">
+      <label class="truf-set-score-name" for="set-score-input-${idx}">${escapeHtml(p.name)}</label>
+      <div class="truf-set-score-control">
+        <button type="button" class="truf-sign-btn" onclick="toggleSetScoreSign(${idx})" title="Ubah positif / minus">±</button>
+        <input
+          id="set-score-input-${idx}"
+          type="number"
+          inputmode="numeric"
+          class="truf-input truf-set-score-input"
+          value="${p.score}"
+        />
+      </div>
+    </div>
+  `).join('');
+
+  modalEl.classList.remove('hidden');
+}
+
+function closeSetScoreModal() {
+  const modalEl = document.getElementById('modal-set-score');
+  if (modalEl) modalEl.classList.add('hidden');
+}
+
+function toggleSetScoreSign(playerIdx) {
+  const input = document.getElementById(`set-score-input-${playerIdx}`);
+  if (!input) return;
+  const raw = input.value.trim();
+  if (!raw || raw === '0') {
+    input.value = '-';
+    input.focus();
+    return;
+  }
+  const num = parseInt(raw, 10);
+  if (!Number.isNaN(num)) {
+    input.value = String(-num);
+  }
+  input.focus();
+}
+
+function applyManualScores() {
+  if (!trufState || !Array.isArray(trufState.players)) return;
+  prevTrufScoreSnapshot = trufState.players.map(p => p.score);
+  trufState.players.forEach((p, idx) => {
+    const input = document.getElementById(`set-score-input-${idx}`);
+    const parsed = input ? parseInt(input.value, 10) : p.score;
+    const nextScore = Number.isNaN(parsed) ? 0 : parsed;
+    p.lastDelta = nextScore - p.score;
+    p.score = nextScore;
+  });
+  saveState();
+  closeSetScoreModal();
+  renderAll();
+}
 
 function saveRoundResult() {
   const totalResult = trufState.results.reduce((sum, v) => sum + v, 0);
@@ -708,6 +789,7 @@ function saveRoundResult() {
   trufState.phase = 'bid';
   trufState.pas13Snapshot = null;
   trufState.results = [0, 0, 0, 0];
+  lastBookedPlayerIdx = null;
   saveState();
   animateLatestTrufRound = true;
   renderAll();
@@ -926,6 +1008,8 @@ function resetSessionNow() {
   document.getElementById('truf-game-view').classList.add('hidden');
   document.getElementById('truf-setup-view').classList.remove('hidden');
   document.getElementById('btn-truf-reset').classList.add('hidden');
+  const setScoreBtn = document.getElementById('btn-truf-set-score');
+  if (setScoreBtn) setScoreBtn.classList.add('hidden');
   document.getElementById('truf-resume-wrap').classList.add('hidden');
   const topSuitEl = document.getElementById('truf-topbar-suit');
   if (topSuitEl) topSuitEl.classList.add('hidden');

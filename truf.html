@@ -13,7 +13,7 @@
     rel="stylesheet" />
   <link rel="stylesheet" href="css/style.css?v=11.0" />
   <link rel="stylesheet" href="css/truf.css?v=37.0" />
-  <link rel="stylesheet" href="css/neobrutalism.css?v=1.3" />
+  <link rel="stylesheet" href="css/neobrutalism.css?v=1.4" />
   <link rel="manifest" href="manifest.json" />
   <link rel="icon" type="image/svg+xml" href="assets/icon.svg" />
   <meta name="theme-color" content="#FFF9EB" />
@@ -57,6 +57,12 @@
         </a>
       </div>
       <div class="truf-topbar-actions">
+        <button id="btn-truf-set-score" class="truf-icon-btn hidden" onclick="openSetScoreModal()" title="Set Skor Manual (dari Buku)" aria-label="Set Skor Manual">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 20h9" />
+            <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+          </svg>
+        </button>
         <button class="truf-icon-btn" onclick="openRulesModal()" title="Aturan" aria-label="Aturan">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
             <circle cx="12" cy="12" r="10" />
@@ -387,7 +393,25 @@
     </div>
   </div>
 
-  <script src="js/truf.js?v=19.0"></script>
+  <!-- Modal: Set Skor Manual (Pindah dari Buku) -->
+  <div id="modal-set-score" class="modal-overlay hidden" onclick="if(event.target===this) closeSetScoreModal()">
+    <div class="modal-card truf-numpad-card" style="max-width: 390px !important;">
+      <div class="truf-numpad-header">
+        <div>
+          <div class="truf-numpad-title">Set Skor Manual</div>
+          <div class="truf-numpad-sub">Pindahkan poin dari buku catatan (bisa minus)</div>
+        </div>
+        <button type="button" class="truf-icon-btn" onclick="closeSetScoreModal()" aria-label="Tutup">✕</button>
+      </div>
+      <div id="truf-set-score-rows" class="truf-set-score-list"></div>
+      <div style="display: flex; gap: 0.55rem; margin-top: 1rem;">
+        <button type="button" class="btn btn-outline" style="flex: 1;" onclick="closeSetScoreModal()">Batal</button>
+        <button type="button" class="btn btn-primary" style="flex: 1.4;" onclick="applyManualScores()">Simpan Skor</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/truf.js?v=21.0"></script>
   <script type="module" src="js/leaves-init.js?v=1.0"></script>
 </body>
 
